@@ -8,6 +8,8 @@ Status, open tasks and decisions live in [HANDOVER.md](HANDOVER.md). The
 design is in [docs/DESIGN.md](docs/DESIGN.md). Asset licences are in
 [CREDITS.md](CREDITS.md).
 
+Play it online: https://yurtemre7.github.io/team-1-game-samurai-hook/
+
 ## Run it
 
 Needs Node 20 or newer.

@@ -3,12 +3,16 @@
 Shared source of truth for project status. Read this before starting any
 work, and update it in the same commit as the work.
 
-Last updated: 2026-11-14 (first playable build)
+Last updated: 2026-11-14 (restyle and GitHub Pages)
 
 ## Current state
 
 - **First playable build is on `main`.** The whole loop works: ocean, hook-up
   cutscene, fight, result, shop, repeat, with saving.
+- **Play it online:** https://yurtemre7.github.io/team-1-game-samurai-hook/
+  Every push to `main` runs the tests, builds and redeploys
+  (`.github/workflows/pages.yml`). Asset paths go through `assetUrl()` in
+  `src/core/assets.ts`, so the build works under the `/<repo>/` sub-path.
 - How to run: `npm install`, then `npm run dev` and open
   http://localhost:5173. Checks: `npm run typecheck`, `npm test` (47 tests).
   README.md has controls and how to add a fish or swap an asset.
@@ -19,9 +23,18 @@ Last updated: 2026-11-14 (first playable build)
 - Art: real CC0 / CC-BY sprites for the fight samurai (LuizMelo "Martial
   Hero"), sardine, mackerel, piranha, eel, shark, pufferfish and squid.
   Sound: 14 effects and two music tracks. Everything is listed in CREDITS.md.
-- Still code-drawn placeholders: swordfish, anglerfish, boat, hook, nigiri.
-  The samurai in the boat is drawn in code on purpose (a simple meditating
-  figure, by team request); the detailed fighter appears only in duels.
+- Still code-drawn: swordfish, anglerfish, nigiri (plain placeholders), and
+  the boat and hook (deliberately detailed code-drawn pixel art: an old
+  wooden wasen with lantern, basket and patched planks). All can be replaced
+  by a sprite through the manifest.
+- The samurai in the boat is the same fight character (idle strip, legs
+  hidden behind the gunwale, holding a bamboo rod).
+- All scenes share one look: the sunset sky, sun, clouds and waves are drawn
+  by `src/ui/backdrop.ts` for both the ocean and the fight stage; the shop,
+  cutscene and result screens use `src/scenes/screens/paint.ts`.
+- Fish have Japanese names (Iwashi, Saba, Pirania, Unagi, Fugu, Kajiki,
+  Anko, Hojiro, Daioika); the English species is in each fish's `title`.
+  Gold is shown as RYO in the shop and result screens.
 - Still synthesised blips: `bite`, `lose`, `hooked`, `uiDeny`.
 
 ### Verified in a browser on 2026-11-14 (by the orchestrator, scripted input)
@@ -33,6 +46,12 @@ Last updated: 2026-11-14 (first playable build)
   shop, buy the blade upgrade, refused purchase when short of gold, back to
   the ocean. Prompts switched to A / Y / stick glyphs.
 - No console errors in any of the above.
+- After the restyle (same day): ocean, shop, cutscene, win screen and one
+  hook-up into a fight were re-checked by the orchestrator on `main`, and the
+  live Pages site was loaded with no console errors. The full win / loss /
+  gamepad script above was not re-run after the restyle.
+- A team member reported playing the first build and that it worked; whether
+  that included a real controller is not confirmed.
 - **Not verified:** a real controller, a human actually playing (all input
   was scripted, so feel and difficulty for people are untested), and sound
   (calls are made; nobody has listened to the files or the spoken announcer).
@@ -56,16 +75,21 @@ Nothing. All branches are merged.
    table (bot results per fish and damage level). Known soft spots: early
    fish die in 1 or 2 hits from damage level 6; bite damage does not grow
    with tier; a straight hook drop can miss every fish.
-5. **Move scene constants into the manifest:** the four texts at the top of
+5. `text.win.sold` in the manifest still ends in "G"; the result screen
+   swaps it to RYO when drawing. Change the string and drop the workaround.
+   The ocean HUD still says GOLD.
+6. Kanji in the shop, banners and gauge rely on a Japanese system font
+   (checked on macOS only). Consider bundling a free font.
+7. **Move scene constants into the manifest:** the four texts at the top of
    `src/scenes/fight.ts` (`SAMURAI_SAFE_SUB`, `DODGED_TEXT`, `PUFF_TEXT`,
    `SAMURAI_LABEL`), cutscene and result timings, and the ocean layout
    constants at the top of `src/scenes/ocean.ts`.
-6. `tint` in `src/core/assets.ts` colours the sprite's whole rectangle, not
+8. `tint` in `src/core/assets.ts` colours the sprite's whole rectangle, not
    just its pixels. The fight scene works around it with a scratch canvas;
    fix it in `assets.ts` and remove the workaround.
-7. Add `vulnLeft` to the fight state so the "OPEN" ring is exact instead of
+9. Add `vulnLeft` to the fight state so the "OPEN" ring is exact instead of
    estimated from tuning.
-8. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
+10. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
    and reel-speed upgrades, parry, a boss, a bestiary.
 
 ## Decisions
@@ -108,6 +132,13 @@ Changes after team feedback during the build (2026-11-14):
   and replaced with LuizMelo's "Martial Hero" (CC0).
 - In the boat the samurai is a simple code-drawn figure meditating while he
   waits for a bite; the detailed fighter is for duels only.
+- Second round of feedback: the boat samurai must be the same character as
+  the fighter (this replaced the earlier simple meditating figure), the boat
+  must look ancient and wooden, the fishing and fighting scenes must share
+  one look, and the shop and fish should be more Japanese. All done in PRs
+  10, 12 and 13.
+- The team asked for GitHub Pages hosting; the orchestrator enabled Pages
+  (build type: GitHub Actions) on the repository.
 - First tuning pass: more fish per screen (8), larger small fish in fights,
   blocking absorbs 65% instead of 80% so biters matter, longer timers for
   the eel and anglerfish, squid health 550 to 480.
