@@ -9,6 +9,7 @@ const SHAKE_DECAY = 7;
 const BURST_LIFE = 0.18;
 const INK_FADE = 1;
 const INK_SPLATS = 7;
+const WHITE_FLASH_ALPHA = 0.55;
 
 interface Popup { text: string; x: number; y: number; t: number; size: number; color: string; life: number }
 interface Particle {
@@ -208,7 +209,7 @@ export class Fx {
       ctx.fillRect(0, 0, w, h);
     }
     if (this.white > 0) {
-      ctx.fillStyle = `rgba(255,255,255,${0.75 * this.white})`;
+      ctx.fillStyle = `rgba(255,255,255,${WHITE_FLASH_ALPHA * this.white})`;
       ctx.fillRect(0, 0, w, h);
     }
   }

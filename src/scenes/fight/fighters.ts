@@ -2,7 +2,7 @@
 // slash trails, charge glow, shield, dash ghosts, fish slip-state tells.
 import { fight as F, sprites } from '../../manifest';
 import type { FightState } from '../../fight/sim';
-import type { Assets, FishInstance } from '../../types';
+import type { Assets, DrawOpts, FishInstance } from '../../types';
 import { drawOutlinedText } from '../../ui/hud';
 
 // ---------- look-and-feel constants ----------
@@ -91,6 +91,33 @@ export function lurePos(state: FightState, fish: FishInstance, look: Look): { x:
   };
 }
 
+// ---------- tinted sprites ----------
+
+let scratch: HTMLCanvasElement | null = null;
+
+/**
+ * Like assets.draw, but a tint only colours the sprite's own pixels. The
+ * asset tint uses 'source-atop' on the target canvas, which would also tint
+ * the stage behind the sprite, so tinted sprites go through a scratch canvas.
+ */
+function drawSprite(ctx: CanvasRenderingContext2D, assets: Assets, id: string, x: number, y: number, opts: DrawOpts): void {
+  if (!opts.tint) { assets.draw(ctx, id, x, y, opts); return; }
+  const d = sprites[id];
+  const size = Math.ceil(Math.max(d?.w ?? 64, d?.h ?? 64) * (opts.scale ?? 1) * 1.5) + 4;
+  if (!scratch) scratch = document.createElement('canvas');
+  if (scratch.width < size || scratch.height < size) { scratch.width = size; scratch.height = size; }
+  const s = scratch.getContext('2d')!;
+  s.setTransform(1, 0, 0, 1, 0, 0);
+  s.globalCompositeOperation = 'source-over';
+  s.globalAlpha = 1;
+  s.clearRect(0, 0, size, size);
+  assets.draw(s, id, size / 2, size / 2, { ...opts, alpha: 1 });
+  ctx.save();
+  ctx.globalAlpha *= opts.alpha ?? 1;
+  ctx.drawImage(scratch, 0, 0, size, size, x - size / 2, y - size / 2, size, size);
+  ctx.restore();
+}
+
 // ---------- shadows ----------
 
 export function drawShadow(ctx: CanvasRenderingContext2D, x: number, radius: number, height: number): void {
@@ -143,7 +170,7 @@ function drawSamuraiSprite(
   ctx.translate(x, F.arena.floorY + tr.dy);
   ctx.rotate(tr.rot);
   ctx.scale(tr.sx, tr.sy);
-  assets.draw(ctx, id, 0, -h / 2, { flipX: flip, time, alpha, tint });
+  drawSprite(ctx, assets, id, 0, -h / 2, { flipX: flip, time, alpha, tint });
   ctx.restore();
 }
 
@@ -318,7 +345,7 @@ export function drawFish(
     ctx.save();
     ctx.translate(g.x, g.y);
     ctx.rotate(g.rot);
-    assets.draw(ctx, def.sprite, 0, 0, { flipX: g.flip, scale: pose.scale, alpha: a, tint: '#9fe8ff', time: look.wt });
+    drawSprite(ctx, assets, def.sprite, 0, 0, { flipX: g.flip, scale: pose.scale, alpha: a, tint: '#9fe8ff', time: look.wt });
     ctx.restore();
   }
 
@@ -355,7 +382,7 @@ export function drawFish(
   if (f.mode === 'attack') ctx.scale(ATTACK_STRETCH.x, ATTACK_STRETCH.y);
   ctx.rotate(pose.rot);
   const breathe = f.mode === 'puffed' ? 1 + 0.04 * Math.sin(look.wt * 9) : 1 + 0.03 * Math.sin(look.wt * 5);
-  assets.draw(ctx, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * breathe, time: look.wt, tint });
+  drawSprite(ctx, assets, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * breathe, time: look.wt, tint });
   ctx.restore();
 
   if (f.slipReady && f.mode !== 'puffed') drawWetShine(ctx, pose, look);

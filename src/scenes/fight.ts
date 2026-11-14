@@ -47,6 +47,8 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
   const fish = params.fish;
   const sim = createFight(fish, game.state.samurai);
   const state = sim.state;
+  // Dev only: lets browser checks read the fight state.
+  if (import.meta.env?.DEV && typeof window !== 'undefined') (window as unknown as { __fight?: unknown }).__fight = sim;
   const W = game.width;
   const H = game.height;
   const floorY = F.arena.floorY;
