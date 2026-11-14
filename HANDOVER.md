@@ -75,9 +75,9 @@ Nothing. All branches are merged.
    table (bot results per fish and damage level). Known soft spots: early
    fish die in 1 or 2 hits from damage level 6; bite damage does not grow
    with tier; a straight hook drop can miss every fish.
-5. `text.win.sold` in the manifest still ends in "G"; the result screen
+5. `text.win.sold` in the manifest still ends in "G" (now fixed to RYO; the result-screen swap is harmless and can go)
    swaps it to RYO when drawing. Change the string and drop the workaround.
-   The ocean HUD still says GOLD.
+
 6. Kanji in the shop, banners and gauge rely on a Japanese system font
    (checked on macOS only). Consider bundling a free font.
 7. **Move scene constants into the manifest:** the four texts at the top of

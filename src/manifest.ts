@@ -257,7 +257,7 @@ export const text = {
   heavyHit: ['KATANA SMASH!', 'DISHONOUR CUTTER!', 'MEGA FILLET!'],
   block: 'BLOCKED!',
   bounce: 'BOING!',
-  win: { banner: 'K.O.!', perfect: 'PERFECT!', sold: 'SOLD TO SUSHI-YA: {gold} G' },
+  win: { banner: 'K.O.!', perfect: 'PERFECT!', sold: 'SOLD TO SUSHI-YA: {gold} RYO' },
   timeout: { banner: 'TIME!', sub: 'IT WAS... TOO SLIPPERY.' },
   ko: { banner: 'YOU GOT BITTEN.', sub: '{fish} SWIMS AWAY, UNDEFEATED.' },
   announce: {

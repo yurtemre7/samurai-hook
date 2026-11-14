@@ -471,7 +471,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
 
   function drawHud(ctx: CanvasRenderingContext2D): void {
     drawOutlinedText(ctx, text.title, 16, 30, { size: 34, align: 'left' });
-    drawOutlinedText(ctx, `GOLD ${game.state.gold}`, 16, 64, { size: 22, align: 'left', color: '#ffdd22' });
+    drawOutlinedText(ctx, `${game.state.gold} RYO`, 16, 64, { size: 22, align: 'left', color: '#ffdd22' });
   }
 
   /** A nobori banner by the gauge with the hook's depth written down it. */

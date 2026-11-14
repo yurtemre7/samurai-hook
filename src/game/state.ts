@@ -38,7 +38,7 @@ export function createGameState(storage: Storage | null): GameState {
   function effect(id: UpgradeId, lvl: number): string {
     if (id === 'damage') return `DAMAGE x${damageMult(lvl).toFixed(2)} > x${damageMult(lvl + 1).toFixed(2)}`;
     if (id === 'depth') return `DEPTH ${maxDepth(lvl)} M > ${maxDepth(lvl + 1)} M`;
-    return `GOLD x${goldMult(lvl).toFixed(2)} > x${goldMult(lvl + 1).toFixed(2)}`;
+    return `RYO x${goldMult(lvl).toFixed(2)} > x${goldMult(lvl + 1).toFixed(2)}`;
   }
 
   function makeFish(fishId: string, tier: number): FishInstance {
