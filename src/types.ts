@@ -85,8 +85,10 @@ export interface AudioSys {
   unlock(): void;
   play(id: string): void;
   music(id: string | null): void;
-  /** Spoken announcer line (browser speech synthesis). Silent if unsupported. */
-  announce(text: string): void;
+  /** Announcer line. Plays the recorded clip for `clip` when the manifest has
+   *  one, else speaks `text` with browser speech synthesis (silent if
+   *  unsupported). Announcer lines never overlap. */
+  announce(text: string, clip?: import('./core/announcer').AnnounceRequest): void;
 }
 
 // ---------- Fish ----------

@@ -41,10 +41,10 @@ export function createResultScene(game: Game, params: SceneParams['result']): Sc
     enter() {
       if (outcome === 'win') {
         game.audio.play('ko');
-        game.audio.announce(params.perfect ? text.announce.perfect : text.announce.win);
+        game.audio.announce(params.perfect ? text.announce.perfect : text.announce.win, { key: params.perfect ? 'perfect' : 'win' });
       } else {
         game.audio.play('lose');
-        game.audio.announce(outcome === 'timeout' ? text.announce.timeout : text.announce.ko);
+        game.audio.announce(outcome === 'timeout' ? text.announce.timeout : text.announce.ko, { key: outcome === 'timeout' ? 'timeout' : 'ko' });
       }
     },
     update(dt) {

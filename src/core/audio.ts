@@ -1,8 +1,12 @@
 import type { AudioSys, SoundDef } from '../types';
 import { assetUrl } from './assets';
+import { planAnnounce, type AnnounceRequest } from './announcer';
 
 interface MusicDef { src: string | null; volume: number }
-interface VoiceDef { enabled: boolean; rate: number; pitch: number; volume: number }
+interface VoiceDef {
+  enabled: boolean; rate: number; pitch: number; volume: number;
+  clips: Record<string, string>; speakFishName: boolean;
+}
 
 /** Plays manifest sounds. Missing files fall back to a synthesised blip. */
 export function createAudio(
@@ -17,6 +21,28 @@ export function createAudio(
   let currentMusicId: string | null = null;
   let wantedMusic: string | null = null;
   let unlocked = false;
+  const voiceClips = new Map<string, HTMLAudioElement>();
+  const voiceBroken = new Set<string>();
+  let voiceCurrent: HTMLAudioElement | null = null;
+  let voiceToken = 0;
+
+  for (const [key, src] of Object.entries(voice.clips)) {
+    const el = new Audio(assetUrl(src));
+    el.preload = 'auto';
+    el.volume = voice.volume;
+    el.addEventListener('error', () => voiceBroken.add(key));
+    voiceClips.set(key, el);
+  }
+
+  function speak(line: string): void {
+    if (typeof speechSynthesis === 'undefined') return;
+    try {
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(line);
+      u.rate = voice.rate; u.pitch = voice.pitch; u.volume = voice.volume;
+      speechSynthesis.speak(u);
+    } catch { /* no voice available */ }
+  }
 
   for (const [id, def] of Object.entries(sounds)) {
     if (!def.src) continue;
@@ -78,14 +104,31 @@ export function createAudio(
       wantedMusic = id;
       if (unlocked) startMusic(id);
     },
-    announce(line) {
-      if (!voice.enabled || !unlocked || typeof speechSynthesis === 'undefined') return;
-      try {
-        speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(line);
-        u.rate = voice.rate; u.pitch = voice.pitch; u.volume = voice.volume;
-        speechSynthesis.speak(u);
-      } catch { /* no voice available */ }
+    announce(line, req?: AnnounceRequest) {
+      if (!voice.enabled || !unlocked) return;
+      const token = ++voiceToken;
+      // Never overlap: stop the previous announcer clip and speech.
+      if (voiceCurrent) { voiceCurrent.pause(); voiceCurrent = null; }
+      try { if (typeof speechSynthesis !== 'undefined') speechSynthesis.cancel(); } catch { /* ignore */ }
+      // Only offer clips that have not failed to load.
+      const usable: Record<string, string> = {};
+      for (const [k, v] of Object.entries(voice.clips)) if (!voiceBroken.has(k)) usable[k] = v;
+      const plan = planAnnounce(req, line, usable, voice.speakFishName);
+      const key = plan.clip ? Object.keys(usable).find((k) => usable[k] === plan.clip) : undefined;
+      const el = key ? voiceClips.get(key) : undefined;
+      if (!plan.clip || !el) { if (plan.speech) speak(plan.speech); return; }
+      voiceCurrent = el;
+      el.currentTime = 0;
+      el.onended = () => {
+        if (token !== voiceToken) return;
+        voiceCurrent = null;
+        if (plan.speech) speak(plan.speech);
+      };
+      el.play().catch(() => {
+        if (token !== voiceToken) return;
+        voiceCurrent = null;
+        speak(line); // clip unplayable: say the whole line instead
+      });
     },
   };
 }

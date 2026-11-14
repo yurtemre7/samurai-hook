@@ -1,0 +1,35 @@
+import { describe, expect, it } from 'vitest';
+import { planAnnounce } from '../src/core/announcer';
+import { voice } from '../src/manifest';
+
+const clips = { fight: 'a/fight.ogg', round: 'a/round.ogg', round2: 'a/r2.ogg' };
+
+describe('planAnnounce', () => {
+  it('uses the clip for a simple line and says nothing else', () => {
+    expect(planAnnounce({ key: 'fight' }, 'Fight!', clips, true)).toEqual({ clip: 'a/fight.ogg', speech: null });
+  });
+  it('falls back to speech when the clip is missing', () => {
+    expect(planAnnounce({ key: 'win' }, 'K. O.!', clips, false)).toEqual({ clip: null, speech: 'K. O.!' });
+    expect(planAnnounce({ key: 'fight' }, 'Fight!', {}, false)).toEqual({ clip: null, speech: 'Fight!' });
+  });
+  it('speaks the whole line with no request at all', () => {
+    expect(planAnnounce(undefined, 'Upgrade!', clips, true)).toEqual({ clip: null, speech: 'Upgrade!' });
+  });
+  it('prefers the numbered round clip, then the generic one', () => {
+    expect(planAnnounce({ key: 'round', round: 2 }, 'Round 2! X!', clips, false).clip).toBe('a/r2.ogg');
+    expect(planAnnounce({ key: 'round', round: 9 }, 'Round 9! X!', clips, false).clip).toBe('a/round.ogg');
+  });
+  it('speaks the whole round line when no round clip exists at all', () => {
+    const noGeneric = { fight: 'a/fight.ogg' };
+    expect(planAnnounce({ key: 'round', round: 9, fish: 'Fugu' }, 'Round 9! Fugu!', noGeneric, true))
+      .toEqual({ clip: null, speech: 'Round 9! Fugu!' });
+  });
+  it('speakFishName on: fish name follows the round clip; off: dropped', () => {
+    expect(planAnnounce({ key: 'round', round: 2, fish: 'Fugu' }, 't', clips, true)).toEqual({ clip: 'a/r2.ogg', speech: 'Fugu' });
+    expect(planAnnounce({ key: 'round', round: 2, fish: 'Fugu' }, 't', clips, false)).toEqual({ clip: 'a/r2.ogg', speech: null });
+  });
+  it('manifest: announce keys have clips, speakFishName is off for now', () => {
+    expect(voice.speakFishName).toBe(false);
+    for (const k of ['fight', 'win', 'perfect', 'timeout', 'ko', 'round', 'round1', 'round5']) expect(voice.clips[k]).toBeTruthy();
+  });
+});

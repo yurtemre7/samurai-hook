@@ -69,7 +69,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       case 'fightStart':
         fightT = 0;
         game.audio.play('gong');
-        game.audio.announce(text.announce.fight);
+        game.audio.announce(text.announce.fight, { key: 'fight' });
         break;
       case 'quick': game.audio.play('slash'); break;
       case 'heavyStart': game.audio.play('uiMove'); break;

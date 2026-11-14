@@ -72,8 +72,34 @@ export const music: Record<string, { src: string | null; volume: number }> = {
   fight: { src: 'assets/music/fight.ogg', volume: 0.4 },
 };
 
-/** Spoken announcer (browser speech synthesis). */
-export const voice = { enabled: true, rate: 1.15, pitch: 0.6, volume: 1 };
+/**
+ * Announcer. Recorded clips (`clips`) are played when present and loaded;
+ * otherwise the line in `text.announce` is spoken by browser speech synthesis
+ * (rate/pitch/volume below), so the game is never silent. Round clips: the
+ * game looks up `round<N>` first, then the generic `round`, then speech.
+ * Clips: Kenney "Voiceover Pack: Fighter" (CC0), see CREDITS.md. No clip
+ * exists for `buy` ("Upgrade!"), which stays synthesised.
+ */
+export const voice = {
+  enabled: true, rate: 1.15, pitch: 0.6, volume: 1,
+  clips: {
+    fight: 'assets/voice/fight.ogg',
+    win: 'assets/voice/win.ogg',
+    perfect: 'assets/voice/perfect.ogg',
+    timeout: 'assets/voice/timeout.ogg',
+    ko: 'assets/voice/ko.ogg',
+    round: 'assets/voice/round.ogg',       // generic, used from round 6 on
+    round1: 'assets/voice/round1.ogg',
+    round2: 'assets/voice/round2.ogg',
+    round3: 'assets/voice/round3.ogg',
+    round4: 'assets/voice/round4.ogg',
+    round5: 'assets/voice/round5.ogg',
+  } as Record<string, string>,
+  /** After a recorded "Round N" clip, also speak the fish name with the
+   *  synthesised voice? OPEN QUESTION, awaiting the owner's choice: false
+   *  drops it (the name is on screen anyway), true says it after the clip. */
+  speakFishName: false,
+};
 
 // ---------- Fish ----------
 // Depth bands are for tier 0. Deeper than `tiers.depth`, the roster repeats.

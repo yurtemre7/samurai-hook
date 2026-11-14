@@ -20,6 +20,7 @@ was copied unchanged except `music/ocean.mp3` (trimmed to 60 s, fades, MP3 64 kb
 | `public/assets/sfx/splash.ogg` (splash_02) | Water splash | https://opengameart.org/content/40-cc0-water-splash-slime-sfx | rubberduck | CC0 | 2026-11-14 |
 | `public/assets/sfx/coin.wav` (coin3) | Coin | https://opengameart.org/content/10-8bit-coin-sounds | Luke.RUSTLTD | CC0 | 2026-11-14 |
 | `public/assets/sfx/ui_confirm.ogg` (metalClick) | Metal click | https://opengameart.org/content/50-rpg-sound-effects | Kenney (kenney.nl) | CC0 | 2026-11-14 |
+| `public/assets/voice/fight.ogg` (fight), `win.ogg` (you_win), `perfect.ogg` (flawless_victory), `timeout.ogg` (time), `ko.ogg` (you_lose), `round.ogg` (ready; generic, used from round 6), `round1.ogg` to `round5.ogg` (round_1 to round_5) | Fight announcer lines, copied unchanged (.ogg) | https://opengameart.org/content/voiceover-pack-fighter-40-taunts (also https://kenney.nl/assets/voiceover-pack-fighter) | Kenney Vleugels (kenney.nl) | CC0 (OpenGameArt "License(s): CC0"; the zip's License.txt says CC0 1.0) | 2026-11-14 |
 | `public/assets/music/fight.ogg` (8BitBattleLoop) | Fight loop | https://opengameart.org/content/8-bit-battle-loop | Wolfgang_ | CC0 | 2026-11-14 |
 | `public/assets/music/ocean.mp3` (first 60 s of hot_spring_town.ogg) | Calm ocean track | https://opengameart.org/content/hot-springs-town | Kistol | CC0 | 2026-11-14 |
 
@@ -36,6 +37,9 @@ Sprites
 
 Sounds (synthesised fallbacks stay in use)
 - `bite`, `uiDeny`, `lose`, `hooked`: no confident match found, and files could not be auditioned. Not guessed.
+
+Announcer
+- The voice pack has one voice and no "K.O." clip, so the win line uses "you win". There is no "Upgrade!" clip: that line (and any line whose clip fails to load) is spoken by browser speech synthesis. Fish names are not recorded; whether synthesis speaks them after "Round N" is the `voice.speakFishName` switch (off). Nobody has listened to the clips; line choice is by file name.
 
 Notes
 - Fish art faces left; samurai art faces right (`facing: 'right'`); frames are 456x173 on screen, body about 125 px tall.

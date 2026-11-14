@@ -77,7 +77,7 @@ export function createCutsceneScene(game: Game, params: SceneParams['cutscene'])
     enter() {
       round = game.state.nextRound();
       game.audio.play('gong');
-      game.audio.announce(fill(text.announce.round, { round, fish: fish.name }));
+      game.audio.announce(fill(text.announce.round, { round, fish: fish.name }), { key: 'round', round, fish: fish.name });
       game.audio.music('fight');
       taunt = fish.def.taunts.length ? pick(fish.def.taunts) : '...';
       line = pick(text.samuraiLines);
