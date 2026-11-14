@@ -222,7 +222,7 @@ export interface SceneParams {
   shop: undefined;
   cutscene: { fish: FishInstance };
   fight: { fish: FishInstance };
-  result: { fish: FishInstance; outcome: FightOutcome; goldEarned: number };
+  result: { fish: FishInstance; outcome: FightOutcome; goldEarned: number; perfect?: boolean };
 }
 
 export type SceneId = keyof SceneParams;
