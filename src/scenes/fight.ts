@@ -6,7 +6,7 @@ import { drawPrompts } from '../input/prompts';
 import { fight as F, sprites, text } from '../manifest';
 import type { FightInput, Game, Prompt, Scene, SceneParams } from '../types';
 import { drawHealthBar, drawSlamText, drawTimer, fill, drawOutlinedText } from '../ui/hud';
-import { FISH_TILT_BY_MODE, createLook, drawFish, drawSamurai, fishPose, lurePos, type Ghost } from './fight/fighters';
+import { FISH_TILT_BY_MODE, createLook, drawFish, drawFishMarks, drawSamurai, fishPose, lurePos, type Ghost } from './fight/fighters';
 import { Fx } from './fight/fx';
 import { drawStage } from './fight/stage';
 
@@ -361,6 +361,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       fx.drawWorld(ctx);
       if (state.effects.dark) drawDarkness(ctx);
       fx.drawInk(ctx, state.effects.inkLeft);
+      drawFishMarks(ctx, state, fish, look);
       fx.drawPopups(ctx);
       ctx.restore();
 

@@ -17,14 +17,16 @@ export const FISH_TILT_BY_MODE: Record<FightState['fish']['mode'], number> = {
 const FISH_MOVE_LEAN = 0.0011;
 const FISH_MOVE_LEAN_MAX = 0.4;
 const PUFF_SCALE = 1.6;
+/** Sprites whose art already stands upright: drawn without the standing tilt. */
+const UPRIGHT_SPRITES = new Set(['fish.squid']);
 const ATTACK_STRETCH = { x: 1.35, y: 0.78 };
 const GHOSTS = 5;
-const QUICK_TRAIL = { radius: 86, thick: 24, color: '#9ff0ff', core: '#ffffff' };
+const QUICK_TRAIL = { radius: 80, thick: 24, color: '#9ff0ff', core: '#ffffff' };
 const HEAVY_TRAIL = { radius: 132, thick: 46, color: '#ff9a1a', core: '#fff3b0' };
 const TRAIL_FADE = 0.12;
-const SLASH_FROM = -1.9; // radians, canvas angle at the start of the sweep (facing right)
+const SLASH_FROM = -1.6; // radians, canvas angle at the start of the sweep (facing right)
 const SLASH_TO = 0.85;
-const SAMURAI_SHOULDER = 70; // px above the floor where the sword arc is centred
+const SAMURAI_SHOULDER = 80; // px above the floor where the sword arc is centred
 
 const SAM_SPRITE: Record<FightState['samurai']['move'], string> = {
   idle: 'samuraiIdle', walk: 'samuraiWalk', dash: 'samuraiWalk', quick: 'samuraiQuick',
@@ -67,7 +69,7 @@ export function fishPose(state: FightState, fish: FishInstance, look: Look) {
   const f = state.fish;
   const d = sprites[fish.def.sprite] ?? { w: 64, h: 32 };
   const scale = fishScale(fish) * (1 + (PUFF_SCALE - 1) * look.puff);
-  const tilt = look.fishTilt;
+  const tilt = UPRIGHT_SPRITES.has(fish.def.sprite) ? 0 : look.fishTilt;
   const hw = (d.w * scale) / 2;
   const hh = (d.h * scale) / 2;
   const ext = Math.abs(hw * Math.sin(tilt)) + Math.abs(hh * Math.cos(tilt));
@@ -386,6 +388,12 @@ export function drawFish(
   ctx.restore();
 
   if (f.slipReady && f.mode !== 'puffed') drawWetShine(ctx, pose, look);
+}
+
+/** State markers above the fish ("!", the open-window ring). Drawn above darkness and ink. */
+export function drawFishMarks(ctx: CanvasRenderingContext2D, state: FightState, fish: FishInstance, look: Look): void {
+  const f = state.fish;
+  const pose = fishPose(state, fish, look);
   if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, look);
   if (f.mode === 'tell') {
     const p = f.tellProgress;
@@ -435,10 +443,10 @@ function drawWetShine(ctx: CanvasRenderingContext2D, pose: Pose, look: Look): vo
   ctx.globalCompositeOperation = 'lighter';
   ctx.translate(pose.cx, pose.cy);
   ctx.rotate(pose.rot);
-  const sweep = ((look.rt * 0.9) % 1) * 2 - 0.5; // -0.5..1.5
-  ctx.fillStyle = 'rgba(220,250,255,0.55)';
+  const sweep = ((look.rt * 0.9) % 1) * 2 - 1; // -1..1 across the body
+  ctx.fillStyle = `rgba(220,250,255,${0.55 * (1 - Math.abs(sweep))})`;
   ctx.beginPath();
-  ctx.ellipse((sweep - 0.5) * pose.hw * 1.6, -pose.hh * 0.35, pose.hw * 0.18, pose.hh * 0.22, -0.4, 0, Math.PI * 2);
+  ctx.ellipse(sweep * pose.hw * 0.7, -pose.hh * 0.35, pose.hw * 0.18, pose.hh * 0.22, -0.4, 0, Math.PI * 2);
   ctx.fill();
   ctx.fillStyle = 'rgba(255,255,255,0.35)';
   ctx.beginPath();
