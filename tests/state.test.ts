@@ -23,6 +23,13 @@ describe('game state', () => {
     expect(again.gold).toBe(30);
     expect(again.upgrades().find((u) => u.id === 'damage')!.level).toBe(1);
   });
+  it('loads a demo preset', () => {
+    const s = createGameState(null);
+    s.loadPreset({ gold: 1500, levels: { damage: 4, depth: 6, gold: 2 } });
+    expect(s.gold).toBe(1500);
+    expect(s.maxDepth).toBe(ocean.startDepth + 6 * 15);
+    expect(s.samurai.heavyDamage).toBe(36);
+  });
   it('costs rise with level', () => {
     const s = createGameState(null);
     for (let i = 0; i < 100; i++) s.sell(s.makeFish('shark', 0));

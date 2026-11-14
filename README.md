@@ -46,6 +46,13 @@ the screen switch to whichever you used last.
 | Defend: hold to block, tap with a direction to dash-dodge | L or Shift | B or RB |
 | Shop (at the surface) | E | Y |
 
+### Demo shortcuts
+
+| Shortcut | What it does |
+|---|---|
+| F2, or open the page with `?start=demo` | Start with progress: 1500 ryo, blade level 4, line level 6 (115 m), reputation level 2. Change the preset in `demoStart` in `src/manifest.ts`. |
+| F4, or `?start=fresh` | Wipe the save and start over. |
+
 ## How to play
 
 1. Drop the hook and steer it. Touching any fish starts a duel, so steer

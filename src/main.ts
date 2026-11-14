@@ -2,7 +2,7 @@ import { createAssets } from './core/assets';
 import { createAudio } from './core/audio';
 import { createGameState } from './game/state';
 import { createInput } from './input/input';
-import { music, sounds, sprites, voice } from './manifest';
+import { demoStart, music, sounds, sprites, voice } from './manifest';
 import { createCutsceneScene } from './scenes/cutscene';
 import { createFightScene } from './scenes/fight';
 import { createOceanScene } from './scenes/ocean';
@@ -59,6 +59,8 @@ for (const ev of ['keydown', 'pointerdown', 'gamepadconnected'] as const) {
 /** Dev shortcut: ?scene=fight&fish=shark&tier=0 jumps straight to a scene. */
 function start(): void {
   const q = new URLSearchParams(location.search);
+  if (q.get('start') === 'demo') game.state.loadPreset(demoStart);
+  if (q.get('start') === 'fresh') game.state.reset();
   const id = q.get('scene') as SceneId | null;
   const f = game.state.makeFish(q.get('fish') ?? 'sardine', Number(q.get('tier') ?? 0));
   if (id === 'fight' || id === 'cutscene') game.go(id, { fish: f });
@@ -88,6 +90,12 @@ function frame(now: number): void {
 game.assets.load().then(() => {
   start();
   requestAnimationFrame(frame);
+});
+
+// Demo shortcuts: F2 = start with progress (manifest `demoStart`), F4 = wipe the save.
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'F2') { e.preventDefault(); game.state.loadPreset(demoStart); game.audio.play('buy'); game.go('ocean', undefined); }
+  if (e.code === 'F4') { e.preventDefault(); game.state.reset(); game.audio.play('uiDeny'); game.go('ocean', undefined); }
 });
 
 // Handy in the browser console while tuning.

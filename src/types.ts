@@ -193,6 +193,8 @@ export interface GameState {
   /** Adds the fish's gold (with bonus) and saves. Returns the amount earned. */
   sell(fish: FishInstance): number;
   reset(): void;
+  /** Replaces the save with a preset: gold and upgrade levels (demo shortcut). */
+  loadPreset(preset: { gold: number; levels: Record<UpgradeId, number> }): void;
 }
 
 // ---------- Fight ----------

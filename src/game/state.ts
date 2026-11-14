@@ -97,5 +97,6 @@ export function createGameState(storage: Storage | null): GameState {
       return earned;
     },
     reset() { data = fresh(); save(); },
+    loadPreset(preset) { data = { ...fresh(), gold: preset.gold, levels: { ...preset.levels } }; save(); },
   };
 }

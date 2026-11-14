@@ -16,6 +16,9 @@ Last updated: 2026-11-14 (restyle and GitHub Pages)
 - How to run: `npm install`, then `npm run dev` and open
   http://localhost:5173. Checks: `npm run typecheck`, `npm test` (47 tests).
   README.md has controls and how to add a fish or swap an asset.
+- Demo shortcuts: F2 (or `?start=demo`) starts with gold and upgrades from
+  `demoStart` in the manifest; F4 (or `?start=fresh`) wipes the save.
+  Keyboard only; there is no gamepad shortcut.
 - Jump to a scene while developing:
   `http://localhost:5173/?scene=fight&fish=shark&tier=0`. In the browser
   console `game` is the game object (`game.state.reset()` wipes the save) and,

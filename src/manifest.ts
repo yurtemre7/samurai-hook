@@ -216,6 +216,15 @@ export const ocean = {
   catchRadiusScale: 0.8,   // multiplied by the fish's half-width
 };
 
+// ---------- Demo shortcut ----------
+// Press F2 in the game, or open the page with ?start=demo, to begin with this progress.
+// F4 or ?start=fresh wipes the save.
+
+export const demoStart = {
+  gold: 1500,
+  levels: { damage: 4, depth: 6, gold: 2 },
+};
+
 // ---------- Shop ----------
 
 export const upgrades: UpgradeDef[] = [
