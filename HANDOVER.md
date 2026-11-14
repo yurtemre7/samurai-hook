@@ -139,6 +139,12 @@ Changes after team feedback during the build (2026-11-14):
   10, 12 and 13.
 - The team asked for GitHub Pages hosting; the orchestrator enabled Pages
   (build type: GitHub Actions) on the repository.
+- Third round of feedback: the shop is navigated left/right (the boards hang
+  side by side), and the sword hitbox now matches the slash drawn in the
+  sprite: quick reach 110 to 185, heavy 150 to 215, strike height 70 to 150
+  (`fight.samurai` and `fight.fish.hitHeight` in the manifest). This makes
+  every fight easier: the test bot now beats all nine fish at damage level 0,
+  so fish health or timers probably need raising in the next tuning pass.
 - First tuning pass: more fish per screen (8), larger small fish in fights,
   blocking absorbs 65% instead of 80% so biters matter, longer timers for
   the eel and anglerfish, squid health 550 to 480.

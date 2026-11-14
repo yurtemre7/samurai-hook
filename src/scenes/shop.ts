@@ -51,8 +51,8 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
       lifted = lifted.map((v, i) => v + ((i === sel ? 1 : 0) - v) * Math.min(1, dt * 14));
       if (t < LOCK) return;
       const rows = game.state.upgrades();
-      if (game.input.pressed('up')) { sel = (sel + rows.length - 1) % rows.length; game.audio.play('uiMove'); }
-      if (game.input.pressed('down')) { sel = (sel + 1) % rows.length; game.audio.play('uiMove'); }
+      if (game.input.pressed('left')) { sel = (sel + rows.length - 1) % rows.length; game.audio.play('uiMove'); }
+      if (game.input.pressed('right')) { sel = (sel + 1) % rows.length; game.audio.play('uiMove'); }
       if (game.input.pressed('confirm')) {
         if (game.state.buy(rows[sel].id)) {
           game.audio.play('buy');

@@ -177,8 +177,9 @@ export const fight = {
   samurai: {
     walkSpeed: 260,
     bodyRadius: 30,
-    quick: { startup: 0.06, active: 0.08, recovery: 0.14, reach: 110 },
-    heavy: { startup: 0.45, active: 0.1, recovery: 0.3, reach: 150 },
+    // reach matches the slash drawn in the sprite (about 226 px forward of his centre)
+    quick: { startup: 0.06, active: 0.08, recovery: 0.14, reach: 185 },
+    heavy: { startup: 0.45, active: 0.1, recovery: 0.3, reach: 215 },
     blockReduction: 0.65,   // fraction of damage removed while blocking
     dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5 },
     hurtStun: 0.25,
@@ -190,7 +191,7 @@ export const fight = {
     slipDuration: 0.3,     // seconds the dart takes
     slipArc: 50,           // dart height when it darts away on its own side, px
     overArc: 170,          // dart / cross height when it goes over the samurai, px
-    hitHeight: 70,         // a fish higher than this above the floor cannot be struck
+    hitHeight: 150,         // a fish higher than this above the floor cannot be struck (the slash sweeps about 160 px up)
     hitStun: 0.12,
     hitPush: 180,          // px/s the fish is knocked back by a landed hit
     lungeDuration: 0.2,    // seconds a biter's lunge takes
