@@ -1,5 +1,7 @@
 // The fight stage: a boat deck at sea at sunset. Drawn entirely in code.
 // Everything here is cosmetic and animated by `t` (seconds).
+// Sky, sun and far sea are shared with the ocean scene (src/ui/backdrop.ts).
+import { drawSunsetSea, drawSunsetSky } from '../../ui/backdrop';
 
 const W = 960;
 
@@ -13,124 +15,15 @@ const MAST_X = 34;
 const WAVE_ROWS = 7;
 const PLANK_H = 17;
 
-const SKY = ['#1c0f3a', '#4a1d5c', '#a33a5a', '#f07a3a', '#ffc65a'];
-
-interface Cloud { x: number; y: number; w: number; speed: number }
-const CLOUDS: Cloud[] = [
-  { x: 120, y: 92, w: 220, speed: 6 },
-  { x: 520, y: 60, w: 300, speed: 4 },
-  { x: 800, y: 150, w: 180, speed: 8 },
-  { x: 330, y: 190, w: 260, speed: 5 },
-];
-
 export function drawStage(ctx: CanvasRenderingContext2D, t: number, floorY: number, height: number): void {
-  drawSky(ctx, t);
-  drawSea(ctx, t);
+  drawSunsetSky(ctx, t, { width: W, top: 0, horizonY: HORIZON_Y, sunX: SUN_X, sunR: SUN_R });
+  drawSunsetSea(ctx, t, {
+    width: W, horizonY: HORIZON_Y, bottomY: RAIL_Y + 20, crestY: RAIL_Y,
+    sunX: SUN_X, sunR: SUN_R, waveRows: WAVE_ROWS, glintRows: 12,
+  });
   drawRail(ctx, t);
   drawDeck(ctx, floorY, height);
   drawMast(ctx, t, floorY);
-}
-
-function drawSky(ctx: CanvasRenderingContext2D, t: number): void {
-  const g = ctx.createLinearGradient(0, 0, 0, HORIZON_Y);
-  SKY.forEach((c, i) => g.addColorStop(i / (SKY.length - 1), c));
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, HORIZON_Y);
-
-  // A few stars still visible high up.
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 26; i++) {
-    const x = (i * 337) % W;
-    const y = (i * 53) % 110;
-    ctx.globalAlpha = 0.25 + 0.35 * Math.abs(Math.sin(t * 1.3 + i));
-    ctx.fillRect(x, y, 2, 2);
-  }
-  ctx.globalAlpha = 1;
-
-  // Sun glow.
-  const glow = ctx.createRadialGradient(SUN_X, HORIZON_Y - 30, SUN_R * 0.6, SUN_X, HORIZON_Y - 30, SUN_R * 3.2);
-  glow.addColorStop(0, 'rgba(255,214,120,0.55)');
-  glow.addColorStop(1, 'rgba(255,140,80,0)');
-  ctx.fillStyle = glow;
-  ctx.fillRect(0, 0, W, HORIZON_Y);
-
-  // Retro striped sun, sitting on the horizon.
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(0, 0, W, HORIZON_Y);
-  ctx.clip();
-  const sg = ctx.createLinearGradient(0, HORIZON_Y - 30 - SUN_R, 0, HORIZON_Y);
-  sg.addColorStop(0, '#fff2b0');
-  sg.addColorStop(0.6, '#ffb347');
-  sg.addColorStop(1, '#ff5e3a');
-  ctx.fillStyle = sg;
-  ctx.beginPath();
-  ctx.arc(SUN_X, HORIZON_Y - 30, SUN_R, 0, Math.PI * 2);
-  ctx.fill();
-  // Horizontal cuts across the lower half, drifting slowly downward.
-  ctx.fillStyle = SKY[3];
-  for (let i = 0; i < 6; i++) {
-    const y = HORIZON_Y - 72 + i * 13 + ((t * 6) % 13);
-    ctx.fillRect(SUN_X - SUN_R, y, SUN_R * 2, 2 + i * 0.9);
-  }
-  ctx.restore();
-
-  // Long thin clouds drifting across.
-  for (const c of CLOUDS) {
-    const x = ((c.x + t * c.speed) % (W + c.w)) - c.w / 2;
-    ctx.fillStyle = 'rgba(60,20,70,0.45)';
-    roundBar(ctx, x, c.y, c.w, 9);
-    ctx.fillStyle = 'rgba(255,170,120,0.35)';
-    roundBar(ctx, x + 18, c.y - 5, c.w * 0.6, 5);
-  }
-}
-
-function roundBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
-  ctx.beginPath();
-  ctx.moveTo(x + h / 2, y);
-  ctx.lineTo(x + w - h / 2, y);
-  ctx.arc(x + w - h / 2, y + h / 2, h / 2, -Math.PI / 2, Math.PI / 2);
-  ctx.lineTo(x + h / 2, y + h);
-  ctx.arc(x + h / 2, y + h / 2, h / 2, Math.PI / 2, -Math.PI / 2);
-  ctx.fill();
-}
-
-function drawSea(ctx: CanvasRenderingContext2D, t: number): void {
-  const g = ctx.createLinearGradient(0, HORIZON_Y, 0, RAIL_Y + 20);
-  g.addColorStop(0, '#5a3a7a');
-  g.addColorStop(0.35, '#2a2a6a');
-  g.addColorStop(1, '#101a40');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, HORIZON_Y, W, RAIL_Y + 20 - HORIZON_Y);
-
-  // Sun reflection: broken horizontal glints below the sun.
-  for (let i = 0; i < 12; i++) {
-    const y = HORIZON_Y + 4 + i * 9;
-    const w = (SUN_R * 1.6) * (1 - i / 14) * (0.6 + 0.4 * Math.sin(t * 2.2 + i * 1.7));
-    ctx.fillStyle = `rgba(255,200,110,${0.55 - i * 0.04})`;
-    ctx.fillRect(SUN_X - w / 2 + Math.sin(t * 1.5 + i) * 8, y, w, 3);
-  }
-
-  // Rows of wave crests, faster and bigger toward the viewer.
-  ctx.lineWidth = 2;
-  for (let r = 0; r < WAVE_ROWS; r++) {
-    const k = r / (WAVE_ROWS - 1);
-    const y = HORIZON_Y + 10 + k * k * (RAIL_Y - HORIZON_Y - 10);
-    const amp = 1.5 + k * 4;
-    const len = 40 + k * 70;
-    const speed = 10 + k * 26;
-    ctx.strokeStyle = `rgba(170,190,255,${0.15 + k * 0.2})`;
-    ctx.beginPath();
-    for (let x = -len; x <= W + len; x += 8) {
-      const yy = y + Math.sin((x + t * speed * (r % 2 ? 1 : -1)) / len * Math.PI * 2) * amp;
-      if (x === -len) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
-    }
-    ctx.stroke();
-  }
-
-  // Horizon line.
-  ctx.fillStyle = 'rgba(255,210,150,0.7)';
-  ctx.fillRect(0, HORIZON_Y - 1, W, 2);
 }
 
 function drawRail(ctx: CanvasRenderingContext2D, t: number): void {
