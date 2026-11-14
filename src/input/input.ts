@@ -1,6 +1,7 @@
 // Keyboard + gamepad input. Thin browser wrapper around the pure core in core.ts.
 import type { Input } from '../types';
-import { createInputCore, type GamepadLike } from './core';
+import { actionsForKey, createInputCore, type GamepadLike } from './core';
+import { createKeyDebug, keysDebugEnabled } from './debug';
 
 const NO_SCROLL = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 
@@ -15,11 +16,29 @@ export function createInput(target: Window = window): Input {
     },
   });
 
+  const debug = keysDebugEnabled(target.location?.search ?? '') ? createKeyDebug(core) : null;
+  const isLetter = (e: KeyboardEvent) => /^Key[A-Z]$/.test(e.code) || /^[a-z]$/i.test(e.key);
+
   target.addEventListener('keydown', (e) => {
-    if (NO_SCROLL.has(e.code)) e.preventDefault();
-    core.keyDown(e.code);
+    // Cmd held: the browser may swallow later keyups, so drop everything rather than risk a stuck key.
+    if (e.key === 'Meta') core.clearKeys();
+    // Browser shortcuts (Cmd+W, Ctrl+S, Alt+...) must not drive the samurai.
+    const mod = e.metaKey || e.ctrlKey || e.altKey;
+    if (mod && isLetter(e)) {
+      debug?.log('down', e, []);
+      return;
+    }
+    // Bound keys (by code or label) are consumed so macOS press-and-hold / IME never sees them.
+    // Not with a modifier held, so browser shortcuts keep working. Unbound keys and F-keys untouched.
+    // Composition/Dead/Process events are still mapped by their `code` (the core ignores `key` then).
+    // Repeats re-assert the held state; the core's pressed() edge only fires on a real up->down.
+    if (!mod && (NO_SCROLL.has(e.code) || actionsForKey(e.code, e.key).length > 0)) e.preventDefault();
+    debug?.log('down', e, core.keyDown(e.code, e.key));
   });
-  target.addEventListener('keyup', (e) => core.keyUp(e.code));
+  // Keyup is never filtered: it releases by code whatever was activated on keydown.
+  target.addEventListener('keyup', (e) => {
+    debug?.log('up', e, core.keyUp(e.code, e.key));
+  });
   target.addEventListener('blur', () => core.clearKeys());
 
   return core;

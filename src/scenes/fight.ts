@@ -31,7 +31,7 @@ const DARK_ALPHA = 0.95;
 const OVERSCAN = 48;
 
 const PROMPTS: Prompt[] = [
-  { action: 'move', label: 'MOVE' },
+  { action: 'move', label: 'MOVE', keys: 'horizontal' },
   { action: 'quick', label: 'QUICK' },
   { action: 'heavy', label: 'HEAVY' },
   { action: 'defend', label: 'BLOCK / +DIR DASH' },
