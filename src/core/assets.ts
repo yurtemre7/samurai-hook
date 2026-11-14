@@ -1,5 +1,10 @@
 import type { Assets, DrawOpts, SpriteDef } from '../types';
 
+/** Resolves a manifest path against the site base, so the game also works under a sub-path (GitHub Pages). */
+export function assetUrl(src: string): string {
+  return `${import.meta.env.BASE_URL}${src.replace(/^\//, '')}`;
+}
+
 /** Loads sprite images from the manifest and draws them, or a placeholder if missing. */
 export function createAssets(defs: Record<string, SpriteDef>): Assets {
   const images = new Map<string, HTMLImageElement>();
@@ -11,7 +16,7 @@ export function createAssets(defs: Record<string, SpriteDef>): Assets {
         const img = new Image();
         img.onload = () => { images.set(id, img); resolve(); };
         img.onerror = () => { console.warn(`[assets] missing ${d.src}; using placeholder for "${id}"`); resolve(); };
-        img.src = d.src!.startsWith('/') ? d.src! : `/${d.src}`;
+        img.src = assetUrl(d.src!);
       }));
     return Promise.all(jobs).then(() => undefined);
   }

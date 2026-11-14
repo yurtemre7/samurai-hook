@@ -1,4 +1,5 @@
 import type { AudioSys, SoundDef } from '../types';
+import { assetUrl } from './assets';
 
 interface MusicDef { src: string | null; volume: number }
 interface VoiceDef { enabled: boolean; rate: number; pitch: number; volume: number }
@@ -19,7 +20,7 @@ export function createAudio(
 
   for (const [id, def] of Object.entries(sounds)) {
     if (!def.src) continue;
-    const el = new Audio(def.src.startsWith('/') ? def.src : `/${def.src}`);
+    const el = new Audio(assetUrl(def.src));
     el.preload = 'auto';
     el.addEventListener('error', () => broken.add(id));
     clips.set(id, el);
@@ -47,7 +48,7 @@ export function createAudio(
     currentMusicId = id;
     const def = id ? music[id] : null;
     if (!def?.src) return;
-    const el = new Audio(def.src.startsWith('/') ? def.src : `/${def.src}`);
+    const el = new Audio(assetUrl(def.src));
     el.loop = true;
     el.volume = def.volume;
     el.play().catch(() => { /* blocked or missing: stay silent */ });
