@@ -39,7 +39,7 @@ export function createAssets(defs: Record<string, SpriteDef>): Assets {
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(img, frame * fw, 0, fw, img.height, -def.w / 2, -def.h / 2, def.w, def.h);
     } else {
-      drawPlaceholder(ctx, def);
+      drawPlaceholder(ctx, def, opts.time ?? 0);
       if (def.placeholder.label) {
         // Keep the label readable when mirrored.
         ctx.scale(mirror ? -1 : 1, 1);
@@ -64,7 +64,7 @@ export function createAssets(defs: Record<string, SpriteDef>): Assets {
 }
 
 /** Simple code-drawn stand-ins, centred on the origin, facing right. */
-function drawPlaceholder(ctx: CanvasRenderingContext2D, def: SpriteDef): void {
+function drawPlaceholder(ctx: CanvasRenderingContext2D, def: SpriteDef, time = 0): void {
   const { w, h } = def;
   const { shape, color } = def.placeholder;
   ctx.fillStyle = color;
@@ -94,6 +94,41 @@ function drawPlaceholder(ctx: CanvasRenderingContext2D, def: SpriteDef): void {
       ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.strokeStyle = '#ecf0f1'; ctx.lineWidth = 4; // katana
       ctx.beginPath(); ctx.moveTo(w * 0.2, h * 0.05); ctx.lineTo(w * 0.5, -h * 0.25); ctx.stroke();
+      break;
+    }
+    case 'fisher': {
+      // Meditating in the lotus position under a wide straw hat, breathing slowly.
+      const breath = Math.sin(time * 1.6);
+      ctx.lineWidth = 2;
+      ctx.save(); // calm aura
+      ctx.globalAlpha *= 0.18 + 0.08 * breath;
+      ctx.fillStyle = '#fff6c8';
+      ctx.beginPath(); ctx.arc(0, -h * 0.05, w * (0.62 + 0.04 * breath), 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = color;
+      ctx.beginPath(); // crossed legs
+      ctx.ellipse(0, h * 0.38, w * 0.44, h * 0.11, 0, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+      const lift = -breath * h * 0.012; // chest rises and falls
+      ctx.beginPath(); // robe
+      ctx.moveTo(-w * 0.27, h * 0.36); ctx.lineTo(-w * 0.17, -h * 0.1 + lift);
+      ctx.lineTo(w * 0.17, -h * 0.1 + lift); ctx.lineTo(w * 0.27, h * 0.36);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#c0392b'; // sash
+      ctx.fillRect(-w * 0.22, h * 0.14, w * 0.44, h * 0.06);
+      ctx.fillStyle = '#f1c9a5'; // hands resting on the knees, palms up
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.arc(side * w * 0.33, h * 0.3, w * 0.06, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(0, -h * 0.2 + lift, w * 0.13, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); // face
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 1.5; // closed eyes
+      for (const side of [-1, 1]) {
+        ctx.beginPath(); ctx.arc(side * w * 0.055, -h * 0.2 + lift, w * 0.035, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+      }
+      ctx.lineWidth = 2;
+      ctx.fillStyle = '#d9b36c'; // straw hat
+      ctx.beginPath(); ctx.moveTo(-w * 0.48, -h * 0.23 + lift); ctx.lineTo(0, -h * 0.5 + lift); ctx.lineTo(w * 0.48, -h * 0.23 + lift);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
       break;
     }
     case 'boat': {

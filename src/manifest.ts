@@ -19,7 +19,8 @@ export const sprites: Record<string, SpriteDef> = {
   samuraiHeavy: { src: 'assets/samurai/heavy.png', w: 456, h: 173, facing: 'right', frames: 6, fps: 10, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
   samuraiBlock: { src: 'assets/samurai/block.png', w: 456, h: 173, facing: 'right', placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
   samuraiHurt:  { src: 'assets/samurai/hurt.png', w: 456, h: 173, facing: 'right', frames: 4, fps: 12, placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
-  samuraiSit:   { src: 'assets/samurai/idle.png', w: 285, h: 108, facing: 'right', frames: 8, fps: 8, placeholder: { shape: 'samurai', color: '#c0392b' } },
+  // In the boat he is a simple seated figure; the detailed fighter appears only in duels.
+  samuraiSit:   { src: null, w: 64, h: 72, placeholder: { shape: 'fisher', color: '#2c3e63' } },
   boat:         { src: null, w: 200, h: 56, placeholder: { shape: 'boat', color: '#8e5a2b' } },
   hook:         { src: null, w: 20, h: 28,  placeholder: { shape: 'hook', color: '#dfe6e9' } },
   nigiri:       { src: null, w: 72, h: 48,  placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
@@ -28,7 +29,7 @@ export const sprites: Record<string, SpriteDef> = {
   'fish.mackerel':   { ...fishSprite('#4f8fba', 'MACKEREL', 78, 42), src: 'assets/fish/mackerel.png', facing: 'left' },
   'fish.piranha':    { ...fishSprite('#d35454', 'PIRANHA', 70, 60), src: 'assets/fish/piranha.png', facing: 'left' },
   'fish.eel':        { ...fishSprite('#6b8e23', 'EEL', 144, 40), src: 'assets/fish/eel.png', facing: 'left' },
-  'fish.pufferfish': { ...fishSprite('#e6c34a', 'PUFFER', 81, 69), src: 'assets/fish/pufferfish.png', facing: 'left' },
+  'fish.pufferfish': { ...fishSprite('#e6c34a', 'PUFFER', 81, 69), src: 'assets/fish/pufferfish.png', facing: 'right' },
   'fish.swordfish':  fishSprite('#5d6d9e', 'SWORDFISH', 150, 56),
   'fish.anglerfish': fishSprite('#5b3a6b', 'ANGLER', 110, 88),
   'fish.shark':      { ...fishSprite('#7d8a97', 'SHARK', 188, 60), src: 'assets/fish/shark.png', facing: 'left' },
@@ -78,7 +79,7 @@ export const voice = { enabled: true, rate: 1.15, pitch: 0.6, volume: 1 };
 export const fish: FishDef[] = [
   {
     id: 'sardine', name: 'Sardine', title: 'WHITE BELT', category: 'slippery', sprite: 'fish.sardine',
-    depthMin: 5, depthMax: 25, hp: 40, timer: 20, gold: 5, swimSpeed: 70, size: 26,
+    depthMin: 5, depthMax: 25, hp: 40, timer: 20, gold: 5, swimSpeed: 70, size: 32,
     move: { speed: 150, keepAway: 120, restless: 0.3 },
     slip: { recovery: 3.0, dart: 180 },
     gimmick: 'none',
@@ -86,7 +87,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'mackerel', name: 'Mackerel', title: '3RD DAN', category: 'slippery', sprite: 'fish.mackerel',
-    depthMin: 15, depthMax: 40, hp: 70, timer: 25, gold: 12, swimSpeed: 95, size: 32,
+    depthMin: 15, depthMax: 40, hp: 70, timer: 25, gold: 12, swimSpeed: 95, size: 40,
     move: { speed: 200, keepAway: 140, restless: 0.5 },
     slip: { recovery: 2.0, dart: 240 },
     gimmick: 'none',
@@ -94,7 +95,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'piranha', name: 'Piranha', title: 'THE NIBBLER', category: 'biter', sprite: 'fish.piranha',
-    depthMin: 30, depthMax: 55, hp: 90, timer: 25, gold: 25, swimSpeed: 120, size: 30,
+    depthMin: 30, depthMax: 55, hp: 90, timer: 25, gold: 25, swimSpeed: 120, size: 38,
     move: { speed: 260, keepAway: 110, restless: 0.8 },
     slip: { recovery: 1.8, dart: 200 },
     attack: { damage: 6, tell: 0.3, cooldown: 1.1, reach: 150 },
@@ -103,7 +104,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'eel', name: 'Eel', title: 'GRAND SLIPMASTER', category: 'slippery', sprite: 'fish.eel',
-    depthMin: 40, depthMax: 70, hp: 80, timer: 25, gold: 40, swimSpeed: 110, size: 30,
+    depthMin: 40, depthMax: 70, hp: 80, timer: 30, gold: 40, swimSpeed: 110, size: 42,
     move: { speed: 280, keepAway: 130, restless: 0.7 },
     slip: { recovery: 0.9, dart: 320 },
     gimmick: 'none',
@@ -111,7 +112,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'pufferfish', name: 'Pufferfish', title: 'THE ROUND ONE', category: 'slippery', sprite: 'fish.pufferfish',
-    depthMin: 55, depthMax: 90, hp: 160, timer: 30, gold: 70, swimSpeed: 60, size: 38,
+    depthMin: 55, depthMax: 90, hp: 160, timer: 30, gold: 70, swimSpeed: 60, size: 44,
     move: { speed: 140, keepAway: 120, restless: 0.3 },
     slip: { recovery: 2.2, dart: 160 },
     gimmick: 'puff',
@@ -128,7 +129,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'anglerfish', name: 'Anglerfish', title: 'LIGHTS OUT', category: 'slippery', sprite: 'fish.anglerfish',
-    depthMin: 95, depthMax: 130, hp: 260, timer: 35, gold: 200, swimSpeed: 55, size: 44,
+    depthMin: 95, depthMax: 130, hp: 260, timer: 40, gold: 200, swimSpeed: 55, size: 44,
     move: { speed: 170, keepAway: 150, restless: 0.5 },
     slip: { recovery: 1.6, dart: 240 },
     gimmick: 'dark',
@@ -145,7 +146,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'squid', name: 'Giant Squid', title: 'EIGHT-ARMED STYLE', category: 'slippery', sprite: 'fish.squid',
-    depthMin: 140, depthMax: 170, hp: 550, timer: 40, gold: 600, swimSpeed: 50, size: 60,
+    depthMin: 140, depthMax: 170, hp: 480, timer: 40, gold: 600, swimSpeed: 50, size: 60,
     move: { speed: 190, keepAway: 170, restless: 0.6 },
     slip: { recovery: 1.5, dart: 280 },
     gimmick: 'ink',
@@ -176,7 +177,7 @@ export const fight = {
     bodyRadius: 30,
     quick: { startup: 0.06, active: 0.08, recovery: 0.14, reach: 110 },
     heavy: { startup: 0.45, active: 0.1, recovery: 0.3, reach: 150 },
-    blockReduction: 0.8,   // fraction of damage removed while blocking
+    blockReduction: 0.65,   // fraction of damage removed while blocking
     dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5 },
     hurtStun: 0.25,
     hurtKnockback: 240,    // px/s pushed away on a bite, decays over hurtStun
@@ -208,7 +209,7 @@ export const ocean = {
   pxPerMetre: 14,
   surfaceY: 150,           // screen y of the water line when the camera is at the top
   hook: { sinkSpeed: 150, fastSinkSpeed: 300, brakeSpeed: 60, reelSpeed: 260, steerSpeed: 260, radius: 12 },
-  fishPerScreen: 5,
+  fishPerScreen: 8,
   catchRadiusScale: 0.8,   // multiplied by the fish's half-width
 };
 

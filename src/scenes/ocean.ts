@@ -292,7 +292,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       const boatY = surfaceY - 8 + boatBob;
       if (sy(boatY) > -120) {
         game.assets.draw(ctx, 'boat', BOAT_X, sy(boatY));
-        game.assets.draw(ctx, 'samuraiSit', BOAT_X - 10, sy(boatY - 54));
+        game.assets.draw(ctx, 'samuraiSit', BOAT_X - 10, sy(boatY - 54), { time: game.time });
       }
       const rodTipY = sy(surfaceY + ROD_DY + boatBob);
       ctx.save();

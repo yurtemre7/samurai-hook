@@ -39,7 +39,7 @@ export interface Prompt {
 
 // ---------- Assets and audio ----------
 
-export type PlaceholderShape = 'fish' | 'samurai' | 'boat' | 'hook' | 'nigiri' | 'box';
+export type PlaceholderShape = 'fish' | 'samurai' | 'fisher' | 'boat' | 'hook' | 'nigiri' | 'box';
 
 export interface SpriteDef {
   /** Path under /public (e.g. "assets/fish/sardine.png"), or null to use the placeholder. */
