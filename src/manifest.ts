@@ -78,7 +78,7 @@ export const voice = { enabled: true, rate: 1.15, pitch: 0.6, volume: 1 };
 
 export const fish: FishDef[] = [
   {
-    id: 'sardine', name: 'Sardine', title: 'WHITE BELT', category: 'slippery', sprite: 'fish.sardine',
+    id: 'sardine', name: 'Iwashi', title: 'SARDINE · WHITE BELT', category: 'slippery', sprite: 'fish.sardine',
     depthMin: 5, depthMax: 25, hp: 40, timer: 20, gold: 5, swimSpeed: 70, size: 32,
     move: { speed: 150, keepAway: 120, restless: 0.3 },
     slip: { recovery: 3.0, dart: 180 },
@@ -86,7 +86,7 @@ export const fish: FishDef[] = [
     taunts: ['I AM ONE OF MILLIONS!', 'YOU CANNOT CAN ME!', 'SMALL FISH. BIG DREAMS.'],
   },
   {
-    id: 'mackerel', name: 'Mackerel', title: '3RD DAN', category: 'slippery', sprite: 'fish.mackerel',
+    id: 'mackerel', name: 'Saba', title: 'MACKEREL · 3RD DAN', category: 'slippery', sprite: 'fish.mackerel',
     depthMin: 15, depthMax: 40, hp: 70, timer: 25, gold: 12, swimSpeed: 95, size: 40,
     move: { speed: 200, keepAway: 140, restless: 0.5 },
     slip: { recovery: 2.0, dart: 240 },
@@ -94,7 +94,7 @@ export const fish: FishDef[] = [
     taunts: ['HOLY ME!', 'YOUR BLADE IS DULL. LIKE YOUR BAIT.', 'CATCH THIS? UNLIKELY!'],
   },
   {
-    id: 'piranha', name: 'Piranha', title: 'THE NIBBLER', category: 'biter', sprite: 'fish.piranha',
+    id: 'piranha', name: 'Pirania', title: 'PIRANHA · THE NIBBLER', category: 'biter', sprite: 'fish.piranha',
     depthMin: 30, depthMax: 55, hp: 90, timer: 25, gold: 25, swimSpeed: 120, size: 38,
     move: { speed: 260, keepAway: 110, restless: 0.8 },
     slip: { recovery: 1.8, dart: 200 },
@@ -103,7 +103,7 @@ export const fish: FishDef[] = [
     taunts: ['NOM. NOM. NOM.', 'I SKIPPED LUNCH FOR THIS!', 'DEATH BY A THOUSAND NIBBLES!'],
   },
   {
-    id: 'eel', name: 'Eel', title: 'GRAND SLIPMASTER', category: 'slippery', sprite: 'fish.eel',
+    id: 'eel', name: 'Unagi', title: 'EEL · GRAND SLIPMASTER', category: 'slippery', sprite: 'fish.eel',
     depthMin: 40, depthMax: 70, hp: 80, timer: 30, gold: 40, swimSpeed: 110, size: 42,
     move: { speed: 280, keepAway: 130, restless: 0.7 },
     slip: { recovery: 0.9, dart: 320 },
@@ -111,7 +111,7 @@ export const fish: FishDef[] = [
     taunts: ['SHOCKING, ISN\'T IT?', 'TOO SLIPPERY FOR YOU, OLD MAN!', 'EEL BE BACK.'],
   },
   {
-    id: 'pufferfish', name: 'Pufferfish', title: 'THE ROUND ONE', category: 'slippery', sprite: 'fish.pufferfish',
+    id: 'pufferfish', name: 'Fugu', title: 'PUFFERFISH · THE ROUND ONE', category: 'slippery', sprite: 'fish.pufferfish',
     depthMin: 55, depthMax: 90, hp: 160, timer: 30, gold: 70, swimSpeed: 60, size: 44,
     move: { speed: 140, keepAway: 120, restless: 0.3 },
     slip: { recovery: 2.2, dart: 160 },
@@ -119,7 +119,7 @@ export const fish: FishDef[] = [
     taunts: ['DO NOT TOUCH. SERIOUSLY.', 'I AM INFLATING MY EGO!', 'ONE BITE AND YOU DIE. OF ME.'],
   },
   {
-    id: 'swordfish', name: 'Swordfish', title: 'RIVAL DUELLIST', category: 'biter', sprite: 'fish.swordfish',
+    id: 'swordfish', name: 'Kajiki', title: 'SWORDFISH · RIVAL DUELLIST', category: 'biter', sprite: 'fish.swordfish',
     depthMin: 75, depthMax: 110, hp: 200, timer: 30, gold: 120, swimSpeed: 150, size: 40,
     move: { speed: 230, keepAway: 220, restless: 0.5 },
     slip: { recovery: 1.6, dart: 260 },
@@ -128,7 +128,7 @@ export const fish: FishDef[] = [
     taunts: ['EN GARDE!', 'MY SWORD IS ATTACHED. IS YOURS?', 'I WAS BORN ARMED!'],
   },
   {
-    id: 'anglerfish', name: 'Anglerfish', title: 'LIGHTS OUT', category: 'slippery', sprite: 'fish.anglerfish',
+    id: 'anglerfish', name: 'Anko', title: 'ANGLERFISH · LIGHTS OUT', category: 'slippery', sprite: 'fish.anglerfish',
     depthMin: 95, depthMax: 130, hp: 260, timer: 40, gold: 200, swimSpeed: 55, size: 44,
     move: { speed: 170, keepAway: 150, restless: 0.5 },
     slip: { recovery: 1.6, dart: 240 },
@@ -136,7 +136,7 @@ export const fish: FishDef[] = [
     taunts: ['COME TOWARD THE LIGHT.', 'I HAVE SEEN THINGS. DARK THINGS.', 'WHO TURNED OFF THE OCEAN?'],
   },
   {
-    id: 'shark', name: 'Shark', title: 'FINAL-ISH BOSS', category: 'biter', sprite: 'fish.shark',
+    id: 'shark', name: 'Hojiro', title: 'GREAT WHITE · FINAL-ISH BOSS', category: 'biter', sprite: 'fish.shark',
     depthMin: 115, depthMax: 150, hp: 400, timer: 40, gold: 350, swimSpeed: 90, size: 56,
     move: { speed: 150, keepAway: 200, restless: 0.4 },
     slip: { recovery: 2.4, dart: 200 },
@@ -145,7 +145,7 @@ export const fish: FishDef[] = [
     taunts: ['WE\'RE GONNA NEED A BIGGER SAMURAI.', 'I SMELL HONOUR. AND LUNCH.', 'DUN DUN. DUN DUN.'],
   },
   {
-    id: 'squid', name: 'Giant Squid', title: 'EIGHT-ARMED STYLE', category: 'slippery', sprite: 'fish.squid',
+    id: 'squid', name: 'Daioika', title: 'GIANT SQUID · EIGHT-ARMED STYLE', category: 'slippery', sprite: 'fish.squid',
     depthMin: 140, depthMax: 170, hp: 480, timer: 40, gold: 600, swimSpeed: 50, size: 60,
     move: { speed: 190, keepAway: 170, restless: 0.6 },
     slip: { recovery: 1.5, dart: 280 },
@@ -159,7 +159,7 @@ export const tiers = {
   depth: 170,
   hpMult: 2.2,
   goldMult: 2.5,
-  prefixes: ['', 'ELDER', 'LEGENDARY', 'MYTHIC', 'COSMIC', 'FORBIDDEN'],
+  prefixes: ['', 'ELDER', 'SENSEI', 'SHOGUN', 'YOKAI', 'KAMI'],
 };
 
 // ---------- Samurai and fight tuning ----------
@@ -267,5 +267,5 @@ export const text = {
     ko: 'You got bitten!',
     buy: 'Upgrade!',
   },
-  shop: { title: 'DOCKSIDE DOJO SHOP', broke: 'NOT ENOUGH GOLD', gold: '{gold} G' },
+  shop: { title: 'MINATO DOJO SHOP', broke: 'NOT ENOUGH GOLD', gold: '{gold} G' },
 };

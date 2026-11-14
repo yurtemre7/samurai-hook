@@ -35,7 +35,7 @@ describe('game state', () => {
     expect(s.pickFish(1)).toBeNull();
     const elder = s.pickFish(tiers.depth + 6, () => 0)!;
     expect(elder.tier).toBe(1);
-    expect(elder.name).toBe('ELDER SARDINE');
+    expect(elder.name).toBe('ELDER IWASHI');
     expect(elder.maxHp).toBe(Math.round(40 * tiers.hpMult));
   });
   it('every depth from 5 m down has at least one fish', () => {
