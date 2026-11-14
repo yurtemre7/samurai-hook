@@ -197,6 +197,12 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
 
   // ---------- drawing ----------
 
+  /**
+   * Anglerfish lure light, as multiples of DARK_LURE_RADIUS: `reveal` is the
+   * hole cut in the dark (clear inside `inner` of it), `halo` the warm glow.
+   */
+  const LURE_GLOW = { reveal: 1.3, inner: 0.3, halo: 1.1 };
+
   function drawDarkness(ctx: CanvasRenderingContext2D): void {
     if (!dark) {
       dark = document.createElement('canvas');
@@ -210,35 +216,46 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
     d.fillStyle = `rgba(2,0,8,${DARK_ALPHA})`;
     d.fillRect(-OVERSCAN, -OVERSCAN, W + 2 * OVERSCAN, H + 2 * OVERSCAN);
     d.globalCompositeOperation = 'destination-out';
-    const hole = (x: number, y: number, r: number) => {
-      const g = d.createRadialGradient(x, y, r * 0.45, x, y, r);
+    /** Clears the dark: fully inside `inner` x r, fading out to r. */
+    const hole = (x: number, y: number, r: number, inner = 0.45) => {
+      const g = d.createRadialGradient(x, y, r * inner, x, y, r);
       g.addColorStop(0, 'rgba(0,0,0,1)');
       g.addColorStop(1, 'rgba(0,0,0,0)');
       d.fillStyle = g;
       d.fillRect(x - r, y - r, r * 2, r * 2);
     };
     hole(state.samurai.x, floorY - 64, F.fish.darkRadius);
-    const lure = lurePos(state, fish, look);
-    const flick = 0.9 + 0.1 * Math.sin(look.rt * 11);
-    hole(lure.x, lure.y + 20, DARK_LURE_RADIUS * flick);
+    // The anglerfish's own lure is the light: centred on the bulb in its art,
+    // so it follows the fish's pose and facing, and flickers like a flame.
+    const onSprite = game.assets.has(fish.def.sprite);
+    const lure = lurePos(state, fish, look, onSprite);
+    const flick = 0.9 + 0.06 * Math.sin(look.rt * 11) + 0.04 * Math.sin(look.rt * 23.7);
+    hole(lure.x, lure.y, DARK_LURE_RADIUS * LURE_GLOW.reveal * flick, LURE_GLOW.inner);
     ctx.drawImage(dark, -OVERSCAN, -OVERSCAN);
 
-    // The lure itself: a glowing bulb on a stalk.
-    const pose = fishPose(state, fish, look);
     ctx.save();
-    ctx.strokeStyle = 'rgba(160,200,120,0.8)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(pose.cx + state.fish.facing * pose.hw * 0.2, pose.cy - pose.ext * 0.6);
-    ctx.quadraticCurveTo(pose.cx, lure.y - 18, lure.x, lure.y);
-    ctx.stroke();
+    if (!onSprite) {
+      // Placeholder art has no lure: draw a stalk and bulb.
+      const pose = fishPose(state, fish, look);
+      ctx.strokeStyle = 'rgba(160,200,120,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(pose.cx + state.fish.facing * pose.hw * 0.2, pose.cy - pose.ext * 0.6);
+      ctx.quadraticCurveTo(pose.cx, lure.y - 18, lure.x, lure.y);
+      ctx.stroke();
+      ctx.fillStyle = '#fbf236';
+      ctx.beginPath(); ctx.arc(lure.x, lure.y, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    // Warm glow, added on top so it shines through the dark.
     ctx.globalCompositeOperation = 'lighter';
-    const g = ctx.createRadialGradient(lure.x, lure.y, 1, lure.x, lure.y, 34);
-    g.addColorStop(0, 'rgba(230,255,190,1)');
-    g.addColorStop(0.3, `rgba(120,255,170,${0.6 * flick})`);
-    g.addColorStop(1, 'rgba(40,200,140,0)');
+    const r = DARK_LURE_RADIUS * LURE_GLOW.halo * flick;
+    const g = ctx.createRadialGradient(lure.x, lure.y, 0, lure.x, lure.y, r);
+    g.addColorStop(0, `rgba(255,230,150,${0.75 * flick})`);
+    g.addColorStop(0.1, `rgba(255,200,90,${0.5 * flick})`);
+    g.addColorStop(0.35, `rgba(255,140,40,${0.16 * flick})`);
+    g.addColorStop(1, 'rgba(255,100,20,0)');
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(lure.x, lure.y, 34, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(lure.x, lure.y, r, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 

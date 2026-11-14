@@ -23,6 +23,17 @@ was copied unchanged except `music/ocean.mp3` (trimmed to 60 s, fades, MP3 64 kb
 | `public/assets/music/fight.ogg` (8BitBattleLoop) | Fight loop | https://opengameart.org/content/8-bit-battle-loop | Wolfgang_ | CC0 | 2026-11-14 |
 | `public/assets/music/ocean.mp3` (first 60 s of hot_spring_town.ogg) | Calm ocean track | https://opengameart.org/content/hot-springs-town | Kistol | CC0 | 2026-11-14 |
 
+### DRAFT, pending the owner's choice (option B: original art)
+
+Not third-party assets. Drawn by `tools/fish-sprites.mjs` in the style of the
+Fish DB32 sprites (DB32 colours, 1 px black outline, facing left, shown at 2x).
+Remove these rows if found art is chosen instead.
+
+| File(s) | What | Source | Author | Licence | Checked |
+|---|---|---|---|---|---|
+| `public/assets/fish/swordfish.png` | 75x28 pixel swordfish (Kajiki) | `tools/fish-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
+| `public/assets/fish/anglerfish.png` | 55x44 pixel anglerfish (Anko) with lure | `tools/fish-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
+
 ## Gaps (still code-drawn or synthesised placeholders)
 
 Sprites
