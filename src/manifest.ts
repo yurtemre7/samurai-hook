@@ -235,7 +235,7 @@ export const upgrades: UpgradeDef[] = [
     id: 'gold', label: 'REPUTATION', baseCost: 40, growth: 1.6, perLevel: 0.15,
     names: [
       'Unknown Angler', 'Local Nuisance', 'Market Regular', 'Sushi Supplier',
-      'Feared By Fishmongers', 'Sashimi Tycoon', 'Emperor\'s Fishmonger', 'Legend of the Seven Seas',
+      'Feared By Fishmongers', 'Sashimi Tycoon', 'Shogun\'s Fishmonger', 'Legend of the Seven Seas',
     ],
   },
 ];
@@ -267,5 +267,12 @@ export const text = {
     ko: 'You got bitten!',
     buy: 'Upgrade!',
   },
-  shop: { title: 'MINATO DOJO SHOP', broke: 'NOT ENOUGH GOLD', gold: '{gold} G' },
+  shop: {
+    title: 'MINATO DOJO SHOP',
+    kanji: '港道具',          // "harbour tools", on the shop curtain
+    broke: 'NOT ENOUGH RYO',
+    gold: '{gold} RYO',
+    away: 'BACK IN 5 MIN',
+    awaySub: '(SINCE 1603)',
+  },
 };
