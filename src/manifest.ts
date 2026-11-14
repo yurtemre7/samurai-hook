@@ -179,10 +179,20 @@ export const fight = {
     blockReduction: 0.8,   // fraction of damage removed while blocking
     dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5 },
     hurtStun: 0.25,
+    hurtKnockback: 240,    // px/s pushed away on a bite, decays over hurtStun
+    blockPush: 120,        // px/s pushed back on a blocked bite, decays over 0.15 s
+    buffer: 0.12,          // seconds a slash pressed during another move is remembered
   },
   fish: {
     slipDuration: 0.3,     // seconds the dart takes
+    slipArc: 50,           // dart height when it darts away on its own side, px
+    overArc: 170,          // dart / cross height when it goes over the samurai, px
+    hitHeight: 70,         // a fish higher than this above the floor cannot be struck
     hitStun: 0.12,
+    hitPush: 180,          // px/s the fish is knocked back by a landed hit
+    lungeDuration: 0.2,    // seconds a biter's lunge takes
+    lungeRecovery: 0.8,    // seconds a biter stays vulnerable after a lunge (or an interrupted tell)
+    crossCooldown: 1.2,    // seconds between corner escapes over the samurai
     puff: { every: 4.5, duration: 1.6, knockback: 260, stun: 0.5 },
     ink: { every: 6, duration: 3 },
     darkRadius: 150,       // visible radius around the samurai in 'dark' fights
