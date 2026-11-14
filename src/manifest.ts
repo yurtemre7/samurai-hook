@@ -214,6 +214,58 @@ export const ocean = {
   hook: { sinkSpeed: 150, fastSinkSpeed: 300, brakeSpeed: 60, reelSpeed: 260, steerSpeed: 260, radius: 12 },
   fishPerScreen: 8,
   catchRadiusScale: 0.8,   // multiplied by the fish's half-width
+  /** Screen layout and look of the ocean scene (px unless noted); cosmetic. */
+  layout: {
+    fishTopM: 3, // shallowest depth fish are spawned at
+    fishBeyondPx: 200, // fish seen below the max depth (the tease)
+    fishMinGapPx: 40, // vertical spacing when spawning a chunk
+    fishSpeedVariation: 0.2, // +-20% swim speed
+    fishBobPx: 5,
+    fishWrapMargin: 30,
+    unreachableAlpha: 0.35,
+    hookAnchorY: 255, // screen y the camera tries to keep the hook at
+    cameraLerp: 8,
+    hookSteerMargin: 16,
+    boatX: 380,
+    boatBobPx: 3,
+    rodDx: 100, // rod tip (and idle hook x) relative to boatX
+    rodDy: -84, // rod tip height relative to the water line
+    hookIdleDy: -22, // idle hook height relative to the water line
+    bubbleCount: 22,
+    gaugeX: 898,
+    gaugeLaneW: 10,
+    gaugeLanes: 3,
+    boatDrawDx: -80, // hull centre relative to boatX (keeps the prow clear of the hook)
+    boatKeelDepth: 8, // px the keel sits below the water line
+    samDx: 72, // samurai relative to the hull centre (at the stern)
+    samSink: 12, // px of the samurai hidden below the gunwale
+    samHands: { x: 6, y: 13 }, // his hands on the hilt, source px from the frame centre
+    samSrcW: 190, // source frame width of the samurai strip
+    seaBand: 36, // px of far sea between the horizon and the water line
+    sunX: 660,
+    sunR: 46,
+    islandX: 64,
+    toriiX: 744, // sunX + 84
+    banner: { x: 852, y: 0, w: 36, h: 112 }, // x is gaugeX - 46
+    seigaihaR: 10,
+  },
+};
+
+// ---------- Cutscene and result timing (seconds) ----------
+
+export const cutscene = {
+  duration: 2.5,
+  inputLock: 0.2,   // ignore input this long
+  slide: 0.45,      // slide-in time of the banners
+};
+
+export const result = {
+  lock: 0.5,        // ignore input this long
+  auto: 5,          // leave on its own after this long
+  goldAt: 1.2,      // when the receipt appears
+  countTime: 0.8,   // how long the gold counts up
+  dropAt: 0.3,      // when the nigiri starts to fall
+  unroll: 0.22,     // loss scroll unroll time
 };
 
 // ---------- Demo shortcut ----------
@@ -267,6 +319,9 @@ export const text = {
   heavyHit: ['KATANA SMASH!', 'DISHONOUR CUTTER!', 'MEGA FILLET!'],
   block: 'BLOCKED!',
   bounce: 'BOING!',
+  dodged: 'DODGED!',
+  puff: 'PUFF!',
+  samurai: { label: 'SAMURAI', safeSub: 'CANNOT BE HARMED BY THIS FISH' },
   win: { banner: 'K.O.!', perfect: 'PERFECT!', sold: 'SOLD TO SUSHI-YA: {gold} RYO' },
   timeout: { banner: 'TIME!', sub: 'IT WAS... TOO SLIPPERY.' },
   ko: { banner: 'YOU GOT BITTEN.', sub: '{fish} SWIMS AWAY, UNDEFEATED.' },

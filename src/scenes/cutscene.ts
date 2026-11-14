@@ -1,14 +1,11 @@
 import { drawPrompts } from '../input/prompts';
-import { text } from '../manifest';
+import { cutscene, text } from '../manifest';
 import { drawOutlinedText, drawSlamText, fill } from '../ui/hud';
 import type { Game, Scene, SceneParams } from '../types';
 import {
   FISH_KANJI, INK, PAPER, VERMILION, brush, fillPattern, kanji, kanjiColumn, scroll, seigaiha, sunRays,
 } from './screens/paint';
 
-const DURATION = 2.5;
-const INPUT_LOCK = 0.2;
-const SLIDE = 0.45;
 
 const BUBBLE_FONT = "bold 16px 'Arial Black', sans-serif";
 
@@ -88,7 +85,7 @@ export function createCutsceneScene(game: Game, params: SceneParams['cutscene'])
     update(dt) {
       t += dt;
       if (done) return;
-      if (t >= DURATION || (t > INPUT_LOCK && game.input.anyPressed())) {
+      if (t >= cutscene.duration || (t > cutscene.inputLock && game.input.anyPressed())) {
         done = true;
         game.go('fight', { fish });
       }
@@ -160,7 +157,7 @@ export function createCutsceneScene(game: Game, params: SceneParams['cutscene'])
       banner(ctx, 0, 46, H, VERMILION, '侍道', t);
       banner(ctx, W - 46, 46, H, '#1f2456', fishKanji, t + 1);
 
-      const k = Math.min(1, t / SLIDE);
+      const k = Math.min(1, t / cutscene.slide);
       const ease = 1 - Math.pow(1 - k, 3);
       const sx = -150 + 380 * ease;
       const fx = W + 200 - 420 * ease;

@@ -134,6 +134,25 @@ describe('the slip', () => {
     expect(t).toBeCloseTo(def('sardine').slip.recovery, 1);
   });
 
+  it('vulnLeft is 0 until a slip ends, then counts down to 0', () => {
+    const sim = makeFight('sardine', 6);
+    skipIntro(sim);
+    expect(sim.state.fish.vulnLeft).toBe(0);
+    run(sim, approachAnd('quick', quickReach), has('slip'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    const recovery = def('sardine').slip.recovery;
+    expect(sim.state.fish.vulnLeft).toBeGreaterThan(0);
+    expect(sim.state.fish.vulnLeft).toBeLessThanOrEqual(recovery);
+    let prev = sim.state.fish.vulnLeft;
+    run(sim, () => NONE, () => {
+      const v = sim.state.fish.vulnLeft;
+      expect(v).toBeLessThanOrEqual(prev);
+      prev = v;
+      return sim.state.fish.mode === 'roam';
+    });
+    expect(sim.state.fish.vulnLeft).toBe(0);
+  });
+
   it('a whiffed slash counts as a miss', () => {
     const sim = makeFight('sardine', 1);
     skipIntro(sim);

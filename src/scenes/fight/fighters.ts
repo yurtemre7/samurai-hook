@@ -2,7 +2,7 @@
 // slash trails, charge glow, shield, dash ghosts, fish slip-state tells.
 import { fight as F, sprites } from '../../manifest';
 import type { FightState } from '../../fight/sim';
-import type { Assets, DrawOpts, FishInstance } from '../../types';
+import type { Assets, FishInstance } from '../../types';
 import { drawOutlinedText } from '../../ui/hud';
 
 // ---------- look-and-feel constants ----------
@@ -47,7 +47,7 @@ export interface Look {
   fishTilt: number;
   fishVx: number;
   puff: number;
-  vulnLeft: number;
+  /** Length of the current vulnerable window, the ring's full circle (the sim's `vulnLeft` is the part still open). */
   vulnTotal: number;
   blockFlash: number;
 }
@@ -55,7 +55,7 @@ export interface Look {
 export function createLook(): Look {
   return {
     wt: 0, rt: 0, samGhosts: [], fishGhosts: [], fishTilt: FISH_STAND_TILT, fishVx: 0,
-    puff: 0, vulnLeft: 0, vulnTotal: 1, blockFlash: 0,
+    puff: 0, vulnTotal: 1, blockFlash: 0,
   };
 }
 
@@ -91,33 +91,6 @@ export function lurePos(state: FightState, fish: FishInstance, look: Look): { x:
     x: p.cx + state.fish.facing * p.hw * 0.5 + Math.sin(look.wt * 3) * 4,
     y: p.cy - p.ext - 26 + Math.cos(look.wt * 2.3) * 5,
   };
-}
-
-// ---------- tinted sprites ----------
-
-let scratch: HTMLCanvasElement | null = null;
-
-/**
- * Like assets.draw, but a tint only colours the sprite's own pixels. The
- * asset tint uses 'source-atop' on the target canvas, which would also tint
- * the stage behind the sprite, so tinted sprites go through a scratch canvas.
- */
-function drawSprite(ctx: CanvasRenderingContext2D, assets: Assets, id: string, x: number, y: number, opts: DrawOpts): void {
-  if (!opts.tint) { assets.draw(ctx, id, x, y, opts); return; }
-  const d = sprites[id];
-  const size = Math.ceil(Math.max(d?.w ?? 64, d?.h ?? 64) * (opts.scale ?? 1) * 1.5) + 4;
-  if (!scratch) scratch = document.createElement('canvas');
-  if (scratch.width < size || scratch.height < size) { scratch.width = size; scratch.height = size; }
-  const s = scratch.getContext('2d')!;
-  s.setTransform(1, 0, 0, 1, 0, 0);
-  s.globalCompositeOperation = 'source-over';
-  s.globalAlpha = 1;
-  s.clearRect(0, 0, size, size);
-  assets.draw(s, id, size / 2, size / 2, { ...opts, alpha: 1 });
-  ctx.save();
-  ctx.globalAlpha *= opts.alpha ?? 1;
-  ctx.drawImage(scratch, 0, 0, size, size, x - size / 2, y - size / 2, size, size);
-  ctx.restore();
 }
 
 // ---------- shadows ----------
@@ -172,7 +145,7 @@ function drawSamuraiSprite(
   ctx.translate(x, F.arena.floorY + tr.dy);
   ctx.rotate(tr.rot);
   ctx.scale(tr.sx, tr.sy);
-  drawSprite(ctx, assets, id, 0, -h / 2, { flipX: flip, time, alpha, tint });
+  assets.draw(ctx, id, 0, -h / 2, { flipX: flip, time, alpha, tint });
   ctx.restore();
 }
 
@@ -347,7 +320,7 @@ export function drawFish(
     ctx.save();
     ctx.translate(g.x, g.y);
     ctx.rotate(g.rot);
-    drawSprite(ctx, assets, def.sprite, 0, 0, { flipX: g.flip, scale: pose.scale, alpha: a, tint: '#9fe8ff', time: look.wt });
+    assets.draw(ctx, def.sprite, 0, 0, { flipX: g.flip, scale: pose.scale, alpha: a, tint: '#9fe8ff', time: look.wt });
     ctx.restore();
   }
 
@@ -384,7 +357,7 @@ export function drawFish(
   if (f.mode === 'attack') ctx.scale(ATTACK_STRETCH.x, ATTACK_STRETCH.y);
   ctx.rotate(pose.rot);
   const breathe = f.mode === 'puffed' ? 1 + 0.04 * Math.sin(look.wt * 9) : 1 + 0.03 * Math.sin(look.wt * 5);
-  drawSprite(ctx, assets, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * breathe, time: look.wt, tint });
+  assets.draw(ctx, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * breathe, time: look.wt, tint });
   ctx.restore();
 
   if (f.slipReady && f.mode !== 'puffed') drawWetShine(ctx, pose, look);
@@ -394,7 +367,7 @@ export function drawFish(
 export function drawFishMarks(ctx: CanvasRenderingContext2D, state: FightState, fish: FishInstance, look: Look): void {
   const f = state.fish;
   const pose = fishPose(state, fish, look);
-  if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, look);
+  if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, f.vulnLeft, look);
   if (f.mode === 'tell') {
     const p = f.tellProgress;
     const size = 34 + 58 * p;
@@ -471,7 +444,7 @@ function drawWetShine(ctx: CanvasRenderingContext2D, pose: Pose, look: Look): vo
 }
 
 /** Vulnerable: sweat drop, orbiting dizzy stars and a shrinking window ring. */
-function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, look: Look): void {
+function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vulnLeft: number, look: Look): void {
   const topY = pose.cy - pose.ext - 14;
   // Sweat drop sliding down beside the head.
   const sx = pose.cx - facing * pose.hw * 0.55;
@@ -498,7 +471,7 @@ function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, lo
   ctx.restore();
 
   // Window ring: how long the fish stays open.
-  const frac = look.vulnTotal > 0 ? Math.max(0, Math.min(1, look.vulnLeft / look.vulnTotal)) : 0;
+  const frac = look.vulnTotal > 0 ? Math.max(0, Math.min(1, vulnLeft / look.vulnTotal)) : 0;
   const rx = pose.cx;
   const ry = topY - 28;
   ctx.save();

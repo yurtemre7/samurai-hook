@@ -36,6 +36,8 @@ export interface FightState {
     slipReady: boolean;
     /** 0..1 during 'tell', else 0. */
     tellProgress: number;
+    /** Seconds of the vulnerable window left (also runs through 'stunned'), 0 when none. */
+    vulnLeft: number;
   };
   effects: { dark: boolean; inkLeft: number };
 }
@@ -83,7 +85,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     },
     fish: {
       x: mid + 160, y: 0, facing: -1, hp: inst.maxHp, maxHp: inst.maxHp,
-      mode: 'roam', modeTime: 0, slipReady: true, tellProgress: 0,
+      mode: 'roam', modeTime: 0, slipReady: true, tellProgress: 0, vulnLeft: 0,
     },
     effects: { dark: def.gimmick === 'dark', inkLeft: 0 },
   };
@@ -104,7 +106,6 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
   // ---- hidden fish state ----
   let arc: Arc | null = null;     // slip dart, corner escape or lunge
   let hop: Arc | null = null;     // small cosmetic hop while roaming
-  let vulnLeft = 0;               // remaining vulnerable window (also runs through 'stunned')
   let stunLeft = 0;
   let fishKnockV = 0;
   let pref = def.move.keepAway;   // preferred distance, re-rolled on each reposition
@@ -191,7 +192,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     emit(kind === 'quick' ? 'hit' : 'heavyHit', f.x, fishScreenY(), dmg);
     state.hitStop = F.hitStop;
     if (f.hp <= 0) { endFight('win'); return; }
-    if (f.mode === 'tell' || f.mode === 'attack') vulnLeft = Math.max(vulnLeft, FF.lungeRecovery);
+    if (f.mode === 'tell' || f.mode === 'attack') f.vulnLeft = Math.max(f.vulnLeft, FF.lungeRecovery);
     arc = null;
     hop = null;
     f.y = 0;
@@ -456,7 +457,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
           arc = null;
           f.y = 0;
           attackCd = def.attack!.cooldown;
-          vulnLeft = FF.lungeRecovery;
+          f.vulnLeft = FF.lungeRecovery;
           setFishMode('vulnerable');
         }
         break;
@@ -465,31 +466,31 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
         if (!arc || runArc(arc, dt)) {
           arc = null;
           f.y = 0;
-          vulnLeft = def.slip.recovery;
+          f.vulnLeft = def.slip.recovery;
           setFishMode('vulnerable');
         }
         break;
       }
       case 'stunned': {
-        vulnLeft -= dt;
+        f.vulnLeft = Math.max(0, f.vulnLeft - dt);
         stunLeft -= dt;
         f.x += fishKnockV * dt;
         fishKnockV *= Math.max(0, 1 - 10 * dt);
         if (stunLeft <= 0) {
           fishKnockV = 0;
-          if (vulnLeft > 0) { setFishMode('vulnerable'); }
+          if (f.vulnLeft > 0) { setFishMode('vulnerable'); }
           else setFishMode('roam');
         }
         break;
       }
       case 'vulnerable': {
-        vulnLeft -= dt;
+        f.vulnLeft -= dt;
         // Dazed: drifts slowly away with a wobble, so the samurai has to chase.
         const away = sign(f.x - s.x);
         f.x += away * def.move.speed * 0.25 * dt;
         f.y = 0;
-        if (vulnLeft <= 0) {
-          vulnLeft = 0;
+        if (f.vulnLeft <= 0) {
+          f.vulnLeft = 0;
           repoLeft = 0;
           setFishMode('roam');
         }

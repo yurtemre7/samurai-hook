@@ -5,45 +5,11 @@ import type { FishInstance, Game, Prompt, Scene, SceneParams } from '../types';
 import { drawPineIsland, drawSunsetSea, drawSunsetSky, drawTorii, makeSeigaiha } from '../ui/backdrop';
 import { drawOutlinedText } from '../ui/hud';
 
-// Named constants local to this scene (candidates for the manifest).
-const FISH_TOP_M = 3;                 // shallowest depth fish are spawned at
-const FISH_BEYOND_PX = 200;           // fish seen below the max depth (the tease)
-const FISH_MIN_GAP_PX = 40;           // vertical spacing when spawning a chunk
-const FISH_SPEED_VARIATION = 0.2;     // +-20% swim speed
-const FISH_BOB_PX = 5;
-const FISH_WRAP_MARGIN = 30;
-const UNREACHABLE_ALPHA = 0.35;
-const HOOK_ANCHOR_Y = 255;            // screen y the camera tries to keep the hook at
-const CAMERA_LERP = 8;
-const HOOK_STEER_MARGIN = 16;
-const BOAT_X = 380;
-const BOAT_BOB_PX = 3;
-const ROD_DX = 100;                   // rod tip (and idle hook x) relative to BOAT_X
-const ROD_DY = -84;                   // rod tip height relative to the water line
-const HOOK_IDLE_DY = -22;             // idle hook height relative to the water line
-const BUBBLE_COUNT = 22;
-const GAUGE_X = 898;
-const GAUGE_LANE_W = 10;
-const GAUGE_LANES = 3;
+const L = ocean.layout;
 // Underwater palette: the fight scene's dusk violets sinking into deep indigo.
 const DEEP_STOPS: Array<[number, [number, number, number]]> = [
   [0, [92, 74, 148]], [30, [50, 46, 116]], [80, [24, 22, 72]], [150, [7, 5, 24]],
 ];
-
-// Look of the surface (cosmetic only).
-const BOAT_DRAW_DX = -80;             // hull centre relative to BOAT_X (keeps the prow clear of the hook)
-const BOAT_KEEL_DEPTH = 8;            // px the keel sits below the water line
-const SAM_DX = 72;                    // samurai relative to the hull centre (at the stern)
-const SAM_SINK = 12;                  // px of the samurai hidden below the gunwale
-const SAM_HANDS = { x: 6, y: 13 };    // his hands on the hilt, source px from the frame centre
-const SAM_SRC_W = 190;                // source frame width of the samurai strip
-const SEA_BAND = 36;                  // px of far sea between the horizon and the water line
-const SUN_X = 660;
-const SUN_R = 46;
-const ISLAND_X = 64;
-const TORII_X = SUN_X + 84;
-const BANNER = { x: GAUGE_X - 46, y: 0, w: 36, h: 112 };
-const SEIGAIHA_R = 10;
 
 interface SwimFish {
   fish: FishInstance;
@@ -77,11 +43,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
   const PLAY_H = H - 30;
   const surfaceY = ocean.surfaceY;
   const ppm = ocean.pxPerMetre;
-  const rodX = BOAT_X + ROD_DX;
+  const rodX = L.boatX + L.rodDx;
 
   let mode: Mode = 'idle';
   let hx = rodX;
-  let hy = surfaceY + HOOK_IDLE_DY;
+  let hy = surfaceY + L.hookIdleDy;
   let camY = 0;
   let boatBob = 0;
   const swimmers: SwimFish[] = [];
@@ -93,31 +59,31 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
   const sy = (worldY: number): number => worldY - camY;
   const spriteW = (f: FishInstance): number => sprites[f.def.sprite]?.w ?? 64;
 
-  const seigaiha = makeSeigaiha(W - GAUGE_X + 2, PLAY_H, SEIGAIHA_R, '#241538', 'rgba(150,130,220,0.45)');
+  const seigaiha = makeSeigaiha(W - L.gaugeX + 2, PLAY_H, L.seigaihaR, '#241538', 'rgba(150,130,220,0.45)');
 
-  for (let i = 0; i < BUBBLE_COUNT; i++) {
+  for (let i = 0; i < L.bubbleCount; i++) {
     bubbles.push({ x: Math.random() * W, wy: Math.random() * H, speed: 20 + Math.random() * 30, r: 1.5 + Math.random() * 2.5 });
   }
 
   // ---------- Fish spawning ----------
 
   function spawnChunk(c: number): void {
-    const top = surfaceY + FISH_TOP_M * ppm + c * H;
-    const bottom = Math.min(top + H, limitY() + FISH_BEYOND_PX);
+    const top = surfaceY + L.fishTopM * ppm + c * H;
+    const bottom = Math.min(top + H, limitY() + L.fishBeyondPx);
     if (bottom <= top) return;
     const count = Math.max(1, Math.round(ocean.fishPerScreen * ((bottom - top) / H)));
     const used: number[] = [];
     for (let n = 0; n < count; n++) {
       for (let attempt = 0; attempt < 6; attempt++) {
         const y = lerp(top, bottom, Math.random());
-        if (used.some((u) => Math.abs(u - y) < FISH_MIN_GAP_PX)) continue;
+        if (used.some((u) => Math.abs(u - y) < L.fishMinGapPx)) continue;
         const f = game.state.pickFish(depthOf(y));
         if (!f) continue;
         used.push(y);
         const dir: 1 | -1 = Math.random() < 0.5 ? 1 : -1;
         swimmers.push({
           fish: f, x: Math.random() * W, baseY: y, dir,
-          speed: f.def.swimSpeed * (1 + (Math.random() * 2 - 1) * FISH_SPEED_VARIATION),
+          speed: f.def.swimSpeed * (1 + (Math.random() * 2 - 1) * L.fishSpeedVariation),
           phase: Math.random() * Math.PI * 2,
         });
         break;
@@ -126,8 +92,8 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
   }
 
   function ensureChunks(): void {
-    const first = Math.floor((camY - surfaceY - FISH_TOP_M * ppm) / H) - 1;
-    const last = Math.floor((camY + H - surfaceY - FISH_TOP_M * ppm) / H) + 1;
+    const first = Math.floor((camY - surfaceY - L.fishTopM * ppm) / H) - 1;
+    const last = Math.floor((camY + H - surfaceY - L.fishTopM * ppm) / H) + 1;
     for (let c = Math.max(0, first); c <= last; c++) {
       if (spawnedChunks.has(c)) continue;
       spawnedChunks.add(c);
@@ -135,20 +101,20 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
     }
   }
 
-  const fishY = (s: SwimFish): number => s.baseY + Math.sin(game.time * 1.5 + s.phase) * FISH_BOB_PX;
+  const fishY = (s: SwimFish): number => s.baseY + Math.sin(game.time * 1.5 + s.phase) * L.fishBobPx;
 
   // ---------- Update ----------
 
   function updateFish(dt: number): void {
     for (const s of swimmers) {
       s.x += s.dir * s.speed * dt;
-      const half = spriteW(s.fish) / 2 + FISH_WRAP_MARGIN;
+      const half = spriteW(s.fish) / 2 + L.fishWrapMargin;
       if ((s.dir === 1 && s.x > W + half) || (s.dir === -1 && s.x < -half)) {
         s.x = s.dir === 1 ? -half : W + half;
         const again = game.state.pickFish(depthOf(s.baseY));
         if (again) {
           s.fish = again;
-          s.speed = again.def.swimSpeed * (1 + (Math.random() * 2 - 1) * FISH_SPEED_VARIATION);
+          s.speed = again.def.swimSpeed * (1 + (Math.random() * 2 - 1) * L.fishSpeedVariation);
         }
       }
     }
@@ -187,7 +153,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
 
     update(dt) {
       const input = game.input;
-      boatBob = Math.sin(game.time * 1.6) * BOAT_BOB_PX;
+      boatBob = Math.sin(game.time * 1.6) * L.boatBobPx;
 
       if (mode === 'idle') {
         if (input.pressed('confirm')) {
@@ -199,7 +165,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         }
       } else {
         const h = ocean.hook;
-        hx = clamp(hx + input.moveX() * h.steerSpeed * dt, HOOK_STEER_MARGIN, W - HOOK_STEER_MARGIN);
+        hx = clamp(hx + input.moveX() * h.steerSpeed * dt, L.hookSteerMargin, W - L.hookSteerMargin);
         const my = input.moveY();
         if (mode === 'sinking') {
           if (input.pressed('confirm')) {
@@ -211,8 +177,8 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
           }
         } else {
           hy -= h.reelSpeed * dt;
-          if (hy <= surfaceY + HOOK_IDLE_DY) {
-            hy = surfaceY + HOOK_IDLE_DY;
+          if (hy <= surfaceY + L.hookIdleDy) {
+            hy = surfaceY + L.hookIdleDy;
             hx = rodX;
             mode = 'idle';
           }
@@ -222,8 +188,8 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       }
       if (mode === 'idle') updateFish(dt);
 
-      const target = Math.max(0, hy - HOOK_ANCHOR_Y);
-      camY += (target - camY) * Math.min(1, dt * CAMERA_LERP);
+      const target = Math.max(0, hy - L.hookAnchorY);
+      camY += (target - camY) * Math.min(1, dt * L.cameraLerp);
       updateBubbles(dt);
       ensureChunks();
     },
@@ -237,13 +203,13 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
 
       // Sunset sky and far sea, shared with the fight stage.
       if (waterY > 0) {
-        const horizon = waterY - SEA_BAND;
-        drawSunsetSky(ctx, t, { width: W, top: waterY - surfaceY, horizonY: horizon, sunX: SUN_X, sunR: SUN_R });
-        drawPineIsland(ctx, ISLAND_X, horizon, 1);
-        drawTorii(ctx, TORII_X, horizon, 24);
+        const horizon = waterY - L.seaBand;
+        drawSunsetSky(ctx, t, { width: W, top: waterY - surfaceY, horizonY: horizon, sunX: L.sunX, sunR: L.sunR });
+        drawPineIsland(ctx, L.islandX, horizon, 1);
+        drawTorii(ctx, L.toriiX, horizon, 24);
         drawSunsetSea(ctx, t, {
           width: W, horizonY: horizon, bottomY: waterY + 8, crestY: waterY - 8,
-          sunX: SUN_X, sunR: SUN_R, waveRows: 3, glintRows: 4,
+          sunX: L.sunX, sunR: L.sunR, waveRows: 3, glintRows: 4,
         });
       }
 
@@ -303,11 +269,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       ctx.restore();
 
       // Boat with the resting samurai, the rod, the line and the hook.
-      const boatX = BOAT_X + BOAT_DRAW_DX;
-      const boatCY = surfaceY + BOAT_KEEL_DEPTH - sprites.boat.h / 2 + 2 + boatBob;
+      const boatX = L.boatX + L.boatDrawDx;
+      const boatCY = surfaceY + L.boatKeelDepth - sprites.boat.h / 2 + 2 + boatBob;
       const gunwaleY = boatCY + sprites.boat.h / 2 - BOAT_GEOM.gunwaleFromBottom;
       const hands = drawBoat(ctx, boatX, boatCY, gunwaleY, waterY, t);
-      const rodTipY = sy(surfaceY + ROD_DY + boatBob);
+      const rodTipY = sy(surfaceY + L.rodDy + boatBob);
       if (sy(boatCY) > -160) drawRod(ctx, hands.x, sy(hands.y), rodX, rodTipY);
       ctx.save();
       ctx.strokeStyle = 'rgba(255,235,210,0.8)';
@@ -327,11 +293,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         const dim = s.baseY > lim;
         const movingLeft = s.dir === -1;
         game.assets.draw(ctx, s.fish.def.sprite, s.x, y, {
-          flipX: movingLeft, time: t, alpha: dim ? UNREACHABLE_ALPHA : 1,
+          flipX: movingLeft, time: t, alpha: dim ? L.unreachableAlpha : 1,
         });
         if (s.fish.tier > 0) {
           ctx.save();
-          ctx.globalAlpha = dim ? UNREACHABLE_ALPHA : 1;
+          ctx.globalAlpha = dim ? L.unreachableAlpha : 1;
           const ly = y - (sprites[s.fish.def.sprite]?.h ?? 40) / 2 - 10;
           drawOutlinedText(ctx, s.fish.name, s.x, ly, { size: 15, color: '#ffdd22' });
           ctx.restore();
@@ -367,7 +333,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         ctx.setLineDash([14, 10]);
         ctx.beginPath();
         ctx.moveTo(0, limScreen);
-        ctx.lineTo(GAUGE_X - 4, limScreen);
+        ctx.lineTo(L.gaugeX - 4, limScreen);
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
@@ -399,10 +365,10 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
   ): { x: number; y: number } {
     const def = sprites.boat;
     const sam = sprites.samuraiSit;
-    const k = sam.w / SAM_SRC_W;
-    const samX = boatX + SAM_DX;
-    const samCY = gunwaleY + SAM_SINK - sam.h / 2;
-    const hands = { x: samX + SAM_HANDS.x * k, y: samCY + SAM_HANDS.y * k };
+    const k = sam.w / L.samSrcW;
+    const samX = boatX + L.samDx;
+    const samCY = gunwaleY + L.samSink - sam.h / 2;
+    const hands = { x: samX + L.samHands.x * k, y: samCY + L.samHands.y * k };
     if (sy(boatCY) < -160 || sy(boatCY) > H + 120) return hands;
 
     // Soft broken reflection of the dark hull, and of the lantern, under the water line.
@@ -476,7 +442,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
 
   /** A nobori banner by the gauge with the hook's depth written down it. */
   function drawBanner(ctx: CanvasRenderingContext2D, depthM: number): void {
-    const { x, y, w, h } = BANNER;
+    const { x, y, w, h } = L.banner;
     ctx.save();
     ctx.fillStyle = '#1a0a05';
     ctx.fillRect(x - 6, y, 4, h + 10);          // pole
@@ -509,21 +475,21 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
     drawBanner(ctx, hookM);
     ctx.save();
     ctx.fillStyle = '#241538';
-    ctx.fillRect(GAUGE_X - 2, 0, W - GAUGE_X + 2, PLAY_H);
+    ctx.fillRect(L.gaugeX - 2, 0, W - L.gaugeX + 2, PLAY_H);
     ctx.beginPath();
-    ctx.rect(GAUGE_X - 2, 0, W - GAUGE_X + 2, PLAY_H);
+    ctx.rect(L.gaugeX - 2, 0, W - L.gaugeX + 2, PLAY_H);
     ctx.clip();
     if (seigaiha) {
-      const off = ((camY % SEIGAIHA_R) + SEIGAIHA_R) % SEIGAIHA_R;
-      ctx.drawImage(seigaiha, GAUGE_X - 2, -off - SEIGAIHA_R);
+      const off = ((camY % L.seigaihaR) + L.seigaihaR) % L.seigaihaR;
+      ctx.drawImage(seigaiha, L.gaugeX - 2, -off - L.seigaihaR);
     }
     ctx.fillStyle = '#1a0a0a';
-    ctx.fillRect(GAUGE_X - 2, 0, 2, PLAY_H);
+    ctx.fillRect(L.gaugeX - 2, 0, 2, PLAY_H);
 
     // Bands for unlocked fish, repeated per tier
     const labels: Array<[string, number, string]> = [];
     fishDefs.forEach((def, idx) => {
-      const lane = idx % GAUGE_LANES;
+      const lane = idx % L.gaugeLanes;
       const colour = sprites[def.sprite]?.placeholder.color ?? '#ccc';
       for (let k = 0; ; k++) {
         const a = def.depthMin + k * tiers.depth;
@@ -532,11 +498,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         if (b < viewTopM || a > viewBotM) continue;
         const y0 = sy(surfaceY + a * ppm);
         const y1 = sy(surfaceY + b * ppm);
-        const x = GAUGE_X + 2 + lane * GAUGE_LANE_W;
+        const x = L.gaugeX + 2 + lane * L.gaugeLaneW;
         ctx.fillStyle = '#1a0a0a';
-        ctx.fillRect(x - 1, y0 - 1, GAUGE_LANE_W + 1, y1 - y0 + 2);
+        ctx.fillRect(x - 1, y0 - 1, L.gaugeLaneW + 1, y1 - y0 + 2);
         ctx.fillStyle = colour;
-        ctx.fillRect(x, y0, GAUGE_LANE_W - 1, y1 - y0);
+        ctx.fillRect(x, y0, L.gaugeLaneW - 1, y1 - y0);
         labels.push([def.name.toUpperCase(), clamp((y0 + y1) / 2, 8, PLAY_H - 8), colour]);
       }
     });
@@ -545,11 +511,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
     const limS = sy(lim);
     if (limS < PLAY_H) {
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
-      ctx.fillRect(GAUGE_X - 2, Math.max(0, limS), W - GAUGE_X + 2, PLAY_H);
+      ctx.fillRect(L.gaugeX - 2, Math.max(0, limS), W - L.gaugeX + 2, PLAY_H);
     }
 
     // Ruler
-    const tickX = GAUGE_X + 2 + GAUGE_LANES * GAUGE_LANE_W + 2;
+    const tickX = L.gaugeX + 2 + L.gaugeLanes * L.gaugeLaneW + 2;
     for (let m = Math.max(0, Math.ceil(viewTopM / 10) * 10); m <= viewBotM; m += 10) {
       const y = sy(surfaceY + m * ppm);
       ctx.fillStyle = 'rgba(255,240,220,0.9)';
@@ -560,27 +526,27 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
     // Max marker
     if (limS > -10 && limS < PLAY_H + 10) {
       ctx.fillStyle = '#ff6b6b';
-      ctx.fillRect(GAUGE_X - 2, limS - 1, W - GAUGE_X + 2, 2);
+      ctx.fillRect(L.gaugeX - 2, limS - 1, W - L.gaugeX + 2, 2);
       drawOutlinedText(ctx, `MAX ${maxM}`, W - 3, limS - 9, { size: 11, align: 'right', color: '#ff7b6b' });
     }
 
     // Hook marker
     const hs = sy(hy);
     ctx.fillStyle = '#fff';
-    ctx.fillRect(GAUGE_X - 2, hs - 1, W - GAUGE_X + 2, 2);
+    ctx.fillRect(L.gaugeX - 2, hs - 1, W - L.gaugeX + 2, 2);
     ctx.restore();
 
     for (const [name, my, colour] of labels) {
-      drawOutlinedText(ctx, name, GAUGE_X - 6, my, { size: 11, align: 'right', color: colour });
+      drawOutlinedText(ctx, name, L.gaugeX - 6, my, { size: 11, align: 'right', color: colour });
     }
 
     const py = clamp(hs, 12, PLAY_H - 12);
     ctx.save();
     ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.moveTo(GAUGE_X - 3, py); ctx.lineTo(GAUGE_X - 10, py - 5); ctx.lineTo(GAUGE_X - 10, py + 5);
+    ctx.moveTo(L.gaugeX - 3, py); ctx.lineTo(L.gaugeX - 10, py - 5); ctx.lineTo(L.gaugeX - 10, py + 5);
     ctx.closePath(); ctx.fill();
     ctx.restore();
-    drawOutlinedText(ctx, `${hookM.toFixed(1)} M`, GAUGE_X - 13, py, { size: 17, align: 'right' });
+    drawOutlinedText(ctx, `${hookM.toFixed(1)} M`, L.gaugeX - 13, py, { size: 17, align: 'right' });
   }
 }

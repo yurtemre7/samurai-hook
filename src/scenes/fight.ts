@@ -25,10 +25,6 @@ const GHOST_COUNT = 5;
 const HP_LAG_DELAY = 0.35; // seconds before the white "damage taken" bar drains
 const HP_LAG_SPEED = 0.9;  // fraction of the bar per second
 const BAR = { w: 360, h: 22, y: 22, margin: 26 };
-const SAMURAI_LABEL = 'SAMURAI';
-const SAMURAI_SAFE_SUB = 'CANNOT BE HARMED BY THIS FISH';
-const DODGED_TEXT = 'DODGED!';
-const PUFF_TEXT = 'PUFF!';
 const DARK_LURE_RADIUS = 60;
 const DARK_ALPHA = 0.95;
 /** Extra px drawn around the world layer so shake and zoom never show an edge. */
@@ -117,7 +113,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
         look.blockFlash = 1;
         lag.samHold = HP_LAG_DELAY;
         break;
-      case 'dodged': fx.popup(DODGED_TEXT, e.x, e.y - 90, 30, '#5ad8ff'); break;
+      case 'dodged': fx.popup(text.dodged, e.x, e.y - 90, 30, '#5ad8ff'); break;
       case 'bounce':
         game.audio.play('block');
         fx.popup(text.bounce, e.x, e.y - 60, 44, '#ffe14a');
@@ -125,7 +121,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
         break;
       case 'puff':
         game.audio.play('splash');
-        fx.popup(PUFF_TEXT, e.x, e.y - 80, 32, '#ffe14a');
+        fx.popup(text.puff, e.x, e.y - 80, 32, '#ffe14a');
         fx.addShake(SHAKE.puff);
         break;
       case 'dash': game.audio.play('dash'); break;
@@ -149,17 +145,15 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
     lastFishX = f.x;
     look.fishVx += (vx - look.fishVx) * Math.min(1, dt * 12);
 
-    // Track the vulnerable window for the ring (the sim keeps it hidden).
+    // Track the length of the vulnerable window (the ring's full circle); the sim gives what is left.
     if (f.mode !== prevMode) {
-      if (f.mode === 'vulnerable' && prevMode === 'slip') look.vulnLeft = look.vulnTotal = fish.def.slip.recovery;
-      else if (f.mode === 'vulnerable' && prevMode === 'attack') look.vulnLeft = look.vulnTotal = F.fish.lungeRecovery;
+      if (f.mode === 'vulnerable' && prevMode === 'slip') look.vulnTotal = fish.def.slip.recovery;
+      else if (f.mode === 'vulnerable' && prevMode === 'attack') look.vulnTotal = F.fish.lungeRecovery;
       else if (f.mode === 'stunned' && (prevMode === 'tell' || prevMode === 'attack')) {
-        look.vulnLeft = Math.max(look.vulnLeft, F.fish.lungeRecovery);
-        look.vulnTotal = Math.max(look.vulnLeft, look.vulnTotal);
-      } else if (f.mode === 'roam') look.vulnLeft = 0;
+        look.vulnTotal = Math.max(f.vulnLeft, look.vulnTotal);
+      }
       prevMode = f.mode;
     }
-    if (f.mode === 'vulnerable' || f.mode === 'stunned') look.vulnLeft = Math.max(0, look.vulnLeft - dt);
 
     const tiltTarget = FISH_TILT_BY_MODE[f.mode];
     look.fishTilt += (tiltTarget - look.fishTilt) * Math.min(1, dt * 10);
@@ -266,7 +260,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
     const rx = W - BAR.margin - BAR.w;
     const samF = biter ? s.hp / s.maxHp : 1;
     drawHealthBar(ctx, lx, BAR.y, BAR.w, BAR.h, samF, {
-      label: SAMURAI_LABEL, sub: biter ? undefined : SAMURAI_SAFE_SUB, align: 'left',
+      label: text.samurai.label, sub: biter ? undefined : text.samurai.safeSub, align: 'left',
       color: biter ? undefined : '#7fd0ff',
     });
     if (biter) drawLagBar(ctx, lx, samF, lag.sam, true);

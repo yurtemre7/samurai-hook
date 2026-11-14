@@ -1,16 +1,11 @@
 import { drawPrompts } from '../input/prompts';
-import { text } from '../manifest';
+import { result as R, text } from '../manifest';
 import { drawSlamText, fill } from '../ui/hud';
 import type { Game, Scene, SceneParams } from '../types';
 import {
-  INK, PAPER, VERMILION, W, deck, duskSea, duskSky, hangingScroll, hanko, inkText, lantern, ryo, shadow, sunRays,
+  INK, PAPER, VERMILION, W, deck, duskSea, duskSky, hangingScroll, hanko, inkText, lantern, shadow, sunRays,
 } from './screens/paint';
 
-const LOCK = 0.5;
-const AUTO = 5;
-const GOLD_AT = 1.2;
-const COUNT_TIME = 0.8;
-const DROP_AT = 0.3;
 const GRAVITY = 1800;
 const GROUND = 290;
 const START_Y = -100;
@@ -23,10 +18,9 @@ const HORIZON = 262;
 const RAIL_Y = 372;
 const FLOOR_Y = 452;
 const SAM_SCALE = 1.6;
-const UNROLL = 0.22;
 
 function nigiriY(t: number): number {
-  const dt = Math.max(0, t - DROP_AT);
+  const dt = Math.max(0, t - R.dropAt);
   const fall = Math.sqrt(((GROUND - START_Y) * 2) / GRAVITY);
   if (dt < fall) return START_Y + 0.5 * GRAVITY * dt * dt;
   const tt = dt - fall;
@@ -55,8 +49,8 @@ export function createResultScene(game: Game, params: SceneParams['result']): Sc
     },
     update(dt) {
       t += dt;
-      if (outcome === 'win' && !coined && t >= GOLD_AT) { coined = true; game.audio.play('coin'); }
-      if ((t > LOCK && game.input.pressed('confirm')) || t >= AUTO) leave();
+      if (outcome === 'win' && !coined && t >= R.goldAt) { coined = true; game.audio.play('coin'); }
+      if ((t > R.lock && game.input.pressed('confirm')) || t >= R.auto) leave();
     },
     render(ctx) {
       if (outcome === 'win') {
@@ -68,13 +62,13 @@ export function createResultScene(game: Game, params: SceneParams['result']): Sc
         const landed = Math.max(0, Math.min(1, (ny - 200) / (GROUND + NIGIRI_Y_OFFSET - 200)));
         shadow(ctx, W / 2, TRAY_Y + 2, 40 + 50 * landed);
         game.assets.draw(ctx, 'nigiri', W / 2, ny, { scale: 2.5 });
-        if (t >= GOLD_AT) {
-          const k = Math.min(1, (t - GOLD_AT) / COUNT_TIME);
+        if (t >= R.goldAt) {
+          const k = Math.min(1, (t - R.goldAt) / R.countTime);
           drawReceipt(
-            ctx, t - GOLD_AT,
-            ryo(fill(text.win.sold, { gold: Math.round(goldEarned * k) })),
+            ctx, t - R.goldAt,
+            fill(text.win.sold, { gold: Math.round(goldEarned * k) }),
             fill(text.shop.gold, { gold: Math.round(before + goldEarned * k) }),
-            k >= 1 ? t - GOLD_AT - COUNT_TIME : -1,
+            k >= 1 ? t - R.goldAt - R.countTime : -1,
           );
         }
       } else if (outcome === 'timeout') {
@@ -272,7 +266,7 @@ function drawBannerScroll(
   const w = Math.min(900, Math.max(bw + 110, sw + 170));
   const top = 34;
   const h = 210;
-  const k = Math.min(1, t / UNROLL);
+  const k = Math.min(1, t / R.unroll);
   const ease = 1 - Math.pow(1 - k, 3);
   ctx.save();
   ctx.beginPath();
@@ -281,6 +275,6 @@ function drawBannerScroll(
   hangingScroll(ctx, W / 2, top, w, h, 8);
   ctx.restore();
   drawSlamText(ctx, banner, W / 2, 110, t, { size, color });
-  if (t > UNROLL) inkText(ctx, sub, W / 2, 200, 30, INK);
-  if (t > UNROLL + 0.25) hanko(ctx, W / 2 + w / 2 - 46, 196, 36, '無念', 0.9, 0.15);
+  if (t > R.unroll) inkText(ctx, sub, W / 2, 200, 30, INK);
+  if (t > R.unroll + 0.25) hanko(ctx, W / 2 + w / 2 - 46, 196, 36, '無念', 0.9, 0.15);
 }

@@ -6,6 +6,8 @@ export function assetUrl(src: string): string {
 }
 
 /** Loads sprite images from the manifest and draws them, or a placeholder if missing. */
+let scratch: HTMLCanvasElement | null = null;
+
 export function createAssets(defs: Record<string, SpriteDef>): Assets {
   const images = new Map<string, HTMLImageElement>();
 
@@ -21,7 +23,8 @@ export function createAssets(defs: Record<string, SpriteDef>): Assets {
     return Promise.all(jobs).then(() => undefined);
   }
 
-  function draw(ctx: CanvasRenderingContext2D, id: string, x: number, y: number, opts: DrawOpts = {}): void {
+  /** Draws the sprite straight onto ctx. A tint here fills the whole sprite rectangle, so only call it with a tint on a clean canvas. */
+  function paint(ctx: CanvasRenderingContext2D, id: string, x: number, y: number, opts: DrawOpts): void {
     const def = defs[id];
     if (!def) {
       drawPlaceholder(ctx, { src: null, w: 48, h: 48, placeholder: { shape: 'box', color: '#f0f', label: id } });
@@ -62,6 +65,29 @@ export function createAssets(defs: Record<string, SpriteDef>): Assets {
       ctx.fillStyle = opts.tint;
       ctx.fillRect(-def.w / 2, -def.h / 2, def.w, def.h);
     }
+    ctx.restore();
+  }
+
+  /**
+   * Draws the sprite centred on (x, y). A tint only colours the sprite's own
+   * pixels: the tinted sprite is drawn to a scratch canvas ('source-atop' there
+   * cannot touch what is behind it) and then blitted.
+   */
+  function draw(ctx: CanvasRenderingContext2D, id: string, x: number, y: number, opts: DrawOpts = {}): void {
+    if (!opts.tint) { paint(ctx, id, x, y, opts); return; }
+    const d = defs[id];
+    const size = Math.ceil(Math.max(d?.w ?? 64, d?.h ?? 64) * (opts.scale ?? 1) * 1.5) + 4;
+    if (!scratch) scratch = document.createElement('canvas');
+    if (scratch.width < size || scratch.height < size) { scratch.width = size; scratch.height = size; }
+    const s = scratch.getContext('2d')!;
+    s.setTransform(1, 0, 0, 1, 0, 0);
+    s.globalCompositeOperation = 'source-over';
+    s.globalAlpha = 1;
+    s.clearRect(0, 0, size, size);
+    paint(s, id, size / 2, size / 2, { ...opts, alpha: 1 });
+    ctx.save();
+    ctx.globalAlpha *= opts.alpha ?? 1;
+    ctx.drawImage(scratch, 0, 0, size, size, x - size / 2, y - size / 2, size, size);
     ctx.restore();
   }
 
