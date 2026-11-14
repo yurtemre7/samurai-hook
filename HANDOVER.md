@@ -3,7 +3,7 @@
 Shared source of truth for project status. Read this before starting any
 work, and update it in the same commit as the work.
 
-Last updated: 2026-11-14 (restyle and GitHub Pages)
+Last updated: 2026-11-14 (session 2: cleanups merged; keyboard, announcer and placeholder fish in progress)
 
 ## Current state
 
@@ -14,8 +14,11 @@ Last updated: 2026-11-14 (restyle and GitHub Pages)
   (`.github/workflows/pages.yml`). Asset paths go through `assetUrl()` in
   `src/core/assets.ts`, so the build works under the `/<repo>/` sub-path.
 - How to run: `npm install`, then `npm run dev` and open
-  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (47 tests).
+  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (49 tests).
   README.md has controls and how to add a fish or swap an asset.
+- Keep the working copy on a normal local disk. Inside a cloud drive mount
+  (pCloud Drive was tried) `npm install` fails: the drive cannot create
+  symlinks or run the build tool's binary.
 - Demo shortcuts: F2 (or `?start=demo`) starts with gold and upgrades from
   `demoStart` in the manifest; F4 (or `?start=fresh`) wipes the save.
   Keyboard only; there is no gamepad shortcut.
@@ -61,39 +64,58 @@ Last updated: 2026-11-14 (restyle and GitHub Pages)
 
 ## In progress
 
-Nothing. All branches are merged.
+Session 2 (2026-11-14), run by Rhaveen with a Claude orchestrator and
+subagents. **Please do not edit the files listed here on another branch until
+these land, or the work will collide.** Each pull request updates this file.
+
+| Work | Branch | Files it touches | Why |
+|---|---|---|---|
+| Keyboard fix | `fix/keyboard-wasd` | `src/input/*`, `Prompt` in `src/types.ts`, the prompt lines in `src/scenes/fight.ts` and `shop.ts`, `tests/input.test.ts` | A player on Chrome on a Mac reported that W A S D did nothing in the fight while the arrow keys and J K L E worked. Cause not confirmed; see Known issues. |
+| Recorded announcer | (not pushed yet) | `src/core/audio.ts`, new `src/core/announcer.ts`, `voice` in `src/manifest.ts`, `AudioSys.announce` in `src/types.ts`, announce calls in `cutscene.ts`, `fight.ts`, `result.ts`, new `public/assets/voice/`, `CREDITS.md` | The player found the speech-synthesis announcer robotic. Goes to the team as a pull request for review, because the robot voice was a deliberate joke. Music and other sounds are not changed. |
+| Swordfish and anglerfish sprites, glowing lure | (not pushed yet) | `public/assets/fish/`, the two sprite lines in `src/manifest.ts`, the darkness code in `src/scenes/fight.ts`, `CREDITS.md` | Replace the two placeholder fish. The lure glow is visual only. |
+
+Planned next, not started: boat, hook and nigiri sprites; a bundled Japanese
+font.
+
+Open requests to the repository owner: rename the repo to `samurai-hook`
+(issue #19); a playable preview link on every pull request (issue #21).
 
 ## Pending (in priority order)
 
 1. **Play it as a human, on keyboard and a real controller**, and note what
-   feels off. All tuning so far comes from a scripted bot.
+   feels off. All tuning so far comes from a scripted bot. Rhaveen has no
+   controller, so **the controller test needs another teammate**.
 2. **Listen to the sounds.** They were picked by file name. Swap any that do
    not fit in the `sounds` block of `src/manifest.ts`; find CC0 files for
    `bite`, `lose`, `hooked`, `uiDeny`.
-3. **Missing art:** side-view swordfish, anglerfish, boat, hook, nigiri
-   (CC0 or CC-BY only). The squid sprite is a cute stand-in; a more
-   monstrous one would fit better. Kenney.nl blocked scripted downloads, so
-   a person can fetch its Pirate Pack (boat, hook) by hand.
-4. **Tuning** in `src/manifest.ts`: run `npm test` to print the balance
+3. **Missing art:** swordfish and anglerfish are in progress (see above).
+   Still to do: boat, hook, nigiri (CC0 or CC-BY only). Kenney.nl blocks
+   scripted downloads, but its packs are also on OpenGameArt, where a plain
+   download works.
+4. **Redraw all nine fish in one style.** The current sprites are tiny (the
+   sardine is 14x8 px) and come from three artists. Deferred by Rhaveen until
+   the placeholders are finished.
+5. **Tuning** in `src/manifest.ts`: run `npm test` to print the balance
    table (bot results per fish and damage level). Known soft spots: early
    fish die in 1 or 2 hits from damage level 6; bite damage does not grow
    with tier; a straight hook drop can miss every fish.
-5. `text.win.sold` in the manifest still ends in "G" (now fixed to RYO; the result-screen swap is harmless and can go)
-   swaps it to RYO when drawing. Change the string and drop the workaround.
-
 6. Kanji in the shop, banners and gauge rely on a Japanese system font
-   (checked on macOS only). Consider bundling a free font.
-7. **Move scene constants into the manifest:** the four texts at the top of
-   `src/scenes/fight.ts` (`SAMURAI_SAFE_SUB`, `DODGED_TEXT`, `PUFF_TEXT`,
-   `SAMURAI_LABEL`), cutscene and result timings, and the ocean layout
-   constants at the top of `src/scenes/ocean.ts`.
-8. `tint` in `src/core/assets.ts` colours the sprite's whole rectangle, not
-   just its pixels. The fight scene works around it with a scratch canvas;
-   fix it in `assets.ts` and remove the workaround.
-9. Add `vulnLeft` to the fight state so the "OPEN" ring is exact instead of
-   estimated from tuning.
-10. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
-   and reel-speed upgrades, parry, a boss, a bestiary.
+   (checked on macOS only). Bundling a free font is planned.
+7. The "OPEN" ring's full circle still uses an estimated window length
+   (`look.vulnTotal` in `src/scenes/fight.ts`); only the remaining time is
+   exact. Add `vulnTotal` to the fight state to finish it.
+8. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
+   and reel-speed upgrades, parry, a boss, a bestiary. **Electric eel**
+   (suggested by Rhaveen, 2026-11-14): the eel charges up with a visible
+   crackle, then shocks a circle around itself; back off or dash to avoid it,
+   blocking does not help. Not built; the eel stays slippery for now.
+
+Done in session 2 (PR #20, merged): the old items 5, 7, 8 and 9. The result
+screen's G-to-RYO swap is gone; the fight texts, cutscene and result timings
+and the ocean layout live in `src/manifest.ts` (`text`, `cutscene`, `result`,
+`ocean.layout`); `tint` colours only the sprite's own pixels inside
+`assets.draw`; `fish.vulnLeft` is part of the fight state. No gameplay number
+changed and the bot balance table is identical.
 
 ## Decisions
 
@@ -152,6 +174,19 @@ Changes after team feedback during the build (2026-11-14):
   blocking absorbs 65% instead of 80% so biters matter, longer timers for
   the eel and anglerfish, squid health 550 to 480.
 
+Session 2 decisions by Rhaveen (2026-11-14):
+
+- Slippery fish stay harmless, as designed. The pufferfish keeps its stun and
+  bounce with no damage; the eel stays slippery (electric eel is a later
+  idea); the squid sprite stays as it is.
+- The anglerfish's lure should glow through the darkness (visual only).
+- Finish the placeholder fish first; redraw the whole roster later.
+- The fight music stays. Only the announcer voice is being replaced, and that
+  change is for the team to review.
+- Pull requests are reviewed by teammates before merging, except
+  behaviour-preserving cleanups, documentation and the placeholder-fish
+  sprites, which the orchestrator may merge after its own checks.
+
 ## Known issues and open questions
 
 - The first commit (plan and scaffold) went straight to `main` because an
@@ -162,3 +197,15 @@ Changes after team feedback during the build (2026-11-14):
 - `npm test` prints a large balance table; that is intended.
 - Open question for the team: is the stand-in squid acceptable, or should
   it stay a placeholder until a better sprite is found?
+- **W A S D in the fight (reported by Rhaveen, Chrome on a Mac):** A and D
+  did not move the samurai while the arrow keys and J K L E worked. Not
+  reproduced by the orchestrator. Two unconfirmed causes are both being
+  fixed on `fix/keyboard-wasd`: macOS press-and-hold interrupting a held
+  letter (the arrows were the only keys the game claimed with
+  `preventDefault`), and a non-QWERTY layout. `?debug=keys` on that branch
+  shows what the browser reports.
+- Pull requests have no automated checks; tests run only on pushes to
+  `main`, as part of the deploy.
+- Scripted browser checks cannot watch fights in motion when the browser
+  pane is hidden, because a hidden page pauses its game loop. PR #20 was
+  checked by tests, the balance table and still screenshots only.
