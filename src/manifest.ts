@@ -19,9 +19,11 @@ export const sprites: Record<string, SpriteDef> = {
   samuraiHeavy: { src: 'assets/samurai/heavy.png', w: 456, h: 173, facing: 'right', frames: 6, fps: 10, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
   samuraiBlock: { src: 'assets/samurai/block.png', w: 456, h: 173, facing: 'right', placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
   samuraiHurt:  { src: 'assets/samurai/hurt.png', w: 456, h: 173, facing: 'right', frames: 4, fps: 12, placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
-  // In the boat he is a simple seated figure; the detailed fighter appears only in duels.
-  samuraiSit:   { src: null, w: 64, h: 72, placeholder: { shape: 'fisher', color: '#2c3e63' } },
-  boat:         { src: null, w: 200, h: 56, placeholder: { shape: 'boat', color: '#8e5a2b' } },
+  // In the boat he is the same fighter, resting: his idle strip at a slow breath,
+  // drawn smaller with his legs hidden behind the gunwale (see src/scenes/ocean.ts).
+  samuraiSit:   { src: 'assets/samurai/idle.png', w: 266, h: 101, facing: 'right', frames: 8, fps: 4, placeholder: { shape: 'samurai', color: '#c0392b' } },
+  // Code-drawn old wooden wasen (src/core/assets.ts), prow facing right.
+  boat:         { src: null, w: 280, h: 110, placeholder: { shape: 'boat', color: '#7a4a26' } },
   hook:         { src: null, w: 20, h: 28,  placeholder: { shape: 'hook', color: '#dfe6e9' } },
   nigiri:       { src: null, w: 72, h: 48,  placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
 
