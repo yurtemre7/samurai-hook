@@ -13,13 +13,13 @@ const fishSprite = (color: string, label: string, w = 96, h = 64): SpriteDef => 
 });
 
 export const sprites: Record<string, SpriteDef> = {
-  samuraiIdle:  { src: 'assets/samurai/idle.png', w: 118, h: 115, facing: 'left', placeholder: { shape: 'samurai', color: '#c0392b' } },
-  samuraiWalk:  { src: 'assets/samurai/walk.png', w: 118, h: 115, facing: 'left', frames: 8, fps: 12, placeholder: { shape: 'samurai', color: '#c0392b' } },
-  samuraiQuick: { src: 'assets/samurai/quick.png', w: 118, h: 115, facing: 'left', frames: 8, fps: 24, placeholder: { shape: 'samurai', color: '#e74c3c', label: 'SLASH' } },
-  samuraiHeavy: { src: 'assets/samurai/heavy.png', w: 118, h: 115, facing: 'left', frames: 8, fps: 14, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
-  samuraiBlock: { src: 'assets/samurai/block.png', w: 118, h: 115, facing: 'left', placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
-  samuraiHurt:  { src: 'assets/samurai/hurt.png', w: 118, h: 115, facing: 'left', placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
-  samuraiSit:   { src: 'assets/samurai/idle.png', w: 74, h: 72, facing: 'left',  placeholder: { shape: 'samurai', color: '#c0392b' } },
+  samuraiIdle:  { src: 'assets/samurai/idle.png', w: 456, h: 173, facing: 'right', frames: 8, fps: 8, placeholder: { shape: 'samurai', color: '#c0392b' } },
+  samuraiWalk:  { src: 'assets/samurai/walk.png', w: 456, h: 173, facing: 'right', frames: 8, fps: 12, placeholder: { shape: 'samurai', color: '#c0392b' } },
+  samuraiQuick: { src: 'assets/samurai/quick.png', w: 456, h: 173, facing: 'right', frames: 6, fps: 18, placeholder: { shape: 'samurai', color: '#e74c3c', label: 'SLASH' } },
+  samuraiHeavy: { src: 'assets/samurai/heavy.png', w: 456, h: 173, facing: 'right', frames: 6, fps: 10, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
+  samuraiBlock: { src: 'assets/samurai/block.png', w: 456, h: 173, facing: 'right', placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
+  samuraiHurt:  { src: 'assets/samurai/hurt.png', w: 456, h: 173, facing: 'right', frames: 4, fps: 12, placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
+  samuraiSit:   { src: 'assets/samurai/idle.png', w: 285, h: 108, facing: 'right', frames: 8, fps: 8, placeholder: { shape: 'samurai', color: '#c0392b' } },
   boat:         { src: null, w: 200, h: 56, placeholder: { shape: 'boat', color: '#8e5a2b' } },
   hook:         { src: null, w: 20, h: 28,  placeholder: { shape: 'hook', color: '#dfe6e9' } },
   nigiri:       { src: null, w: 72, h: 48,  placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
@@ -28,11 +28,11 @@ export const sprites: Record<string, SpriteDef> = {
   'fish.mackerel':   { ...fishSprite('#4f8fba', 'MACKEREL', 78, 42), src: 'assets/fish/mackerel.png', facing: 'left' },
   'fish.piranha':    { ...fishSprite('#d35454', 'PIRANHA', 70, 60), src: 'assets/fish/piranha.png', facing: 'left' },
   'fish.eel':        { ...fishSprite('#6b8e23', 'EEL', 144, 40), src: 'assets/fish/eel.png', facing: 'left' },
-  'fish.pufferfish': fishSprite('#e6c34a', 'PUFFER', 80, 72),
+  'fish.pufferfish': { ...fishSprite('#e6c34a', 'PUFFER', 81, 69), src: 'assets/fish/pufferfish.png', facing: 'left' },
   'fish.swordfish':  fishSprite('#5d6d9e', 'SWORDFISH', 150, 56),
   'fish.anglerfish': fishSprite('#5b3a6b', 'ANGLER', 110, 88),
   'fish.shark':      { ...fishSprite('#7d8a97', 'SHARK', 188, 60), src: 'assets/fish/shark.png', facing: 'left' },
-  'fish.squid':      fishSprite('#c0567a', 'SQUID', 150, 130),
+  'fish.squid':      { ...fishSprite('#c0567a', 'SQUID', 140, 118), src: 'assets/fish/squid.png', facing: 'left' },
 };
 
 // ---------- Sounds ----------
