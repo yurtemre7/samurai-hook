@@ -9,7 +9,7 @@ Last updated: 2026-11-14 (session 2: cleanups merged; keyboard, announcer and pl
 
 - **First playable build is on `main`.** The whole loop works: ocean, hook-up
   cutscene, fight, result, shop, repeat, with saving.
-- **Play it online:** https://yurtemre7.github.io/team-1-game-samurai-hook/
+- **Play it online:** https://yurtemre7.github.io/samurai-hook/
   Every push to `main` runs the tests, builds and redeploys
   (`.github/workflows/pages.yml`). Asset paths go through `assetUrl()` in
   `src/core/assets.ts`, so the build works under the `/<repo>/` sub-path.
@@ -77,8 +77,14 @@ these land, or the work will collide.** Each pull request updates this file.
 Planned next, not started: boat, hook and nigiri sprites; a bundled Japanese
 font.
 
-Open requests to the repository owner: rename the repo to `samurai-hook`
-(issue #19); a playable preview link on every pull request (issue #21).
+The repository was renamed to `samurai-hook` on 2026-11-15 (issue #19), so
+the play link is now https://yurtemre7.github.io/samurai-hook/ and the old
+Pages address is a 404. GitHub redirects the old repository URL, but it is
+cleaner to run `git remote set-url origin
+https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
+
+Open request to the repository owner: a playable preview link on every pull
+request (issue #21).
 
 ## Pending (in priority order)
 

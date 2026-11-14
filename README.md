@@ -1,7 +1,7 @@
 # SamuraiHook
 
-**Play it now: https://yurtemre7.github.io/team-1-game-samurai-hook/**
-([start with progress](https://yurtemre7.github.io/team-1-game-samurai-hook/?start=demo))
+**Play it now: https://yurtemre7.github.io/samurai-hook/**
+([start with progress](https://yurtemre7.github.io/samurai-hook/?start=demo))
 
 A deadly serious samurai goes fishing, and every fish he hooks wants a duel.
 Bait the slip, land the heavy slash, and turn your rival into nigiri before
