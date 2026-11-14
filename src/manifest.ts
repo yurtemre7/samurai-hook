@@ -13,25 +13,25 @@ const fishSprite = (color: string, label: string, w = 96, h = 64): SpriteDef => 
 });
 
 export const sprites: Record<string, SpriteDef> = {
-  samuraiIdle:  { src: null, w: 96, h: 128, placeholder: { shape: 'samurai', color: '#c0392b' } },
-  samuraiWalk:  { src: null, w: 96, h: 128, placeholder: { shape: 'samurai', color: '#c0392b' } },
-  samuraiQuick: { src: null, w: 96, h: 128, placeholder: { shape: 'samurai', color: '#e74c3c', label: 'SLASH' } },
-  samuraiHeavy: { src: null, w: 96, h: 128, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
-  samuraiBlock: { src: null, w: 96, h: 128, placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
-  samuraiHurt:  { src: null, w: 96, h: 128, placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
-  samuraiSit:   { src: null, w: 64, h: 72,  placeholder: { shape: 'samurai', color: '#c0392b' } },
+  samuraiIdle:  { src: 'assets/samurai/idle.png', w: 118, h: 115, facing: 'left', placeholder: { shape: 'samurai', color: '#c0392b' } },
+  samuraiWalk:  { src: 'assets/samurai/walk.png', w: 118, h: 115, facing: 'left', frames: 8, fps: 12, placeholder: { shape: 'samurai', color: '#c0392b' } },
+  samuraiQuick: { src: 'assets/samurai/quick.png', w: 118, h: 115, facing: 'left', frames: 8, fps: 24, placeholder: { shape: 'samurai', color: '#e74c3c', label: 'SLASH' } },
+  samuraiHeavy: { src: 'assets/samurai/heavy.png', w: 118, h: 115, facing: 'left', frames: 8, fps: 14, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
+  samuraiBlock: { src: 'assets/samurai/block.png', w: 118, h: 115, facing: 'left', placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
+  samuraiHurt:  { src: 'assets/samurai/hurt.png', w: 118, h: 115, facing: 'left', placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
+  samuraiSit:   { src: 'assets/samurai/idle.png', w: 74, h: 72, facing: 'left',  placeholder: { shape: 'samurai', color: '#c0392b' } },
   boat:         { src: null, w: 200, h: 56, placeholder: { shape: 'boat', color: '#8e5a2b' } },
   hook:         { src: null, w: 20, h: 28,  placeholder: { shape: 'hook', color: '#dfe6e9' } },
   nigiri:       { src: null, w: 72, h: 48,  placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
 
-  'fish.sardine':    fishSprite('#b8c6d1', 'SARDINE', 64, 32),
-  'fish.mackerel':   fishSprite('#4f8fba', 'MACKEREL', 84, 40),
-  'fish.piranha':    fishSprite('#d35454', 'PIRANHA', 72, 56),
-  'fish.eel':        fishSprite('#6b8e23', 'EEL', 128, 32),
+  'fish.sardine':    { ...fishSprite('#b8c6d1', 'SARDINE', 56, 32), src: 'assets/fish/sardine.png', facing: 'left' },
+  'fish.mackerel':   { ...fishSprite('#4f8fba', 'MACKEREL', 78, 42), src: 'assets/fish/mackerel.png', facing: 'left' },
+  'fish.piranha':    { ...fishSprite('#d35454', 'PIRANHA', 70, 60), src: 'assets/fish/piranha.png', facing: 'left' },
+  'fish.eel':        { ...fishSprite('#6b8e23', 'EEL', 144, 40), src: 'assets/fish/eel.png', facing: 'left' },
   'fish.pufferfish': fishSprite('#e6c34a', 'PUFFER', 80, 72),
   'fish.swordfish':  fishSprite('#5d6d9e', 'SWORDFISH', 150, 56),
   'fish.anglerfish': fishSprite('#5b3a6b', 'ANGLER', 110, 88),
-  'fish.shark':      fishSprite('#7d8a97', 'SHARK', 180, 84),
+  'fish.shark':      { ...fishSprite('#7d8a97', 'SHARK', 188, 60), src: 'assets/fish/shark.png', facing: 'left' },
   'fish.squid':      fishSprite('#c0567a', 'SQUID', 150, 130),
 };
 
@@ -43,30 +43,30 @@ const blip = (freq: number, dur: number, wave: OscillatorType = 'square'): Sound
 });
 
 export const sounds: Record<string, SoundDef> = {
-  uiMove:    blip(660, 0.04),
-  uiConfirm: blip(880, 0.08),
+  uiMove:    { ...blip(660, 0.04), src: 'assets/sfx/ui_move.ogg', volume: 0.5 },
+  uiConfirm: { ...blip(880, 0.08), src: 'assets/sfx/ui_confirm.ogg', volume: 0.5 },
   uiDeny:    blip(160, 0.12, 'sawtooth'),
-  splash:    blip(220, 0.18, 'triangle'),
+  splash:    { ...blip(220, 0.18, 'triangle'), src: 'assets/sfx/splash.ogg', volume: 0.7 },
   hooked:    blip(520, 0.2, 'triangle'),
-  gong:      blip(110, 0.9, 'sine'),
-  slash:     blip(900, 0.06, 'sawtooth'),
-  heavy:     blip(300, 0.16, 'sawtooth'),
-  hit:       blip(180, 0.1, 'square'),
-  slip:      blip(1200, 0.12, 'sine'),
-  tell:      blip(1500, 0.08, 'square'),
+  gong:      { ...blip(110, 0.9, 'sine'), src: 'assets/sfx/gong.ogg', volume: 0.7 },
+  slash:     { ...blip(900, 0.06, 'sawtooth'), src: 'assets/sfx/slash.ogg', volume: 0.6 },
+  heavy:     { ...blip(300, 0.16, 'sawtooth'), src: 'assets/sfx/heavy.ogg', volume: 0.7 },
+  hit:       { ...blip(180, 0.1, 'square'), src: 'assets/sfx/hit.ogg', volume: 0.7 },
+  slip:      { ...blip(1200, 0.12, 'sine'), src: 'assets/sfx/slip.wav', volume: 0.5 },
+  tell:      { ...blip(1500, 0.08, 'square'), src: 'assets/sfx/tell.ogg', volume: 0.4 },
   bite:      blip(90, 0.2, 'sawtooth'),
-  block:     blip(400, 0.07, 'triangle'),
-  dash:      blip(700, 0.07, 'sine'),
-  ko:        blip(70, 0.6, 'sawtooth'),
+  block:     { ...blip(400, 0.07, 'triangle'), src: 'assets/sfx/block.ogg', volume: 0.6 },
+  dash:      { ...blip(700, 0.07, 'sine'), src: 'assets/sfx/dash.wav', volume: 0.5 },
+  ko:        { ...blip(70, 0.6, 'sawtooth'), src: 'assets/sfx/ko.ogg', volume: 0.8 },
   lose:      blip(140, 0.7, 'triangle'),
-  coin:      blip(1320, 0.14, 'square'),
-  buy:       blip(990, 0.2, 'triangle'),
+  coin:      { ...blip(1320, 0.14, 'square'), src: 'assets/sfx/coin.wav', volume: 0.5 },
+  buy:       { ...blip(990, 0.2, 'triangle'), src: 'assets/sfx/buy.ogg', volume: 0.6 },
 };
 
 /** Looping music tracks. src: null = no music. */
 export const music: Record<string, { src: string | null; volume: number }> = {
-  ocean: { src: null, volume: 0.35 },
-  fight: { src: null, volume: 0.4 },
+  ocean: { src: 'assets/music/ocean.mp3', volume: 0.35 },
+  fight: { src: 'assets/music/fight.ogg', volume: 0.4 },
 };
 
 /** Spoken announcer (browser speech synthesis). */
