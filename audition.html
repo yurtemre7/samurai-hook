@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SamuraiHook announcer audition</title>
+<style>
+  body { font: 15px/1.4 system-ui, sans-serif; margin: 24px; color: #222; background: #fafafa; }
+  h1 { font-size: 20px; } h2 { font-size: 16px; margin-top: 28px; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
+  th { background: #eee; font-weight: 600; }
+  th.row { text-align: left; }
+  td button { width: 100%; min-width: 64px; padding: 6px 4px; cursor: pointer; }
+  .pack { background: #dde6f5; }
+  .note { max-width: 70ch; color: #555; }
+  .sliders { display: grid; grid-template-columns: 11em 14em 5em; gap: 4px 10px; align-items: center; max-width: 40em; }
+  .sliders label { text-align: right; }
+  textarea { width: 40em; height: 11em; font: 13px ui-monospace, monospace; }
+  .controls > * { margin-right: 10px; }
+</style>
+</head>
+<body>
+<h1>Announcer audition</h1>
+<p class="note">Dev-only page (not part of the game or the production build). Click anywhere once to
+unlock audio, then press any cell. Every cell uses the same code the game uses. "Old robot voice" is the
+browser speech synthesis with the current manifest settings. Pick a column, or tune the sliders below and
+copy the numbers.</p>
+<div id="grid"></div>
+<h2>Custom settings</h2>
+<div class="controls">
+  <label>Clips from <select id="customPack"></select></label>
+  <label>Start from preset <select id="customPreset"></select></label>
+</div>
+<p></p>
+<div class="sliders" id="sliders"></div>
+<p>The "Custom" column in the grid above uses these values.</p>
+<p><button id="copy">Copy settings</button> <span id="copied"></span></p>
+<textarea id="readout" readonly></textarea>
+<script type="module" src="/src/audition.ts"></script>
+</body>
+</html>

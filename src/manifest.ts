@@ -3,6 +3,7 @@
 // See README.md ("Add a fish", "Swap an asset").
 
 import type { FishDef, SoundDef, SpriteDef, UpgradeDef } from './types';
+import type { VoiceFx } from './core/announcer';
 
 // ---------- Sprites ----------
 // src: null means "draw the placeholder". Put files under public/assets and
@@ -73,16 +74,21 @@ export const music: Record<string, { src: string | null; volume: number }> = {
 };
 
 /**
- * Announcer. Recorded clips (`clips`) are played when present and loaded;
- * otherwise the line in `text.announce` is spoken by browser speech synthesis
- * (rate/pitch/volume below), so the game is never silent. Round clips: the
- * game looks up `round<N>` first, then the generic `round`, then speech.
- * Clips: Kenney "Voiceover Pack: Fighter" (CC0), see CREDITS.md. No clip
- * exists for `buy` ("Upgrade!"), which stays synthesised.
+ * Announcer. Recorded clips are played when present and loaded; otherwise the
+ * line in `text.announce` is spoken by browser speech synthesis (rate / pitch /
+ * volume below), so the game is never silent. Round clips: the game looks up
+ * `round<N>` first, then the generic `round`, then speech. No clip exists for
+ * `buy` ("Upgrade!"), which stays synthesised. Clips are credited in
+ * CREDITS.md.
+ *
+ * `packs` are the available clip sets; `pack` picks the active one (`clips`).
+ * Clips are played through a Web Audio effect chain set by the active preset
+ * (`presets`, `preset`); see `VoiceFx` in src/core/announcer.ts. `clean` is
+ * neutral: the clip is played unprocessed.
  */
-export const voice = {
-  enabled: true, rate: 1.15, pitch: 0.6, volume: 1,
-  clips: {
+const voicePacks: Record<string, Record<string, string>> = {
+  // Kenney "Voiceover Pack: Fighter" (CC0): one soft voice.
+  fighter: {
     fight: 'assets/voice/fight.ogg',
     win: 'assets/voice/win.ogg',
     perfect: 'assets/voice/perfect.ogg',
@@ -94,11 +100,37 @@ export const voice = {
     round3: 'assets/voice/round3.ogg',
     round4: 'assets/voice/round4.ogg',
     round5: 'assets/voice/round5.ogg',
-  } as Record<string, string>,
+  },
+  // Kenney "Voiceover Pack #1" (CC0), male voice: no numbered rounds, no
+  // perfect or K.O. line (perfect uses "congratulations").
+  pack1: {
+    fight: 'assets/voice/pack1/fight.ogg',
+    win: 'assets/voice/pack1/win.ogg',
+    perfect: 'assets/voice/pack1/perfect.ogg',
+    timeout: 'assets/voice/pack1/timeout.ogg',
+    ko: 'assets/voice/pack1/ko.ogg',
+    round: 'assets/voice/pack1/round.ogg',
+  },
+};
+const voicePack = 'fighter';
+export const voice = {
+  enabled: true, rate: 1.15, pitch: 0.6, volume: 1,
+  packs: voicePacks,
+  pack: voicePack,
+  clips: voicePacks[voicePack] as Record<string, string>,
   /** After a recorded "Round N" clip, also speak the fish name with the
    *  synthesised voice? OPEN QUESTION, awaiting the owner's choice: false
    *  drops it (the name is on screen anyway), true says it after the clip. */
   speakFishName: false,
+  /** Effect presets for recorded clips. The active one is `preset`, awaiting
+   *  the owner's choice (audition at /audition.html on the dev server). */
+  presets: {
+    clean: {},
+    deep: { rate: 0.85, lowBoost: 8, highCut: 9000 },
+    arena: { rate: 0.85, lowBoost: 8, highCut: 8000, drive: 0.1, reverb: 0.35, reverbSeconds: 2.2, echo: 0.2, echoSeconds: 0.22 },
+    demon: { rate: 0.72, lowBoost: 10, highCut: 5000, drive: 0.5, reverb: 0.3, reverbSeconds: 1.6 },
+  } as Record<string, Partial<VoiceFx>>,
+  preset: 'clean',
 };
 
 // ---------- Fish ----------
