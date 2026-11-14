@@ -1,14 +1,60 @@
 # SamuraiHook
 
-A small, funny 2D browser game. A deadly serious samurai sits in a boat,
-lowers a hook, and duels whatever fish he catches, one on one, like a
-classic fighting game. Catch, fight, sell, upgrade, go deeper, repeat.
+**Play it now: https://yurtemre7.github.io/team-1-game-samurai-hook/**
+([start with progress](https://yurtemre7.github.io/team-1-game-samurai-hook/?start=demo))
 
-Status, open tasks and decisions live in [HANDOVER.md](HANDOVER.md). The
-design is in [docs/DESIGN.md](docs/DESIGN.md). Asset licences are in
-[CREDITS.md](CREDITS.md).
+A deadly serious samurai goes fishing, and every fish he hooks wants a duel.
+Bait the slip, land the heavy slash, and turn your rival into nigiri before
+the timer runs out. Sell the catch, sharpen the katana, and drop the line
+deeper for bigger, angrier fish.
 
-Play it online: https://yurtemre7.github.io/team-1-game-samurai-hook/
+| Fishing | Duel | Shop |
+|---|---|---|
+| ![Ocean scene](docs/screenshots/ocean.jpg) | ![Fight scene](docs/screenshots/fight.jpg) | ![Shop](docs/screenshots/shop.jpg) |
+
+A small single-player 2D browser game: an endless loop of catch, fight,
+sell, upgrade, go deeper. One round takes under a minute. Built with
+TypeScript, Vite and Canvas 2D, with no game engine.
+
+## Features
+
+- **Fishing:** steer the hook past small fry to reach valuable fish deeper
+  down. Touching any fish starts a duel.
+- **Duels staged like a fighting game:** health bars, a round timer, quick
+  and heavy slashes, block and dash-dodge, hit-stop and screen shake, and a
+  spoken announcer ("ROUND ONE! IWASHI!").
+- **Two kinds of fish:** slippery fish dodge and race the clock; biters also
+  attack, with wind-up tells you can block or dodge.
+- **Shop:** three endless upgrade tracks (blade damage, line depth,
+  reputation for more ryo per fish) with rising prices.
+- **Endless depth:** below 170 m the roster repeats in tougher, richer tiers
+  (Elder, Sensei, Shogun, Yokai, Kami).
+- **Keyboard and gamepad** at any time, with on-screen prompts that switch
+  glyphs to the device you used last. No settings menu.
+- **Progress is saved** in the browser.
+- **Everything is swappable:** all art, sound, text and tuning live in one
+  file, `src/manifest.ts`.
+
+## The fish
+
+| Fish | Species | Type | Depth | Special |
+|---|---|---|---|---|
+| Iwashi | Sardine | slippery | 5-25 m | the tutorial fish |
+| Saba | Mackerel | slippery | 15-40 m | weaves |
+| Pirania | Piranha | biter | 30-55 m | fast, weak bites |
+| Unagi | Eel | slippery | 40-70 m | slips almost everything |
+| Fugu | Pufferfish | slippery | 55-90 m | inflates and bounces you back |
+| Kajiki | Swordfish | biter | 75-110 m | long fencing lunges |
+| Anko | Anglerfish | slippery | 95-130 m | fights in the dark |
+| Hojiro | Great white shark | biter | 115-150 m | slow, very heavy bite |
+| Daioika | Giant squid | slippery | 140-170 m | squirts ink over the screen |
+
+Project documents:
+
+- [HANDOVER.md](HANDOVER.md): current status, open tasks, decisions and
+  known issues. Read it before starting any work.
+- [docs/DESIGN.md](docs/DESIGN.md): the game design and architecture.
+- [CREDITS.md](CREDITS.md): every asset with its source, author and licence.
 
 ## Run it
 
@@ -29,7 +75,7 @@ Other commands:
 | Command | What it does |
 |---|---|
 | `npm run typecheck` | TypeScript check |
-| `npm test` | Unit tests (fight logic, economy, input) |
+| `npm test` | Unit tests (fight logic, economy, input); also prints a balance table |
 | `npm run build` | Production build into `dist/` |
 
 ## Controls
@@ -45,6 +91,7 @@ the screen switch to whichever you used last.
 | Heavy slash | K | Y |
 | Defend: hold to block, tap with a direction to dash-dodge | L or Shift | B or RB |
 | Shop (at the surface) | E | Y |
+| Shop: choose an upgrade | A D or left/right arrows | left stick or d-pad |
 
 ### Demo shortcuts
 
@@ -62,7 +109,7 @@ the screen switch to whichever you used last.
    Bait the slip with a quick slash, then land heavy slashes.
 3. Some fish bite. Watch for the wind-up, then block or dash.
 4. Beaten fish are sold automatically. Spend the gold in the shop on a
-   better blade, a longer line, or a better reputation (more gold).
+   better blade, a longer line, or a better reputation (more ryo).
 
 ## Change the game without touching game logic
 
@@ -129,6 +176,29 @@ Jump straight to a scene while developing:
 `http://localhost:5173/?scene=fight&fish=shark&tier=0`
 (`scene` is one of ocean, cutscene, fight, result, shop). `game` is
 available in the browser console, for example `game.state.reset()`.
+
+## Deployment
+
+Every push to `main` runs the tests, builds, and deploys to GitHub Pages
+through `.github/workflows/pages.yml`. The build uses a relative base path,
+so it works under `/<repo>/` or at a domain root.
+
+## Known gaps
+
+- Swordfish, anglerfish and nigiri are still simple code-drawn placeholders;
+  the squid sprite is a friendly stand-in.
+- Four sounds (bite, lose, hook-up, shop "denied") are synthesised blips.
+- Kanji use the system's Japanese font.
+- Not yet confirmed on a real controller.
+
+See HANDOVER.md for the full list.
+
+## Credits and licence of assets
+
+Art, sound and music are CC0 or CC-BY from OpenGameArt and itch.io authors,
+including LuizMelo ("Martial Hero", the samurai). Every file is listed with
+its source and licence in [CREDITS.md](CREDITS.md). Built at a hackathon by
+Team 1 with Claude Code.
 
 ## Contributing
 
