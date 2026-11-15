@@ -1,6 +1,8 @@
 # SamuraiHook: design and build plan
 
-Status: **awaiting team approval** (2026-11-14). No game code exists yet.
+Status: **approved on 2026-11-14 and built**; the game is on `main`. This is
+the original plan with later design changes written in. HANDOVER.md has the
+current state; `src/manifest.ts` has the current numbers.
 
 ## 1. What we are building and why
 
@@ -86,13 +88,13 @@ Samurai moves:
 | Walk | left / right |
 | Quick slash | fast, short reach, low damage |
 | Heavy slash | 0.45 s wind-up, long reach, triple damage |
-| Block | hold defend: takes 20% damage, cannot move |
+| Block | hold defend: takes 35% damage, cannot move |
 | Dash-dodge | tap defend with a direction: short dash, brief invulnerability |
 | Jump | W / up / Space (pad: A or up): ground-only, 120 px high, 0.7 s in the air, air steering; no slash, block or dash in the air |
 | Crouch | hold S / down: halves the hurtbox (120 to 60 px) |
 
-Jump and crouch were added after the first build (branch
-`feat/jump-crouch-dodge`, pending team review). They exist to answer the
+Jump and crouch were added after the first build (PR #36, merged on
+2026-11-15). They exist to answer the
 **specials** below; the 4-button duel is otherwise unchanged.
 
 Every fish has a **slip**: when a strike would land,
@@ -208,6 +210,8 @@ layout is fixed).
    per-frame collision and animation, where canvas is simpler.
 
 ## 5. Architecture
+
+This was the planned layout. The layout as built is in README.md ("Code layout").
 
 ```
 index.html
