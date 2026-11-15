@@ -1,0 +1,31 @@
+name: CI
+
+# Runs on every pull request (forks included) and on every push to main.
+# The job name `test` is the status check to require in the main-branch
+# ruleset, so a pull request cannot be merged while it fails. See HANDOVER.md
+# ("Deployment and pull request previews", CI).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test            # all Vitest suites (fight sim, input, state, audio logic, ...)
+      - run: npm run build       # also type-checks (tsc --noEmit) before bundling

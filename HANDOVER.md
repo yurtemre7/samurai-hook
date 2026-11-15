@@ -80,7 +80,7 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
 
 ## In progress
 
-### Jump, crouch and dodge-only specials (branch `feat/jump-crouch-dodge`, for team review)
+### Jump, crouch and dodge-only specials (merged in #36)
 
 - **Controls:** in the fight, W / up / Space (pad: A or up) jumps, S / down
   (pad: down) held crouches. No new `Action`: `up`, `confirm` and `down` are
@@ -170,6 +170,22 @@ cleaner to run `git remote set-url origin
 https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
 
 ### Deployment and pull request previews
+
+- **CI (`.github/workflows/ci.yml`):** every pull request (forks included)
+  and every push to `main` runs `npm ci`, `npm test` and `npm run build`
+  (which type-checks) in one job named `test`. Added 2026-11-15 because
+  several people now work on the game at once.
+- **Making it a merge gate needs the repository owner** (only an admin can):
+  Settings, Rules, Rulesets, New ruleset, New branch ruleset. Name it
+  `main`, Enforcement: Active, Target branches: add the default branch.
+  Tick "Require a pull request before merging" and "Require status checks
+  to pass"; under the latter tick "Require branches to be up to date before
+  merging" and add the check `test` (it appears in the list after the
+  workflow has run once). Save. Until this exists the check is advisory:
+  a red `test` does not block the merge button. As of 2026-11-15 `main` has
+  no protection at all.
+- `preview.yml` also runs the tests, but only for branches in this repo and
+  only to publish the preview; `ci.yml` is the check to rely on.
 
 - **Every pull request is tested, built and published** by
   `.github/workflows/preview.yml` to the `gh-pages` branch under
