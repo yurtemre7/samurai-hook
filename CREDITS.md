@@ -5,6 +5,7 @@ asset's own OpenGameArt page (the "License(s)" field) on 2026-11-14; the Kenney
 RPG sounds pack also ships a `license.txt` stating CC0. Credit is not required
 but given here anyway. Sprites were cropped, scaled and cut into strips; audio
 was copied unchanged except `music/ocean.mp3` (trimmed to 60 s, fades, MP3 64 kbps).
+Every Ogg file also ships as an AAC `.m4a` re-encode (macOS `afconvert`, 2026-11-15) for browsers that cannot play Ogg; the audio is otherwise unchanged, and all of these files are CC0.
 
 | File(s) | What | Source | Author | Licence | Checked |
 |---|---|---|---|---|---|

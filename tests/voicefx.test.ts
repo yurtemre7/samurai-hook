@@ -3,7 +3,7 @@ import { NEUTRAL_FX, dbToGain, driveCurve, isNeutralFx, makeImpulse, resolveFx, 
 import { text, voice } from '../src/manifest';
 
 // Files on disk under public/assets/voice (keys only; nothing is loaded).
-const voiceFiles = new Set(Object.keys(import.meta.glob('../public/assets/voice/**/*.{ogg,wav}')).map((k) => k.replace('../public/', '')));
+const voiceFiles = new Set(Object.keys(import.meta.glob('../public/assets/voice/**/*.{ogg,m4a,wav}')).map((k) => k.replace('../public/', '')));
 const fxOf = (k: string) => resolveLineFx(voice.presets, voice.preset, voice.linePresets, k);
 
 describe('voice fx', () => {
@@ -90,7 +90,9 @@ describe('voice fx', () => {
   });
   it('manifest: every clip in the manifest exists, and no unreferenced clip is shipped', () => {
     const paths = Object.values(voice.clips);
-    for (const path of paths) expect(voiceFiles.has(path), path).toBe(true);
-    expect([...voiceFiles].sort()).toEqual([...paths].sort());
+    // Each .ogg clip also ships as an AAC .m4a twin (for browsers that cannot play Ogg).
+    const expected = paths.flatMap((p) => (p.endsWith('.ogg') ? [p, p.replace(/\.ogg$/, '.m4a')] : [p]));
+    for (const path of expected) expect(voiceFiles.has(path), path).toBe(true);
+    expect([...voiceFiles].sort()).toEqual([...expected].sort());
   });
 });

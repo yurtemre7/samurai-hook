@@ -335,6 +335,12 @@ Session 2 decisions by Rhaveen (2026-11-14):
 
 ## Known issues and open questions
 
+- iPhone visitors reported no "Round 1" announcer and no fight music (fishing
+  music, an MP3, worked). Probable cause: every silent file is Ogg Vorbis,
+  which older iOS WebKit (all iOS browsers) cannot play. Fix: each `.ogg` also
+  ships as an AAC `.m4a`, and `src/core/audioFormat.ts` picks one via
+  `canPlayType`. Unconfirmed until tested on that phone. New audio must be
+  added as both `.ogg` and `.m4a`: `afconvert -f m4af -d aac in.ogg in.m4a`.
 - The first commit (plan and scaffold) went straight to `main` because an
   empty repo gives pull requests no base. Everything after it goes through
   PRs.
