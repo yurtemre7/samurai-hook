@@ -35,6 +35,11 @@ const PROMPTS: Prompt[] = [
   { action: 'quick', label: 'QUICK' },
   { action: 'heavy', label: 'HEAVY' },
   { action: 'defend', label: 'BLOCK / +DIR DASH' },
+  { action: 'settings', label: 'PAUSE' },
+];
+const PAUSED_PROMPTS: Prompt[] = [
+  { action: 'settings', label: 'RESUME' },
+  { action: 'confirm', label: 'RESUME' },
 ];
 
 const pick = <T>(a: readonly T[]): T => a[Math.floor(Math.random() * a.length)];
@@ -58,6 +63,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
   let fightT = -1; // seconds since "FIGHT!", -1 before
   let overT = -1;  // seconds since the fight ended, -1 before
   let left = false;
+  let paused = false;
   let worldStep = 0;
   let lastFishX = state.fish.x;
   const lag = { sam: 1, fish: 1, samHold: 0, fishHold: 0 };
@@ -307,6 +313,15 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
     },
 
     update(dt) {
+      // Pause (the settings action: Esc / Tab, pad Select, touch PAUSE): everything stops, timer
+      // included. Confirm also resumes; that press is used up here, so it does not jump.
+      if (state.phase !== 'over') {
+        if (game.input.pressed('settings') || (paused && game.input.pressed('confirm'))) {
+          paused = !paused;
+          game.audio.play('uiMove');
+        }
+        if (paused) { look.rt += dt; return; }
+      }
       t += dt;
       look.rt += dt;
       fx.update(dt);
@@ -386,7 +401,14 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       fx.drawFlashes(ctx, W, H);
       drawHud(ctx);
       drawBanners(ctx);
-      drawPrompts(ctx, game.input, PROMPTS);
+      if (paused) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(8,6,20,0.6)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.restore();
+        drawOutlinedText(ctx, 'PAUSED', W / 2, 220, { size: 84, color: '#ffdd22' });
+      }
+      drawPrompts(ctx, game.input, paused ? PAUSED_PROMPTS : PROMPTS);
     },
   };
 }

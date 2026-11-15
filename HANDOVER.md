@@ -152,7 +152,15 @@ block merging.
     them): left/right dash, up jumps (one press of `up`), down crouches
     (holds `down` until the finger lifts). Rhaveen: all controls should work
     by touch, not only by buttons.
-  - **tap to slash (fights only, branch `feat/touch-tap-slash`):** a touch on
+  - **fight pause (branch `feat/fight-pause`):** the settings action (Esc /
+    Tab, pad Select, a touch PAUSE button in SHOP's top-right spot, fights
+    only) pauses a fight: the sim, timer and animations stop, the screen dims
+    and shows PAUSED. Settings again or confirm (Space / Enter / A) resumes;
+    that press is used up, so resuming does not jump. Music keeps playing.
+    Done in `src/scenes/fight.ts` (no sim change). Checked in the browser on
+    the keyboard (timer and fish frozen, Space resumes without a jump); the
+    touch button only by a unit test (the hidden browser pane froze the loop).
+  - **tap to slash (fights only, merged #57):** a touch on
     the play area that never leaves the 8 px dead zone and is not a swipe is
     a slash: lifted before `LONG_PRESS_MS` (350 ms) = QUICK on release, held
     still that long = HEAVY at once, while the finger is still down
