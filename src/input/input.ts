@@ -33,11 +33,14 @@ export function createInput(target: Window = window): Input {
     // Composition/Dead/Process events are still mapped by their `code` (the core ignores `key` then).
     // Repeats re-assert the held state; the core's pressed() edge only fires on a real up->down.
     if (!mod && (NO_SCROLL.has(e.code) || actionsForKey(e.code, e.key).length > 0)) e.preventDefault();
-    debug?.log('down', e, core.keyDown(e.code, e.key));
+    // Call the core first: `debug?.log(..., core.keyDown())` would skip keyDown when debug is off.
+    const acts = core.keyDown(e.code, e.key);
+    debug?.log('down', e, acts);
   });
   // Keyup is never filtered: it releases by code whatever was activated on keydown.
   target.addEventListener('keyup', (e) => {
-    debug?.log('up', e, core.keyUp(e.code, e.key));
+    const acts = core.keyUp(e.code, e.key);
+    debug?.log('up', e, acts);
   });
   target.addEventListener('blur', () => core.clearKeys());
 
