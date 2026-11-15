@@ -53,27 +53,61 @@ export interface VoiceFx {
   echo: number;
   /** Echo delay in seconds. */
   echoSeconds: number;
+  /** Echo feedback 0 to 0.85: 0 = one slap, higher = repeating echoes. */
+  echoFeedback: number;
+  /** Presence: peak gain at 3 kHz in dB (0 = off). Makes the voice cut through. */
+  presence: number;
+  /** Output trim in dB before the limiter (0 = off). Positive = louder and
+   *  more squashed; the limiter keeps it from clipping. */
+  gain: number;
+  /** Second copy of the clip played at the same time, at rate x layerRate
+   *  (e.g. 0.65 = most of an octave lower). Only used when layerGain > 0. */
+  layerRate: number;
+  /** Level of the second copy, 0 to 1 (0 = off). */
+  layerGain: number;
 }
 
 export const NEUTRAL_FX: VoiceFx = {
   rate: 1, drive: 0, lowBoost: 0, highCut: 20000,
   reverb: 0, reverbSeconds: 1.5, echo: 0, echoSeconds: 0.2,
+  echoFeedback: 0, presence: 0, gain: 0, layerRate: 1, layerGain: 0,
 };
+
+/** A preset name from the manifest, or inline fx values. */
+export type FxChoice = string | Partial<VoiceFx>;
 
 /** Merge a (possibly partial) preset over the neutral values. */
 export function resolveFx(
   presets: Record<string, Partial<VoiceFx>>,
-  name: string,
+  choice: FxChoice,
   overrides: Partial<VoiceFx> = {},
 ): VoiceFx {
-  return { ...NEUTRAL_FX, ...(presets[name] ?? {}), ...overrides };
+  const base = typeof choice === 'string' ? (presets[choice] ?? {}) : choice;
+  return { ...NEUTRAL_FX, ...base, ...overrides };
+}
+
+/** Effects for one announce line: `linePresets[key]` when set, else the
+ *  default. A round line ('round', any number) uses key 'round'. */
+export function resolveLineFx(
+  presets: Record<string, Partial<VoiceFx>>,
+  defaultChoice: FxChoice,
+  linePresets: Record<string, FxChoice> | undefined,
+  key: string | undefined,
+): VoiceFx {
+  const line = key !== undefined ? linePresets?.[key] : undefined;
+  return resolveFx(presets, line ?? defaultChoice);
+}
+
+/** Decibels to a linear gain factor. */
+export function dbToGain(db: number): number {
+  return Math.pow(10, db / 20);
 }
 
 /** True when the settings would not change the clip (the chain is bypassed
  *  entirely, so the output is the clip itself). */
 export function isNeutralFx(fx: VoiceFx): boolean {
   return fx.rate === 1 && fx.drive <= 0 && fx.lowBoost === 0 && fx.highCut >= 20000
-    && fx.reverb <= 0 && fx.echo <= 0;
+    && fx.reverb <= 0 && fx.echo <= 0 && fx.presence === 0 && fx.gain === 0 && fx.layerGain <= 0;
 }
 
 /** Soft-clipping curve for a WaveShaperNode. drive 0 is the identity. */

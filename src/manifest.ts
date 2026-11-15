@@ -3,7 +3,7 @@
 // See README.md ("Add a fish", "Swap an asset").
 
 import type { FishDef, SoundDef, SpriteDef, UpgradeDef } from './types';
-import type { VoiceFx } from './core/announcer';
+import type { FxChoice, VoiceFx } from './core/announcer';
 
 // ---------- Fonts ----------
 // Kanji use a bundled font (subset to the characters the game draws) so they
@@ -98,9 +98,11 @@ export const music: Record<string, { src: string | null; volume: number }> = {
  * CREDITS.md.
  *
  * `packs` are the available clip sets; `pack` picks the active one (`clips`).
- * Clips are played through a Web Audio effect chain set by the active preset
- * (`presets`, `preset`); see `VoiceFx` in src/core/announcer.ts. `clean` is
- * neutral: the clip is played unprocessed.
+ * Clips are played through a Web Audio effect chain; see `VoiceFx` in
+ * src/core/announcer.ts for every setting. `preset` is the treatment for all
+ * lines; `linePresets` overrides it per line key (fight, win, perfect,
+ * timeout, ko, round), with either a preset name or inline fx values.
+ * `clean` is neutral: the clip is played unprocessed.
  */
 const voicePacks: Record<string, Record<string, string>> = {
   // Kenney "Voiceover Pack: Fighter" (CC0): one soft voice.
@@ -138,15 +140,40 @@ export const voice = {
    *  synthesised voice? OPEN QUESTION, awaiting the owner's choice: false
    *  drops it (the name is on screen anyway), true says it after the clip. */
   speakFishName: false,
-  /** Effect presets for recorded clips. The active one is `preset`, awaiting
-   *  the owner's choice (audition at /audition.html on the dev server). */
+  /** Effect presets for recorded clips (audition them at /audition.html on
+   *  the dev server). */
   presets: {
     clean: {},
     deep: { rate: 0.85, lowBoost: 8, highCut: 9000 },
     arena: { rate: 0.85, lowBoost: 8, highCut: 8000, drive: 0.1, reverb: 0.35, reverbSeconds: 2.2, echo: 0.2, echoSeconds: 0.22 },
     demon: { rate: 0.72, lowBoost: 10, highCut: 5000, drive: 0.5, reverb: 0.3, reverbSeconds: 1.6 },
+    // More energetic treatments, made for the "Fight" line.
+    // Loud and urgent: barely lowered, pushed hard into the limiter, bright slap.
+    hype: { rate: 0.92, gain: 9, presence: 6, drive: 0.25, echo: 0.25, echoSeconds: 0.09 },
+    // Shouted, gritty growl: heavy distortion, short room.
+    roar: { rate: 0.8, drive: 0.85, lowBoost: 8, highCut: 6500, reverb: 0.18, reverbSeconds: 0.7, gain: 3 },
+    // Two voices at once: the clip plus a copy most of an octave lower.
+    titan: { rate: 0.95, layerRate: 0.65, layerGain: 0.7, lowBoost: 5, reverb: 0.3, reverbSeconds: 1.8, gain: 3 },
+    // Deep, huge hall, repeating echo ("FIGHT... ight... ight").
+    stadium: { rate: 0.82, lowBoost: 8, highCut: 8000, reverb: 0.5, reverbSeconds: 3.2, echo: 0.5, echoSeconds: 0.32, echoFeedback: 0.55, gain: 2 },
+    // demon pushed further: more drive, a touch faster, slap echo, louder.
+    demonPlus: { rate: 0.78, lowBoost: 10, highCut: 6000, drive: 0.75, reverb: 0.3, reverbSeconds: 1.6, echo: 0.22, echoSeconds: 0.12, gain: 4 },
   } as Record<string, Partial<VoiceFx>>,
-  preset: 'clean',
+  /** Owner's choice (2026-11-15): Kenney Fighter pack, `deep` for every line. */
+  preset: 'deep' as FxChoice,
+  /** Per-line overrides. The Fight treatment is STILL BEING CHOSEN: `demon`
+   *  is the owner's favourite so far; more options are on the audition page. */
+  linePresets: { fight: 'demon' } as Record<string, FxChoice>,
+  /** Audition only (not used by the game): other recordings of the word
+   *  "fight", all CC-BY, credited in CREDITS.md. Remove the ones not chosen. */
+  fightCandidates: {
+    'Wozniak, take 1 (male)': 'assets/voice/extra/wozniak-fight1.wav',
+    'Wozniak, take 2 (male)': 'assets/voice/extra/wozniak-fight2.wav',
+    'Alba MacKenna, raw': 'assets/voice/extra/alba-fight.wav',
+    'Alba MacKenna, with her own FX': 'assets/voice/extra/alba-fight-fx.wav',
+    'Aimee Smith (female)': 'assets/voice/extra/aimee-fight.wav',
+    'qubodup (FPS announcer)': 'assets/voice/extra/qubodup-fight.wav',
+  } as Record<string, string>,
 };
 
 // ---------- Fish ----------

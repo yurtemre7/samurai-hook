@@ -1,19 +1,20 @@
 import type { AudioSys, SoundDef } from '../types';
 import { assetUrl } from './assets';
-import { planAnnounce, resolveFx, type AnnounceRequest, type VoiceFx } from './announcer';
+import { planAnnounce, resolveLineFx, type AnnounceRequest, type FxChoice, type VoiceFx } from './announcer';
 import { playThroughFx, type VoicePlayback } from './voicefx';
 
 interface MusicDef { src: string | null; volume: number }
 interface VoiceDef {
   enabled: boolean; rate: number; pitch: number; volume: number;
   clips: Record<string, string>; speakFishName: boolean;
-  presets: Record<string, Partial<VoiceFx>>; preset: string;
+  presets: Record<string, Partial<VoiceFx>>; preset: FxChoice;
+  linePresets?: Record<string, FxChoice>;
 }
 
 /** AudioSys plus a way to swap the announcer's clip set and effects at
  *  runtime (used by the audition page; the game itself never calls it). */
 export interface AudioSysEx extends AudioSys {
-  setVoice(opts: { clips?: Record<string, string>; fx?: VoiceFx }): void;
+  setVoice(opts: { clips?: Record<string, string>; preset?: FxChoice; linePresets?: Record<string, FxChoice> }): void;
 }
 
 /** Plays manifest sounds. Missing files fall back to a synthesised blip. */
@@ -33,7 +34,8 @@ export function createAudio(
   // line), decoded to AudioBuffers once audio is unlocked, and played through
   // the effect chain in voicefx.ts. `voiceBroken` holds clip paths that failed.
   let activeClips = voice.clips;
-  let activeFx = resolveFx(voice.presets, voice.preset);
+  let activePreset: FxChoice = voice.preset;
+  let activeLinePresets: Record<string, FxChoice> = voice.linePresets ?? {};
   const voiceBroken = new Set<string>();
   const fetched = new Map<string, Promise<ArrayBuffer | null>>();
   const decoded = new Map<string, Promise<AudioBuffer | null>>();
@@ -148,7 +150,7 @@ export function createAudio(
       const plan = planAnnounce(req, line, usable, voice.speakFishName);
       if (!plan.clip || !ctx) { if (plan.speech) speak(plan.speech); return; }
       const url = plan.clip;
-      const fx = activeFx;
+      const fx = resolveLineFx(voice.presets, activePreset, activeLinePresets, req?.key);
       const context = ctx;
       void loadBuffer(url).then((buf) => {
         if (token !== voiceToken) return; // a newer line took over
@@ -163,7 +165,8 @@ export function createAudio(
     },
     setVoice(opts) {
       if (opts.clips) activeClips = opts.clips;
-      if (opts.fx) activeFx = opts.fx;
+      if (opts.preset !== undefined) activePreset = opts.preset;
+      if (opts.linePresets) activeLinePresets = opts.linePresets;
     },
   };
 }
