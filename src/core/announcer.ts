@@ -129,3 +129,15 @@ export function makeImpulse(seconds: number, sampleRate: number, rng: () => numb
   for (let i = 0; i < n; i++) out[i] = (rng() * 2 - 1) * Math.pow(1 - i / n, 3);
   return out;
 }
+
+/**
+ * Seconds of near-silence at the start of a clip (first sample louder than `threshold`), minus a small
+ * margin so the attack is not clipped. The announcer starts each clip there: some recordings begin with
+ * 60-150 ms of silence, which the deep treatments stretch further and which made lines feel late.
+ */
+export function leadInSeconds(samples: ArrayLike<number>, sampleRate: number, threshold = 0.02, marginS = 0.01): number {
+  let i = 0;
+  while (i < samples.length && Math.abs(samples[i]) < threshold) i++;
+  if (i >= samples.length || !(sampleRate > 0)) return 0;
+  return Math.max(0, i / sampleRate - marginS);
+}

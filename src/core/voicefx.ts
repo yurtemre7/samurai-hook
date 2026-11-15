@@ -1,4 +1,15 @@
-import { dbToGain, driveCurve, isNeutralFx, makeImpulse, type VoiceFx } from './announcer';
+import { dbToGain, driveCurve, isNeutralFx, leadInSeconds, makeImpulse, type VoiceFx } from './announcer';
+
+/** Lead-in silence per decoded clip, computed once. */
+const leadCache = new WeakMap<AudioBuffer, number>();
+function leadIn(buffer: AudioBuffer): number {
+  let v = leadCache.get(buffer);
+  if (v === undefined) {
+    v = buffer.numberOfChannels > 0 ? leadInSeconds(buffer.getChannelData(0), buffer.sampleRate) : 0;
+    leadCache.set(buffer, v);
+  }
+  return v;
+}
 
 export interface VoicePlayback {
   /** Cut the line off now (short fade, so there is no click). */
@@ -112,7 +123,9 @@ export function playThroughFx(
   const last = sources.reduce((a, b) => (b.playbackRate.value < a.playbackRate.value ? b : a));
   last.onended = () => { if (!stopped) onEnded(); };
   const when = ctx.currentTime;
-  for (const s of sources) s.start(when);
+  // Skip the recording's silent lead-in so the word starts now (offset is in buffer time).
+  const offset = leadIn(buffer);
+  for (const s of sources) s.start(when, offset);
 
   return {
     stop() {

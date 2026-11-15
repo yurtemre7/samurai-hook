@@ -666,6 +666,18 @@ Session 2 decisions by Rhaveen (2026-11-15):
 
 ## Known issues and open questions
 
+- **Announcer felt late on an iPhone (Rhaveen, 2026-11-15):** "Round one"
+  and "Fight" came after the matching banners. The code started each clip
+  immediately (measured 2-3 ms), but the recordings begin with silence
+  (about 60 ms before "Round one", 150 ms before "Fight"), and the `deep`
+  and `demonPlus` treatments slow playback, stretching that to about 70 and
+  190 ms. Fix (`fix/announcer-delay`): each clip now starts at its first
+  audible sample (`leadInSeconds` in `src/core/announcer.ts`, applied in
+  `playThroughFx`). Whatever delay remains on a phone is the device's audio
+  output latency, much larger over Bluetooth headphones; `?debug=perf` now
+  shows it (`latency N ms`) and the time from a line being asked for to it
+  starting (`voice delay N ms`).
+
 - **iPhone audio (fixed, 2026-11-15):** "Round 1" and the fight music were
   silent on an iPhone because they were Ogg files (#42 added `.m4a` twins).
   Right after that merge they were silent again on the live site: the new

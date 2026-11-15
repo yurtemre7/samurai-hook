@@ -43,6 +43,8 @@ export function createAudio(
   let musicHeld = false; // fight pause: the music stays where it is until released
   let unlocked = false;
   let musicFailed = 0;
+  /** ms from announce() to the clip starting, for ?debug=perf (waiting on a decode shows up here). */
+  let lastVoiceDelay = -1;
   // Announcer: clips are fetched (starting now, so they are ready by the first
   // line), decoded to AudioBuffers once audio is unlocked, and played through
   // the effect chain in voicefx.ts. `voiceBroken` holds clip paths that failed.
@@ -179,7 +181,9 @@ export function createAudio(
       const sTotal = Object.values(sounds).filter((d) => d.src).length;
       let vReady = 0;
       for (const p of Object.values(voice.clips)) if (ready.has(p)) vReady += 1;
-      return `audio ${ogg} ctx ${ctx ? ctx.state : 'none'} voice ${vReady}/${vTotal} sfx ${sfxBuffers.size}/${sTotal}` +
+      const lat = ctx ? Math.round(((ctx as AudioContext & { outputLatency?: number }).outputLatency ?? ctx.baseLatency ?? 0) * 1000) : 0;
+      return `audio ${ogg} ctx ${ctx ? ctx.state : 'none'} latency ${lat} ms voice delay ${lastVoiceDelay < 0 ? '-' : `${Math.round(lastVoiceDelay)} ms`}\n` +
+        `voice ${vReady}/${vTotal} sfx ${sfxBuffers.size}/${sTotal}` +
         ` music ${currentMusic ? (currentMusic.paused ? 'paused' : 'playing') : 'none'}${musicFailed ? ` (failed ${musicFailed})` : ''}`;
     },
     play(id) {
@@ -228,7 +232,9 @@ export function createAudio(
       const url = plan.clip;
       const fx = resolveLineFx(voice.presets, voice.preset, voice.linePresets ?? {}, req?.key);
       const context = ctx;
+      const askedAt = typeof performance !== 'undefined' ? performance.now() : 0;
       void loadBuffer(url).then((buf) => {
+        lastVoiceDelay = (typeof performance !== 'undefined' ? performance.now() : 0) - askedAt;
         if (token !== voiceToken) return; // a newer line took over
         if (!buf) { speak(line); return; } // clip unusable: say the whole line
         if (context.state === 'suspended') void context.resume().catch(() => { /* ignore */ });
