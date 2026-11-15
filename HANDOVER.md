@@ -280,6 +280,17 @@ block merging.
   stick tilt still slows the sink. The prompt bar shows each once.
 - No jump or crouch art exists: the poses are the walk and idle frames,
   stretched and squashed by `samuraiTransform`.
+  **No longer true:** jump, fall and crouch have real art (`jump.png`,
+  `fall.png` and `crouch.png` in `public/assets/samurai/`) and nothing is
+  stretched or squashed. Jump and Fall are the Martial Hero pack's own frames
+  (the pack has them; they were just never cut into strips). The crouch
+  is derived from the idle frames by `tools/samurai-sprites.mjs`: edit the
+  script and re-run it, do not hand-edit the PNGs (`--pack <Sprites dir>`
+  re-cuts jump and fall from the downloaded pack). Rising or falling is picked
+  from the height last drawn (`Look.samAir` in
+  `src/scenes/fight/fighters.ts`). Checked on still previews only, not in
+  motion. The crouch reads as a low kneel and its legs are the weak part; the
+  art has not been approved by the team.
 - Verified: 91 tests (new ones: jump arc, clear heights vs. tells, each
   special hits when standing / blocking / dashing and misses when dodged
   right, no jump timing clears a high shot, lunge jumped over); the bot
