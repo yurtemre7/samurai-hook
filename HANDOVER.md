@@ -169,7 +169,25 @@ Pages address is a 404. GitHub redirects the old repository URL, but it is
 cleaner to run `git remote set-url origin
 https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
 
-### Deployment and pull request previews
+### Regression guard for game feel
+
+`tests/balance-snapshot.test.ts` has a scripted bot fight every fish at
+damage levels 0, 3, 6 and 10 with five seeds, and compares each result
+(win or loss, seconds used, health left, hits, misses) with the committed
+snapshot in `tests/__snapshots__/`. Fights are deterministic, so a failure
+means the game now plays differently. Added 2026-11-15 at Rhaveen's request
+("no regressions") because several people now change the game.
+
+- **If you changed difficulty on purpose** (tuning, a new fish, a new move),
+  run `npx vitest run -u tests/balance-snapshot.test.ts` and commit the
+  updated snapshot in the same pull request. Reviewers then see in the diff
+  exactly which fights got easier or harder.
+- **If you did not mean to change gameplay** and it fails, your change has
+  a side effect on fights. Find it before merging.
+- CI never writes snapshots, so a missing or changed snapshot fails `test`.
+- It is a guard, not a full proof: a change that does not alter how the bot
+  wins (for example +4 health on the sardine, still three hits) passes.
+
 
 - **Every pull request is tested, built and published** by
   `.github/workflows/preview.yml` to the `gh-pages` branch under
