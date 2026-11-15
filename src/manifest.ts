@@ -140,10 +140,12 @@ export const voice = {
 // ---------- Fish ----------
 // Depth bands are for tier 0. Deeper than `tiers.depth`, the roster repeats.
 
+// Fight timers were raised by 25% on 2026-11-15 (Rhaveen: fights felt too short), rounded to whole
+// seconds: 20 -> 25, 25 -> 31, 30 -> 38, 40 -> 50.
 export const fish: FishDef[] = [
   {
     id: 'sardine', name: 'Iwashi', title: 'SARDINE · WHITE BELT', category: 'slippery', sprite: 'fish.sardine',
-    depthMin: 5, depthMax: 25, hp: 40, timer: 20, gold: 5, swimSpeed: 70, size: 32,
+    depthMin: 5, depthMax: 25, hp: 40, timer: 25, gold: 5, swimSpeed: 70, size: 32,
     move: { speed: 150, keepAway: 120, restless: 0.3 },
     slip: { recovery: 3.0, dart: 180 },
     gimmick: 'none',
@@ -151,7 +153,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'mackerel', name: 'Saba', title: 'MACKEREL · 3RD DAN', category: 'slippery', sprite: 'fish.mackerel',
-    depthMin: 15, depthMax: 40, hp: 70, timer: 25, gold: 12, swimSpeed: 95, size: 40,
+    depthMin: 15, depthMax: 40, hp: 70, timer: 31, gold: 12, swimSpeed: 95, size: 40,
     move: { speed: 200, keepAway: 140, restless: 0.5 },
     slip: { recovery: 2.0, dart: 240 },
     gimmick: 'none',
@@ -159,7 +161,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'piranha', name: 'Pirania', title: 'PIRANHA · THE NIBBLER', category: 'biter', sprite: 'fish.piranha',
-    depthMin: 30, depthMax: 55, hp: 90, timer: 25, gold: 25, swimSpeed: 120, size: 38,
+    depthMin: 30, depthMax: 55, hp: 90, timer: 31, gold: 25, swimSpeed: 120, size: 38,
     move: { speed: 260, keepAway: 110, restless: 0.8 },
     slip: { recovery: 1.8, dart: 200 },
     attack: { damage: 6, tell: 0.3, cooldown: 1.1, reach: 150 },
@@ -168,7 +170,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'eel', name: 'Unagi', title: 'EEL · GRAND SLIPMASTER', category: 'slippery', sprite: 'fish.eel',
-    depthMin: 40, depthMax: 70, hp: 80, timer: 30, gold: 40, swimSpeed: 110, size: 42,
+    depthMin: 40, depthMax: 70, hp: 80, timer: 38, gold: 40, swimSpeed: 110, size: 42,
     move: { speed: 280, keepAway: 130, restless: 0.7 },
     slip: { recovery: 0.9, dart: 320 },
     // Crackles, then sends a shock wave along the floor: jump.
@@ -178,7 +180,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'pufferfish', name: 'Fugu', title: 'PUFFERFISH · THE ROUND ONE', category: 'slippery', sprite: 'fish.pufferfish',
-    depthMin: 55, depthMax: 90, hp: 160, timer: 30, gold: 70, swimSpeed: 60, size: 44,
+    depthMin: 55, depthMax: 90, hp: 160, timer: 38, gold: 70, swimSpeed: 60, size: 44,
     move: { speed: 140, keepAway: 120, restless: 0.3 },
     slip: { recovery: 2.2, dart: 160 },
     // Spits two spines at head height: crouch.
@@ -188,7 +190,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'swordfish', name: 'Kajiki', title: 'SWORDFISH · RIVAL DUELLIST', category: 'biter', sprite: 'fish.swordfish',
-    depthMin: 75, depthMax: 110, hp: 200, timer: 30, gold: 120, swimSpeed: 150, size: 40,
+    depthMin: 75, depthMax: 110, hp: 200, timer: 38, gold: 120, swimSpeed: 150, size: 40,
     move: { speed: 230, keepAway: 220, restless: 0.5 },
     slip: { recovery: 1.6, dart: 260 },
     attack: { damage: 15, tell: 0.5, cooldown: 1.8, reach: 280 },
@@ -199,7 +201,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'anglerfish', name: 'Anko', title: 'ANGLERFISH · LIGHTS OUT', category: 'slippery', sprite: 'fish.anglerfish',
-    depthMin: 95, depthMax: 130, hp: 260, timer: 40, gold: 200, swimSpeed: 55, size: 44,
+    depthMin: 95, depthMax: 130, hp: 260, timer: 50, gold: 200, swimSpeed: 55, size: 44,
     move: { speed: 170, keepAway: 150, restless: 0.5 },
     slip: { recovery: 1.6, dart: 240 },
     gimmick: 'dark',
@@ -207,7 +209,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'shark', name: 'Hojiro', title: 'GREAT WHITE · FINAL-ISH BOSS', category: 'biter', sprite: 'fish.shark',
-    depthMin: 115, depthMax: 150, hp: 400, timer: 40, gold: 350, swimSpeed: 90, size: 56,
+    depthMin: 115, depthMax: 150, hp: 400, timer: 50, gold: 350, swimSpeed: 90, size: 56,
     move: { speed: 150, keepAway: 200, restless: 0.4 },
     slip: { recovery: 2.4, dart: 200 },
     attack: { damage: 35, tell: 0.9, cooldown: 2.6, reach: 260 },
@@ -218,7 +220,7 @@ export const fish: FishDef[] = [
   },
   {
     id: 'squid', name: 'Daioika', title: 'GIANT SQUID · EIGHT-ARMED STYLE', category: 'slippery', sprite: 'fish.squid',
-    depthMin: 140, depthMax: 170, hp: 480, timer: 40, gold: 600, swimSpeed: 50, size: 60,
+    depthMin: 140, depthMax: 170, hp: 480, timer: 50, gold: 600, swimSpeed: 50, size: 60,
     move: { speed: 190, keepAway: 170, restless: 0.6 },
     slip: { recovery: 1.5, dart: 280 },
     // Ink balls high, low, high: crouch, jump, crouch.

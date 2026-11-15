@@ -205,6 +205,11 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
        manually uploaded zip so players get the automated build.
     4. Re-run the workflow from the Actions tab ("Run workflow").
 
+- **Fight timers +25% (2026-11-15, Rhaveen: fights felt too short):** every
+  fish's `timer` in `src/manifest.ts`, rounded: 20 -> 25, 25 -> 31,
+  30 -> 38, 40 -> 50 s. For everyone; there is no difficulty setting. The
+  scripted bot never runs out of time, so the bot results do not change.
+
 ## Pending (in priority order)
 
 1. **Play it as a human, on keyboard and a real controller**, and note what
