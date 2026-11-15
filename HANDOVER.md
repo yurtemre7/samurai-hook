@@ -465,8 +465,8 @@ means the game now plays differently. Added 2026-11-15 at Rhaveen's request
    and reel-speed upgrades, parry, a boss, a bestiary. **Electric eel**
    (suggested by Rhaveen, 2026-11-14): the eel charges up with a visible
    crackle, then shocks a circle around itself; back off or dash to avoid it,
-   blocking does not help. A version is on branch `feat/jump-crouch-dodge`
-   (a floor shock wave to jump over, not a circle).
+   blocking does not help. A version is on `main` since PR #36 (a floor
+   shock wave to jump over, not a circle; in hard mode only since #52).
 
 Bundled kanji font (session 2): the kanji now use Kaisei Tokumin Bold (SIL
 OFL, chosen by Rhaveen on 2026-11-15 because it is closest to the look the
