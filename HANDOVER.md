@@ -75,6 +75,13 @@ Last updated: 2026-11-15 (session 2: recorded announcer up for review)
 
 ## In progress
 
+README and store text (session 2, 2026-11-15): README.md was rewritten in a
+plainer voice around one hook, "nobody reels in a fish without a fight"
+(Rhaveen's angle). `docs/STORE_TEXT.md` holds the GitHub About blurb and the
+itch.io page text; both are pasted by hand by whoever owns the repo and the
+itch.io page, so change the file first and paste from it.
+
+
 Nothing is in flight from session 2 except open pull requests (check GitHub).
 
 ### Announcer (session 2, for team review)
