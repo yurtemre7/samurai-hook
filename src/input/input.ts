@@ -3,6 +3,9 @@ import { createInputCore, type GamepadLike, type InputCore } from './core';
 import { createKeyDebug, keysDebugEnabled } from './debug';
 
 const NO_SCROLL = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
+/** The canvas is always 960x540 game px, scaled to fit the window. */
+const GAME_W = 960;
+const GAME_H = 540;
 
 export function createInput(target: Window = window): InputCore {
   const core = createInputCore({
@@ -44,8 +47,19 @@ export function createInput(target: Window = window): InputCore {
     debug?.log('up', e, acts);
   });
   // Mouse buttons go through the key path as "Mouse0" (left) / "Mouse2" (right), see KEY_MAP.
-  target.addEventListener('mousedown', (e) => { core.keyDown(`Mouse${e.button}`); });
-  target.addEventListener('mouseup', (e) => { core.keyUp(`Mouse${e.button}`); });
+  // Pointer events from a real mouse only: a phone's tap also fires compatibility mouse events,
+  // which would slash and switch the prompts to the keyboard.
+  target.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    core.keyDown(`Mouse${e.button}`);
+    // A left click also reports where it landed, in game px, for clickable menus.
+    const canvas = target.document?.getElementById('game');
+    const r = canvas?.getBoundingClientRect();
+    if (e.button === 0 && r && r.width > 0 && r.height > 0) {
+      core.mouseClick(((e.clientX - r.left) / r.width) * GAME_W, ((e.clientY - r.top) / r.height) * GAME_H);
+    }
+  });
+  target.addEventListener('pointerup', (e) => { if (e.pointerType === 'mouse') core.keyUp(`Mouse${e.button}`); });
   // Right click is heavy slash, not the browser menu.
   target.addEventListener('contextmenu', (e) => e.preventDefault());
   target.addEventListener('blur', () => core.clearKeys());

@@ -316,7 +316,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       // Pause (the settings action: Esc / Tab, pad Select, touch PAUSE): everything stops, timer
       // included. Confirm also resumes; that press is used up here, so it does not jump.
       if (state.phase !== 'over') {
-        if (game.input.pressed('settings') || (paused && game.input.pressed('confirm'))) {
+        if (game.input.pressed('settings') || (paused && (game.input.pressed('confirm') || game.input.clicked()))) {
           paused = !paused;
           game.audio.pauseMusic(paused);
           game.audio.play('uiMove');

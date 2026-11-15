@@ -57,6 +57,13 @@ export interface Input {
   /** Touch only: a dash was asked for this step (quick swipe or DASH button). -1 / 1 = that way,
    *  0 = no direction given (the fight dashes away from the fish). null = no dash. */
   dashDir(): -1 | 0 | 1 | null;
+  /** Mouse: where the left button was clicked this step, in game px (960x540), or null. Clicks on a
+   *  prompt-bar item are not reported here: they press that item's action instead. */
+  clicked(): { x: number; y: number } | null;
+  /** Presses an action for one step, as a key tap would (the device does not change). */
+  press(a: Action): void;
+  /** Prompt-bar items drawn this frame, in game px, so a click on one presses its action. */
+  setPromptHits(hits: { x0: number; x1: number; y0: number; y1: number; action: Action }[]): void;
 }
 
 export interface Prompt {

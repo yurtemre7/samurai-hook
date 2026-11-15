@@ -46,6 +46,8 @@ export interface InputCore extends Input {
   touchDash(dir: -1 | 0 | 1): void;
   /** Make touch the current device (the overlay calls this on start, so phone hints show before the first touch). */
   useTouch(): void;
+  /** A left mouse click at (x, y) in game px; `clicked()` returns it for exactly one step (unless a prompt took it). */
+  mouseClick(x: number, y: number): void;
 }
 
 export const ACTIONS: readonly Action[] = [
@@ -258,6 +260,10 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   let dragOn = false;
   let dashLatch: -1 | 0 | 1 | null = null;
   let dashNow: -1 | 0 | 1 | null = null;
+  let clickLatch: { x: number; y: number } | null = null;
+  let clickNow: { x: number; y: number } | null = null;
+  /** Prompt-bar items drawn last frame; a click on one presses its action instead of being a click. */
+  let promptHits: { x0: number; x1: number; y0: number; y1: number; action: Action }[] = [];
 
   // ---- key bindings ----
   let bind: Bindings = (() => {
@@ -360,6 +366,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       dragAcc = 0;
       dragOn = false;
       dashLatch = null;
+      clickLatch = null;
     },
     touchDash(dir) {
       device = 'touch';
@@ -379,6 +386,15 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     useTouch() {
       device = 'touch';
     },
+    mouseClick(x, y) {
+      if (Number.isFinite(x) && Number.isFinite(y)) clickLatch = { x, y };
+    },
+    press(a) {
+      keysTapped.add(a); // one step, like a key tap; the device does not change
+    },
+    setPromptHits(hits) {
+      promptHits = hits;
+    },
     touchDown(a) {
       device = 'touch';
       if (!touchHeld.has(a)) touchTapped.add(a);
@@ -396,6 +412,17 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     update() {
       prev = now;
       now = new Set<Action>();
+
+      // A click on a prompt-bar item works like its key; any other click is handed to the scene.
+      clickNow = null;
+      if (clickLatch) {
+        const c = clickLatch;
+        const hit = promptHits.find((h) => c.x >= h.x0 && c.x <= h.x1 && c.y >= h.y0 && c.y <= h.y1);
+        if (hit) keysTapped.add(hit.action);
+        else clickNow = c;
+        clickLatch = null;
+      }
+      promptHits = []; // redrawn every frame; stale ones from another scene must not linger
 
       for (const a of ACTIONS) {
         if (keyActive(a)) now.add(a);
@@ -453,6 +480,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     dragging: () => dragOn,
     dragDX: () => dragStep,
     tapped: () => tapNow,
+    clicked: () => clickNow,
     dashDir: () => dashNow,
     moveX: () => clamp1(digX + stickX + touchX),
     moveY: () => clamp1(digY + stickY + touchY),

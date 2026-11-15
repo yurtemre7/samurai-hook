@@ -44,6 +44,11 @@ export interface SettingsPanel {
   render(ctx: CanvasRenderingContext2D): void;
 }
 
+const KEY_RH = 23;
+
+const inRect = (p: { x: number; y: number }, x: number, y: number, w: number, h: number) =>
+  p.x >= x && p.x <= x + w && p.y >= y && p.y <= y + h;
+
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -112,6 +117,48 @@ export function createSettingsPanel(game: Game, anchor: SettingsAnchor): Setting
     game.input.cancelCapture();
   }
 
+  /** Mouse: the same layout render() draws. Outside the panel closes it. */
+  function clickPanel(c: { x: number; y: number }): void {
+    const { w, h } = size();
+    const { px, py } = origin();
+    if (!inRect(c, px, py, w, h)) { open = false; game.audio.play('uiMove'); return; }
+    if (page === 'main') {
+      const i = Math.floor((c.y - (py + 58 - 17)) / 34);
+      if (i < 0 || i >= MAIN_ROWS.length) return;
+      sel = i;
+      if (i < 2) {
+        // Click on the bar sets the level: each of the 10 blocks is 15 px from px + 112.
+        const bx = c.x - (px + 112);
+        if (bx >= -4 && bx <= 150) {
+          const level = Math.max(0, Math.min(10, Math.ceil(bx / 15))) / 10;
+          if (i === 0) game.audio.musicVolume = level;
+          else { game.audio.sfxVolume = level; game.audio.play('uiMove'); }
+        } else game.audio.play('uiMove');
+      } else if (i === 2) {
+        game.state.hardMode = !game.state.hardMode;
+        game.audio.play(game.state.hardMode ? 'tell' : 'uiMove');
+      } else {
+        page = 'keys'; row = 0; slot = 0; game.audio.play('uiMove');
+      }
+      return;
+    }
+    // Keybinds page: the title goes back; rows are KEY_RH apart from py + 50, then the reset row.
+    if (c.y < py + 36) { page = 'main'; sel = 3; game.audio.play('uiMove'); return; }
+    const i = Math.round((c.y - (py + 50)) / KEY_RH);
+    if (i === KEY_ROWS.length) { row = i; game.input.resetBindings(); say('DEFAULT KEYS RESTORED'); game.audio.play('uiMove'); return; }
+    if (i < 0 || i > KEY_ROWS.length) return;
+    for (const s of [0, 1] as const) {
+      if (inRect(c, px + 250 + s * 86, py + 50 + i * KEY_RH - 9, 78, 18)) {
+        row = i; slot = s;
+        say('PRESS A KEY OR CLICK  ·  ESC CANCELS');
+        beginCapture();
+        return;
+      }
+    }
+    row = i;
+    game.audio.play('uiMove');
+  }
+
   return {
     get open() { return open; },
     update(dt) {
@@ -123,7 +170,9 @@ export function createSettingsPanel(game: Game, anchor: SettingsAnchor): Setting
         if (inp.device === 'gamepad' && inp.pressed('defend')) { cancelCapture(); say('CANCELLED'); }
         return true;
       }
-      if (inp.pressed('settings')) {
+      const click = inp.clicked();
+      const onTab = click !== null && inRect(click, anchor.x, anchor.y, TAB.w, TAB.h);
+      if (inp.pressed('settings') || onTab) {
         open = !open;
         page = 'main';
         sel = 0;
@@ -131,6 +180,7 @@ export function createSettingsPanel(game: Game, anchor: SettingsAnchor): Setting
         return true; // the key press belongs to the panel this step
       }
       if (!open) return false;
+      if (click) { clickPanel(click); return true; }
 
       if (page === 'main') {
         // Closing keys are consumed too, so E does not also leave the shop in the same step.
@@ -232,7 +282,7 @@ export function createSettingsPanel(game: Game, anchor: SettingsAnchor): Setting
         hint = hard ? HARD_NOTE : `${g('up')} ${g('down')} CHOOSE  ·  ${g('left')} ${g('right')} CHANGE  ·  ${g('settings')} CLOSE`;
         if (hard) hintColor = '#ff9a8a';
       } else {
-        const RH = 23;
+        const RH = KEY_RH;
         const y0 = py + 50;
         KEY_ROWS.forEach((r, i) => {
           const y = y0 + i * RH;

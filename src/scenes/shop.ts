@@ -57,7 +57,11 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
       const rows = game.state.upgrades();
       if (game.input.pressed('left')) { sel = (sel + rows.length - 1) % rows.length; game.audio.play('uiMove'); }
       if (game.input.pressed('right')) { sel = (sel + 1) % rows.length; game.audio.play('uiMove'); }
-      if (game.input.pressed('confirm')) {
+      // Mouse: a click on a board picks it; a click on the picked board buys it.
+      const click = game.input.clicked();
+      const hit = click ? rows.findIndex((_, i) => click.x >= boardX(i) && click.x <= boardX(i) + BOARD_W && click.y >= BOARD_Y && click.y <= BOARD_Y + BOARD_H) : -1;
+      if (hit >= 0 && hit !== sel) { sel = hit; game.audio.play('uiMove'); }
+      else if (game.input.pressed('confirm') || hit === sel) {
         if (game.state.buy(rows[sel].id)) {
           game.audio.play('buy');
           flash = 0.5;

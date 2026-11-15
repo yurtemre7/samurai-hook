@@ -152,7 +152,17 @@ block merging.
     them): left/right dash, up jumps (one press of `up`), down crouches
     (holds `down` until the finger lifts). Rhaveen: all controls should work
     by touch, not only by buttons.
-  - **fight pause (merged #58; music pause on branch `feat/pause-music`):** the settings action (Esc /
+  - **mouse (branch `fix/mouse-clicks`):** a left click is `input.clicked()`
+    (game px, one step), from real-mouse pointer events only, so a phone's
+    tap no longer fires a fake mouse click (it used to count as a left-click
+    quick slash and switch the device to keyboard). Prompt-bar items report
+    their rectangles each frame (`setPromptHits`); a click on one presses its
+    action (`input.press`) instead of reaching the scene. Clickable: settings
+    tab, rows, volume bars, hard mode, keybind slots (then a key or a click
+    binds), reset row, keybinds title (back), outside (close); shop boards
+    (pick, then buy); the water (cast); result screen (continue); a paused
+    fight (resume). Checked in the browser with real clicks.
+  - **fight pause (merged #58; music pause merged #59):** the settings action (Esc /
     Tab, pad Select, a touch PAUSE button in SHOP's top-right spot, fights
     only) pauses a fight: the sim, timer and animations stop, the screen dims
     and shows PAUSED. Settings again or confirm (Space / Enter / A) resumes;
