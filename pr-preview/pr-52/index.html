@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <title>SamuraiHook</title>
+    <!-- Description and link preview (chat apps, search). Text mirrors docs/STORE_TEXT.md.
+         The preview image must be an absolute URL, so it points at the GitHub Pages copy. -->
+    <meta name="description" content="A samurai fishing game where nobody reels in a fish without a fight. Nine fish, from a sardine to a giant squid, and none of them wants to be sushi." />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="SamuraiHook: nobody reels in a fish without a fight" />
+    <meta property="og:description" content="A samurai fishing game where nobody reels in a fish without a fight. Nine fish, from a sardine to a giant squid, and none of them wants to be sushi." />
+    <meta property="og:url" content="https://yurtemre7.github.io/samurai-hook/" />
+    <meta property="og:image" content="https://yurtemre7.github.io/samurai-hook/share.jpg" />
+    <meta property="og:image:width" content="800" />
+    <meta property="og:image:height" content="456" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b1020; overflow: hidden; }
+      /* iPhones enlarge text in landscape on their own; that pushed button labels off-centre. */
+      html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+      html, body, canvas {
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior: none;
+      }
+      body { display: flex; align-items: center; justify-content: center; }
+      canvas { image-rendering: pixelated; background: #000; }
+    </style>
+    <script type="module" crossorigin src="./assets/index-BxsXufia.js"></script>
+  </head>
+  <body>
+    <canvas id="game" width="960" height="540"></canvas>
+  </body>
+</html>
