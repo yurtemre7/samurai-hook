@@ -80,6 +80,33 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
 
 ## In progress
 
+### Mobile browser (2026-11-15, for team review)
+
+- **Decisions (owner, 2026-11-15; the team decided to support mobile browsers):**
+  mobile BROWSER only (no manifest, service worker or wrapper app); LANDSCAPE
+  ONLY; steering the hook is by dragging a finger, everything else by
+  on-screen buttons; tapping the canvas never means confirm (confirm also
+  jumps and reels in, so stray taps would misfire).
+- **How it works:** `InputCore` has a third source: `touchDown/touchUp(action)`
+  (same held, edge and tap-latch rules as keys) and `setTouchAxis(x, y)` (added
+  to keys/stick in `moveX/moveY`, clamped). `Device` gained `'touch'`;
+  `clearKeys()` also releases touch. `src/input/touch.ts` builds a DOM overlay
+  (pad, QUICK / HEAVY / BLOCK / CONFIRM, SHOP) with Pointer Events tracked per
+  `pointerId`; the pad hit-tests with pointer capture so sliding changes
+  direction (diagonals allowed). A finger down anywhere that is not a button is
+  a floating-joystick drag: 10 px dead zone, full deflection at 80 px, circular.
+  It only feeds `setTouchAxis`, never an action. The overlay exists only when
+  `(pointer: coarse)` matches or the URL has `?touch=1`; desktop is unchanged.
+  The prompt bar is hidden while `device === 'touch'`.
+- **Portrait:** a full-screen CSS message covers the page, and `main.ts` skips
+  steps and render while `blocked()` (resets the clock each frame, so no dt
+  jump on rotating back). Pad/buttons/drag are released on rotation, blur and
+  tab hide. Music keeps playing in portrait (not paused).
+- **Not verified:** a real phone. Multi-touch (hold left while pressing QUICK),
+  iOS Safari quirks (audio unlock on first touch, address-bar and
+  `visualViewport` resize, notch safe areas), thumb comfort and button size,
+  and performance. Only synthetic pointer events in a desktop browser.
+
 ### Jump, crouch and dodge-only specials (branch `feat/jump-crouch-dodge`, for team review)
 
 - **Controls:** in the fight, W / up / Space (pad: A or up) jumps, S / down
@@ -204,6 +231,8 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
        the browser" for the `html5` channel upload, and remove any old
        manually uploaded zip so players get the automated build.
     4. Re-run the workflow from the Actions tab ("Run workflow").
+    5. For phones: the itch.io embed options may need "Mobile friendly"
+       ticked and the orientation set to landscape. Unverified.
 
 ## Pending (in priority order)
 

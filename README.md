@@ -59,6 +59,21 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 | Shop (at the surface) | E | Y |
 | Shop: choose an upgrade | A D or left/right arrows | left stick or d-pad |
 
+### Touch (mobile browser, landscape only)
+
+Open the game in a phone browser and turn the phone sideways (in portrait it shows a "turn your phone sideways" message and the game is paused). On-screen buttons appear automatically; the prompts bar at the bottom is hidden while you use touch.
+
+| Action | Touch |
+|---|---|
+| Steer the hook, walk in a fight | drag a finger anywhere that is not a button (up to brake, down to sink faster) |
+| Direction pad (fight: up jumps, down crouches) | left thumb, the four arrows; slide between them without lifting |
+| Quick slash, heavy slash | QUICK, HEAVY (right thumb) |
+| Defend: hold to block, with a direction to dash-dodge | BLOCK |
+| Confirm, drop hook, skip | CONFIRM (tapping the game itself does nothing) |
+| Shop | SHOP (top right) |
+
+To try it on a desktop browser, add `?touch=1` to the URL.
+
 ### Demo shortcuts
 
 | Shortcut | What it does |

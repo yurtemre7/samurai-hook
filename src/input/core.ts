@@ -24,8 +24,14 @@ export interface InputCore extends Input {
   keyDown(code: string, key?: string): Action[];
   /** Releases whatever `code` activated on its keydown, whatever `key` says now. Returns those actions. */
   keyUp(code: string, key?: string): Action[];
-  /** Release everything (window blur). */
+  /** Release everything (window blur): keys and touch buttons, and the touch axis. */
   clearKeys(): void;
+  /** On-screen button went down. Same held/edge/tap-latch semantics as a key; switches device to touch. */
+  touchDown(action: Action): void;
+  /** On-screen button released. */
+  touchUp(action: Action): void;
+  /** Analog drag, each -1..1 (clamped). Added to keys/stick in moveX/moveY. Non-zero switches device to touch. */
+  setTouchAxis(x: number, y: number): void;
 }
 
 export const ACTIONS: readonly Action[] = [
@@ -82,6 +88,12 @@ export const PAD_GLYPH: Record<Action, string> = {
   confirm: 'A', quick: 'X', heavy: 'Y', defend: 'B', shop: 'Y',
 };
 
+/** On-screen button symbols for the touch device (the overlay labels itself with words). */
+export const TOUCH_GLYPH: Record<Action, string> = {
+  left: '◀', right: '▶', up: '▲', down: '▼',
+  confirm: 'OK', quick: 'QUICK', heavy: 'HEAVY', defend: 'BLOCK', shop: 'SHOP',
+};
+
 /** Below this the stick reads as 0 for moveX/moveY. */
 export const STICK_DEADZONE = 0.25;
 /** Stick past this counts as a digital direction and switches the device. */
@@ -125,9 +137,14 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   let digX = 0;
   let digY = 0;
   let device: Device = 'keyboard';
+  /** On-screen buttons currently held, plus the same tap latch as keys. */
+  const touchHeld = new Set<Action>();
+  const touchTapped = new Set<Action>();
+  let touchX = 0;
+  let touchY = 0;
 
   const keyActive = (a: Action) => {
-    if (keysTapped.has(a)) return true;
+    if (keysTapped.has(a) || touchTapped.has(a) || touchHeld.has(a)) return true;
     for (const acts of keysDown.values()) if (acts.includes(a)) return true;
     return false;
   };
@@ -151,6 +168,23 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     clearKeys() {
       keysDown.clear();
       keysTapped.clear();
+      touchHeld.clear();
+      touchTapped.clear();
+      touchX = 0;
+      touchY = 0;
+    },
+    touchDown(a) {
+      device = 'touch';
+      if (!touchHeld.has(a)) touchTapped.add(a);
+      touchHeld.add(a);
+    },
+    touchUp(a) {
+      touchHeld.delete(a);
+    },
+    setTouchAxis(x, y) {
+      touchX = clamp1(Number.isFinite(x) ? x : 0);
+      touchY = clamp1(Number.isFinite(y) ? y : 0);
+      if (touchX !== 0 || touchY !== 0) device = 'touch';
     },
 
     update() {
@@ -161,6 +195,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
         if (keyActive(a)) now.add(a);
       }
       keysTapped.clear();
+      touchTapped.clear();
 
       const pad = firstPad(deps.getGamepads);
       const buttons: boolean[] = [];
@@ -199,8 +234,8 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
 
     held: (a) => now.has(a),
     pressed: (a) => now.has(a) && !prev.has(a),
-    moveX: () => clamp1(digX + stickX),
-    moveY: () => clamp1(digY + stickY),
+    moveX: () => clamp1(digX + stickX + touchX),
+    moveY: () => clamp1(digY + stickY + touchY),
     anyPressed: () => {
       for (const a of now) if (!prev.has(a)) return true;
       return false;
@@ -208,7 +243,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     get device() {
       return device;
     },
-    glyph: (a) => (device === 'gamepad' ? PAD_GLYPH[a] : KEY_GLYPH[a]),
+    glyph: (a) => (device === 'gamepad' ? PAD_GLYPH[a] : device === 'touch' ? TOUCH_GLYPH[a] : KEY_GLYPH[a]),
   };
   return core;
 }

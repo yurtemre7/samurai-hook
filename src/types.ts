@@ -11,7 +11,7 @@ export type Action =
   | 'defend'  // hold = block, tap + direction = dash-dodge
   | 'shop';   // open / close the shop at the surface
 
-export type Device = 'keyboard' | 'gamepad';
+export type Device = 'keyboard' | 'gamepad' | 'touch';
 
 export interface Input {
   /** Call exactly once per fixed update step, before the scene updates. */

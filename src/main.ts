@@ -3,6 +3,7 @@ import { createAudio } from './core/audio';
 import { loadKanjiFont } from './core/fonts';
 import { createGameState } from './game/state';
 import { createInput } from './input/input';
+import { createTouchControls, touchEnabled } from './input/touch';
 import { demoStart, music, sounds, sprites, voice } from './manifest';
 import { createCutsceneScene } from './scenes/cutscene';
 import { createFightScene } from './scenes/fight';
@@ -19,11 +20,13 @@ const canvas = document.getElementById('game') as HTMLCanvasElement;
 const ctx = canvas.getContext('2d')!;
 
 function fit(): void {
-  const s = Math.min(window.innerWidth / WIDTH, window.innerHeight / HEIGHT);
+  const vv = window.visualViewport;
+  const s = Math.min((vv?.width ?? window.innerWidth) / WIDTH, (vv?.height ?? window.innerHeight) / HEIGHT);
   canvas.style.width = `${Math.floor(WIDTH * s)}px`;
   canvas.style.height = `${Math.floor(HEIGHT * s)}px`;
 }
 window.addEventListener('resize', fit);
+window.visualViewport?.addEventListener('resize', fit);
 fit();
 
 const factories: { [K in SceneId]: SceneFactory<K> } = {
@@ -37,11 +40,17 @@ const factories: { [K in SceneId]: SceneFactory<K> } = {
 let scene: Scene | null = null;
 let time = 0;
 
+const input = createInput();
+// Touch overlay: phones (coarse pointer) or ?touch=1. Desktop is untouched.
+const touch = touchEnabled(location.search, window.matchMedia('(pointer: coarse)').matches)
+  ? createTouchControls(input)
+  : null;
+
 const game: Game = {
   width: WIDTH,
   height: HEIGHT,
   get time() { return time; },
-  input: createInput(),
+  input,
   assets: createAssets(sprites),
   audio: createAudio(sounds, music, voice),
   state: createGameState(window.localStorage),
@@ -53,7 +62,7 @@ const game: Game = {
 };
 
 // Browsers block audio until the first user gesture.
-for (const ev of ['keydown', 'pointerdown', 'gamepadconnected'] as const) {
+for (const ev of ['keydown', 'pointerdown', 'touchend', 'gamepadconnected'] as const) {
   window.addEventListener(ev, () => game.audio.unlock());
 }
 
@@ -73,6 +82,13 @@ function start(): void {
 let last = performance.now();
 let acc = 0;
 function frame(now: number): void {
+  if (touch?.blocked()) {
+    // Portrait on a phone: no steps, no input. Keep the clock moving so rotating back does not jump.
+    last = now;
+    acc = 0;
+    requestAnimationFrame(frame);
+    return;
+  }
   acc += Math.min(0.1, (now - last) / 1000);
   last = now;
   while (acc >= STEP) {
