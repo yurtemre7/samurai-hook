@@ -41,6 +41,11 @@ export interface FightState {
     tellProgress: number;
     /** Seconds of the vulnerable window left (also runs through 'stunned'), 0 when none. */
     vulnLeft: number;
+    /**
+     * Full length in seconds of the current vulnerable window, 0 when none.
+     * Whenever `vulnLeft > 0`, `0 < vulnLeft <= vulnTotal`; hits inside the window leave it alone.
+     */
+    vulnTotal: number;
   };
   effects: { dark: boolean; inkLeft: number };
   /** Special-attack projectiles in flight. `y` is the centre height above the floor. */
@@ -100,7 +105,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     },
     fish: {
       x: mid + 160, y: 0, facing: -1, hp: inst.maxHp, maxHp: inst.maxHp,
-      mode: 'roam', modeTime: 0, slipReady: true, tellProgress: 0, vulnLeft: 0,
+      mode: 'roam', modeTime: 0, slipReady: true, tellProgress: 0, vulnLeft: 0, vulnTotal: 0,
     },
     effects: { dark: def.gimmick === 'dark', inkLeft: 0 },
     projectiles: [],
@@ -243,7 +248,9 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     if (f.hp <= 0) { endFight('win'); return; }
     // An interrupted special still costs its full cooldown.
     if (sp && (f.mode === 'aim' || f.mode === 'charge' || f.mode === 'shoot')) specialCd = sp.cooldown;
-    if (f.mode === 'tell' || f.mode === 'attack' || f.mode === 'aim' || f.mode === 'charge' || f.mode === 'shoot') f.vulnLeft = Math.max(f.vulnLeft, FF.lungeRecovery);
+    // Interrupting an attack opens a lungeRecovery window (never shortens one already open).
+    const interrupted = f.mode === 'tell' || f.mode === 'attack' || f.mode === 'aim' || f.mode === 'charge' || f.mode === 'shoot';
+    if (interrupted && f.vulnLeft < FF.lungeRecovery) f.vulnLeft = f.vulnTotal = FF.lungeRecovery;
     arc = null;
     hop = null;
     f.y = 0;
@@ -425,7 +432,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
   function endSpecial(next: 'roam' | 'vulnerable') {
     specialCd = sp!.cooldown;
     attackCd = Math.max(attackCd, FF.special.lungeDelay);
-    if (next === 'vulnerable') f.vulnLeft = FF.special.chargeRecovery;
+    if (next === 'vulnerable') f.vulnLeft = f.vulnTotal = FF.special.chargeRecovery;
     setFishMode(next);
   }
 
@@ -618,7 +625,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
           arc = null;
           f.y = 0;
           attackCd = def.attack!.cooldown;
-          f.vulnLeft = FF.lungeRecovery;
+          f.vulnLeft = f.vulnTotal = FF.lungeRecovery;
           setFishMode('vulnerable');
         }
         break;
@@ -627,13 +634,14 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
         if (!arc || runArc(arc, dt)) {
           arc = null;
           f.y = 0;
-          f.vulnLeft = def.slip.recovery;
+          f.vulnLeft = f.vulnTotal = def.slip.recovery;
           setFishMode('vulnerable');
         }
         break;
       }
       case 'stunned': {
         f.vulnLeft = Math.max(0, f.vulnLeft - dt);
+        if (f.vulnLeft === 0) f.vulnTotal = 0; // the window can close while still stunned
         stunLeft -= dt;
         f.x += fishKnockV * dt;
         fishKnockV *= Math.max(0, 1 - 10 * dt);
@@ -651,7 +659,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
         f.x += away * def.move.speed * 0.25 * dt;
         f.y = 0;
         if (f.vulnLeft <= 0) {
-          f.vulnLeft = 0;
+          f.vulnLeft = f.vulnTotal = 0;
           repoLeft = 0;
           setFishMode('roam');
         }

@@ -52,8 +52,6 @@ export interface Look {
   fishTilt: number;
   fishVx: number;
   puff: number;
-  /** Length of the current vulnerable window, the ring's full circle (the sim's `vulnLeft` is the part still open). */
-  vulnTotal: number;
   blockFlash: number;
 }
 
@@ -61,7 +59,7 @@ export function createLook(): Look {
   return {
     samAir: { y: 0, rising: true },
     wt: 0, rt: 0, samGhosts: [], fishGhosts: [], fishTilt: FISH_STAND_TILT, fishVx: 0,
-    puff: 0, vulnTotal: 1, blockFlash: 0,
+    puff: 0, blockFlash: 0,
   };
 }
 
@@ -435,7 +433,7 @@ export function drawFish(
 export function drawFishMarks(ctx: CanvasRenderingContext2D, state: FightState, fish: FishInstance, look: Look): void {
   const f = state.fish;
   const pose = fishPose(state, fish, look);
-  if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, f.vulnLeft, look);
+  if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, f.vulnLeft, f.vulnTotal, look);
   if (f.mode === 'tell') {
     const p = f.tellProgress;
     const size = 34 + 58 * p;
@@ -567,7 +565,7 @@ function drawWetShine(ctx: CanvasRenderingContext2D, pose: Pose, look: Look): vo
 }
 
 /** Vulnerable: sweat drop, orbiting dizzy stars and a shrinking window ring. */
-function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vulnLeft: number, look: Look): void {
+function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vulnLeft: number, vulnTotal: number, look: Look): void {
   const topY = pose.cy - pose.ext - 14;
   // Sweat drop sliding down beside the head.
   const sx = pose.cx - facing * pose.hw * 0.55;
@@ -594,7 +592,7 @@ function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vu
   ctx.restore();
 
   // Window ring: how long the fish stays open.
-  const frac = look.vulnTotal > 0 ? Math.max(0, Math.min(1, vulnLeft / look.vulnTotal)) : 0;
+  const frac = vulnTotal > 0 ? Math.max(0, Math.min(1, vulnLeft / vulnTotal)) : 0;
   const rx = pose.cx;
   const ry = topY - 28;
   ctx.save();

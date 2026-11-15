@@ -461,10 +461,7 @@ means the game now plays differently. Added 2026-11-15 at Rhaveen's request
    table (bot results per fish and damage level). Known soft spots: early
    fish die in 1 or 2 hits from damage level 6; bite damage does not grow
    with tier; a straight hook drop can miss every fish.
-6. The "OPEN" ring's full circle still uses an estimated window length
-   (`look.vulnTotal` in `src/scenes/fight.ts`); only the remaining time is
-   exact. Add `vulnTotal` to the fight state to finish it.
-7. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
+6. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
    and reel-speed upgrades, parry, a boss, a bestiary. **Electric eel**
    (suggested by Rhaveen, 2026-11-14): the eel charges up with a visible
    crackle, then shocks a circle around itself; back off or dash to avoid it,
@@ -483,6 +480,14 @@ see `tools/README-fonts.md` (`python3 tools/font-chars.py`, then
 `sh tools/subset-fonts.sh`; the full font must be downloaded again into
 `candidates/fonts/`). Yuji Syuku and Dela Gothic One were also tried and
 not chosen.
+
+The "OPEN" ring (the old Pending item 6) is done: the fight state carries
+`fish.vulnTotal`, the full length of the current vulnerable window, and the
+ring reads it; the scene no longer estimates it. This also fixes a ring that
+could start partly drained when a hit interrupted an attack after a longer
+window (the estimate kept the larger of the two lengths). No gameplay number
+changed and the bot balance table is identical. Checked by tests only; the
+ring was not looked at in a browser.
 
 Done in session 2 (PR #20, merged): the old items 5, 7, 8 and 9. The result
 screen's G-to-RYO swap is gone; the fight texts, cutscene and result timings

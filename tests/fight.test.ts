@@ -155,6 +155,39 @@ describe('the slip', () => {
     expect(sim.state.fish.vulnLeft).toBe(0);
   });
 
+  it('vulnTotal is 0 with no window, slip.recovery once a slip ends', () => {
+    const sim = makeFight('sardine', 6);
+    skipIntro(sim);
+    expect(sim.state.fish.vulnTotal).toBe(0);
+    run(sim, approachAnd('quick', quickReach), has('slip'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    expect(sim.state.fish.vulnTotal).toBe(def('sardine').slip.recovery);
+    run(sim, () => NONE, () => sim.state.fish.mode === 'roam');
+    expect(sim.state.fish.vulnTotal).toBe(0);
+  });
+
+  it('a hit inside an open window leaves vulnTotal unchanged', () => {
+    const recovery = def('sardine').slip.recovery;
+    const sim = makeFight('sardine', 4);
+    skipIntro(sim);
+    run(sim, approachAnd('quick', quickReach), has('slip'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    run(sim, approachAnd('heavy', heavyReach), has('heavyHit'), 3);
+    expect(sim.state.fish.mode).toBe('stunned');
+    expect(sim.state.fish.vulnLeft).toBeGreaterThan(0);
+    expect(sim.state.fish.vulnTotal).toBe(recovery);
+    // Through 'stunned' and back to 'vulnerable': the total holds while the window is open.
+    let sawVulnerableAgain = false;
+    run(sim, () => NONE, () => {
+      const f = sim.state.fish;
+      if (f.vulnLeft > 0) expect(f.vulnTotal).toBe(recovery);
+      if (f.mode === 'vulnerable') sawVulnerableAgain = true;
+      return f.mode === 'roam';
+    });
+    expect(sawVulnerableAgain).toBe(true);
+    expect(sim.state.fish.vulnTotal).toBe(0);
+  });
+
   it('a whiffed slash counts as a miss', () => {
     const sim = makeFight('sardine', 1);
     skipIntro(sim);
@@ -221,6 +254,35 @@ describe('biters', () => {
     expect(ev.some((e) => e.type === 'hit')).toBe(true);
     expect(sim.state.fish.hp).toBeLessThan(hp);
     expect(sim.state.fish.mode).toBe('stunned');
+  });
+
+  it('after a lunge ends, vulnTotal is lungeRecovery', () => {
+    const sim = makeFight('piranha', 2);
+    skipIntro(sim);
+    run(sim, () => NONE, has('attack'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    expect(sim.state.fish.vulnTotal).toBe(F.fish.lungeRecovery);
+    expect(sim.state.fish.vulnLeft).toBe(F.fish.lungeRecovery);
+  });
+
+  it('a hit that interrupts a tell or an aim opens a window as long as the vulnLeft it starts with', () => {
+    for (const [id, cue] of [['shark', 'tell'], ['eel', 'aim']] as const) {
+      const sim = makeFight(id, 2);
+      skipIntro(sim);
+      run(sim, () => NONE, has(cue));
+      expect(sim.state.fish.vulnTotal).toBe(0);
+      let start = -1;
+      run(sim, approachAnd('quick', F.samurai.quick.reach + def(id).size * 0.5 - 6), (e) => {
+        // The sim sets vulnLeft on the hit, then counts it down in the same step.
+        if (has('hit')(e)) start = sim.state.fish.vulnLeft + DT;
+        return start >= 0;
+      }, 2);
+      expect(sim.state.fish.mode, id).toBe('stunned');
+      expect(start).toBeCloseTo(F.fish.lungeRecovery, 9);
+      expect(sim.state.fish.vulnTotal).toBe(F.fish.lungeRecovery);
+      run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+      expect(sim.state.fish.vulnTotal).toBe(F.fish.lungeRecovery);
+    }
   });
 
   it('fish with no attack and no special never hurt the samurai', () => {
@@ -411,6 +473,8 @@ describe('jump and crouch', () => {
     expect(ev.some((e) => e.type === 'dodged')).toBe(true);
     expect(sim.state.samurai.hp).toBe(hp0);
     expect(sim.state.fish.mode).toBe('vulnerable');
+    expect(sim.state.fish.vulnTotal).toBe(F.fish.special.chargeRecovery);
+    expect(sim.state.fish.vulnLeft).toBe(F.fish.special.chargeRecovery);
   });
 
   it('low shot (eel): crouching or blocking gets hit; jumping dodges', () => {
@@ -461,6 +525,31 @@ describe('competent bot', () => {
         expect(sim.state.samurai.x).toBeGreaterThanOrEqual(F.arena.left);
         expect(sim.state.samurai.x).toBeLessThanOrEqual(F.arena.right);
       }
+    }
+  });
+
+  it('keeps 0 < vulnLeft <= vulnTotal on every step, and vulnTotal steady within a window', () => {
+    for (const { id } of fishDefs) {
+      const sim = makeFight(id, 3);
+      const d = createGameState(null).makeFish(id, 0).def;
+      const bot = competentBot();
+      let prev = { left: 0, total: 0 };
+      let windows = 0;
+      while (sim.state.phase !== 'over') {
+        sim.step(DT, sim.state.phase === 'fighting' ? bot(sim.state, d) : NONE);
+        const { vulnLeft: left, vulnTotal: total } = sim.state.fish;
+        if (left > 0) {
+          expect(left, d.id).toBeLessThanOrEqual(total);
+          // Same window (still open, only counting down): the ring's full circle stays put.
+          if (prev.left > 0 && left <= prev.left) expect(total, d.id).toBe(prev.total);
+          else windows++;
+        } else {
+          expect(left, d.id).toBe(0);
+          expect(total, d.id).toBe(0);
+        }
+        prev = { left, total };
+      }
+      expect(windows, d.id).toBeGreaterThan(0);
     }
   });
 
