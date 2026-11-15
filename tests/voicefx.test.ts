@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { NEUTRAL_FX, dbToGain, driveCurve, isNeutralFx, makeImpulse, resolveFx, resolveLineFx } from '../src/core/announcer';
 import { voice } from '../src/manifest';
 
+// Files on disk under public/assets/voice (keys only; nothing is loaded).
+const voiceFiles = new Set(Object.keys(import.meta.glob('../public/assets/voice/**/*.{ogg,wav}')).map((k) => k.replace('../public/', '')));
+
 describe('voice fx', () => {
   it('neutral defaults leave the clip untouched', () => {
     expect(isNeutralFx(NEUTRAL_FX)).toBe(true);
@@ -89,5 +92,13 @@ describe('voice fx', () => {
     expect(dbToGain(0)).toBe(1);
     expect(dbToGain(6)).toBeCloseTo(1.995, 2);
     expect(dbToGain(-20)).toBeCloseTo(0.1);
+  });
+  it('manifest: every pack covers every line, and every clip file exists', () => {
+    expect(voiceFiles.size).toBeGreaterThan(20);
+    expect(Object.keys(voice.packs).sort()).toEqual(['aimee', 'alba', 'albaFx', 'fighter', 'pack1']);
+    for (const [name, clips] of Object.entries(voice.packs)) {
+      for (const k of ['fight', 'win', 'perfect', 'timeout', 'ko', 'round']) expect(clips[k], `${name}.${k}`).toBeTruthy();
+      for (const path of Object.values(clips)) expect(voiceFiles.has(path), path).toBe(true);
+    }
   });
 });

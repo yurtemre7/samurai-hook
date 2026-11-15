@@ -1,6 +1,9 @@
 // Dev-only audition page (audition.html). Not imported by the game, so it is
 // not in the production build. It uses the game's own audio code (createAudio)
 // and manifest, so what you hear here is what the game would play.
+//
+// One voice speaks every line: pick a voice (pack), a treatment for all lines,
+// and optionally a different treatment for the Fight line only.
 import { createAudio } from './core/audio';
 import { NEUTRAL_FX, resolveFx, type AnnounceRequest, type FxChoice, type VoiceFx } from './core/announcer';
 import { cutscene, music, sounds, text, voice } from './manifest';
@@ -8,111 +11,184 @@ import { cutscene, music, sounds, text, voice } from './manifest';
 const audio = createAudio(sounds, music, voice);
 for (const ev of ['pointerdown', 'keydown']) document.addEventListener(ev, () => audio.unlock(), { capture: true });
 
-interface Line { label: string; line: string; req: AnnounceRequest }
-const ROUND1: Line = { label: 'Round 1', line: 'Round 1! Iwashi!', req: { key: 'round', round: 1, fish: 'Iwashi' } };
-const FIGHT: Line = { label: 'Fight', line: text.announce.fight, req: { key: 'fight' } };
-const WIN: Line = { label: 'Win / K.O.', line: text.announce.win, req: { key: 'win' } };
+const ROBOT = 'robot';
+const CUSTOM = 'custom';
+const SAME = 'same';
+
+/** What each voice actually says per line, and alternate clips to try.
+ *  Taken from the packs' file names; nobody has listened to them. */
+interface PackInfo {
+  label: string;
+  words: Record<string, string>;
+  alternates?: Record<string, Record<string, string>>; // line key -> words -> clip path
+}
+const PACKS: Record<string, PackInfo> = {
+  fighter: {
+    label: 'Kenney Fighter (male, soft)',
+    words: { round: 'Ready', fight: 'Fight', win: 'You win', perfect: 'Flawless victory', timeout: 'Time', ko: 'You lose' },
+  },
+  alba: {
+    label: 'Alba MacKenna (raw)',
+    words: { round: 'Ready', fight: 'Fight', win: 'You win', perfect: 'Victory', timeout: 'Time', ko: 'You lose' },
+    alternates: { perfect: { Great: 'assets/voice/alba/perfect-great.wav' }, ko: { Defeat: 'assets/voice/alba/ko-defeat.wav' } },
+  },
+  albaFx: {
+    label: 'Alba MacKenna (her FX)',
+    words: { round: 'Ready', fight: 'Fight', win: 'You win', perfect: 'Victory', timeout: 'Time', ko: 'You lose' },
+    alternates: { perfect: { Great: 'assets/voice/albaFx/perfect-great.wav' }, ko: { Defeat: 'assets/voice/albaFx/ko-defeat.wav' } },
+  },
+  aimee: {
+    label: 'Aimee Smith (female)',
+    words: { round: 'Ready', fight: 'Fight', win: 'K.O.', perfect: 'Perfect', timeout: 'Game set', ko: 'Game over' },
+    alternates: { timeout: { Game: 'assets/voice/aimee/timeout-game.wav' } },
+  },
+  pack1: {
+    label: 'Kenney Voiceover #1 (says "Go" instead of "Fight")',
+    words: { round: 'Round', fight: 'Go', win: 'You win', perfect: 'Congratulations', timeout: 'Time over', ko: 'You lose' },
+  },
+};
+const packNames = Object.keys(voice.packs);
+const packInfo = (p: string): PackInfo => PACKS[p] ?? { label: p, words: {} };
+
+interface Line { id: string; title: string; line: string; req: AnnounceRequest }
+const round = (n: number): Line => ({ id: `round${n}`, title: `Round ${n}`, line: `Round ${n}! Iwashi!`, req: { key: 'round', round: n, fish: 'Iwashi' } });
+const FIGHT: Line = { id: 'fight', title: 'Fight', line: text.announce.fight, req: { key: 'fight' } };
+const WIN: Line = { id: 'win', title: 'Win', line: text.announce.win, req: { key: 'win' } };
+const LOSE: Line = { id: 'ko', title: 'Lose (bitten)', line: text.announce.ko, req: { key: 'ko' } };
 const lines: Line[] = [
-  ROUND1,
-  { label: 'Round 7 (past the recorded ones)', line: 'Round 7! Iwashi!', req: { key: 'round', round: 7, fish: 'Iwashi' } },
-  FIGHT,
-  WIN,
-  { label: 'Perfect', line: text.announce.perfect, req: { key: 'perfect' } },
-  { label: 'Time', line: text.announce.timeout, req: { key: 'timeout' } },
-  { label: 'Lose (bitten)', line: text.announce.ko, req: { key: 'ko' } },
+  round(1), round(2), round(7), FIGHT, WIN,
+  { id: 'perfect', title: 'Perfect', line: text.announce.perfect, req: { key: 'perfect' } },
+  { id: 'timeout', title: 'Time', line: text.announce.timeout, req: { key: 'timeout' } },
+  LOSE,
 ];
 
 /** Seconds between the "Round N" line and "Fight" in the game (the cutscene). */
 const ROUND_TO_FIGHT = cutscene.duration;
-const FIGHT_TO_WIN = 3.5;
+const FIGHT_TO_END = 3.5;
 
+// ---- current selection ----
 const presetNames = Object.keys(voice.presets);
-const packNames = Object.keys(voice.packs);
-const PACK_LABEL: Record<string, string> = { fighter: 'Kenney Fighter', pack1: 'Kenney Voiceover #1 (male)' };
-const packLabel = (p: string) => PACK_LABEL[p] ?? p;
+const sel = {
+  pack: voice.pack as string,
+  preset: (typeof voice.preset === 'string' ? voice.preset : CUSTOM) as string,
+  fight: (typeof voice.linePresets.fight === 'string' ? voice.linePresets.fight : SAME) as string,
+  alt: {} as Record<string, string>, // line key -> alternate clip path (for the current pack)
+};
+let custom: VoiceFx = resolveFx(voice.presets, 'demon');
+
+const choice = (name: string): FxChoice => (name === CUSTOM ? custom : name);
+function currentClips(): Record<string, string> {
+  return { ...voice.packs[sel.pack], ...sel.alt };
+}
+function currentLinePresets(): Record<string, FxChoice> {
+  return sel.fight === SAME ? {} : { fight: choice(sel.fight) };
+}
+/** What this voice says for a line (from file names). */
+function wordsFor(l: Line): string {
+  if (sel.pack === ROBOT) return l.line;
+  const clips = voice.packs[sel.pack];
+  const key = l.req.key;
+  if (key === 'round') {
+    if (clips[`round${l.req.round}`]) return `Round ${l.req.round}`;
+    return clips.round ? `${packInfo(sel.pack).words.round ?? 'generic'} (no "Round ${l.req.round}" recorded)` : 'robot voice (no clip)';
+  }
+  const alt = sel.alt[key];
+  if (alt) {
+    const hit = Object.entries(packInfo(sel.pack).alternates?.[key] ?? {}).find(([, path]) => path === alt);
+    if (hit) return hit[0];
+  }
+  return packInfo(sel.pack).words[key] ?? key;
+}
 
 // ---- playback: always through audio.announce, the game's own path ----
 let timers: number[] = [];
 function cancelPending(): void { for (const t of timers) clearTimeout(t); timers = []; }
 function later(seconds: number, fn: () => void): void { timers.push(window.setTimeout(fn, seconds * 1000)); }
 
-/** Exactly what the game plays now (manifest pack, preset and linePresets). */
-function sayAsGame(l: Line): void {
-  audio.setVoice({ clips: voice.clips, preset: voice.preset, linePresets: voice.linePresets });
+function say(l: Line): void {
+  if (sel.pack === ROBOT) {
+    audio.setVoice({ clips: {}, preset: 'clean', linePresets: {} });
+    audio.announce(l.line); // no clip request: speech synthesis, as before
+    return;
+  }
+  audio.setVoice({ clips: currentClips(), preset: choice(sel.preset), linePresets: currentLinePresets() });
   audio.announce(l.line, l.req);
-}
-/** A line from a given clip set with one treatment for everything. */
-function sayWith(l: Line, clips: Record<string, string>, fx: FxChoice): void {
-  audio.setVoice({ clips, preset: fx, linePresets: {} });
-  audio.announce(l.line, l.req);
-}
-function sayRobot(l: Line): void {
-  audio.setVoice({ clips: {}, preset: 'clean', linePresets: {} });
-  audio.announce(l.line); // no clip request: speech synthesis
 }
 function click(fn: () => void): () => void {
   return () => { audio.unlock(); cancelPending(); fn(); };
 }
 
+// ---- small DOM helpers ----
+const $ = (id: string) => document.getElementById(id)!;
 function button(label: string, fn: () => void, cls = ''): HTMLButtonElement {
   const b = document.createElement('button');
-  b.textContent = label; b.className = cls; b.onclick = click(fn);
+  b.textContent = label; b.className = cls; b.onclick = fn;
   return b;
 }
-const $ = (id: string) => document.getElementById(id)!;
-
-// ---- Section 1: chosen so far ----
-{
-  const box = $('chosen');
-  for (const l of lines) box.append(button(l.label, () => sayAsGame(l)));
-  $('chosenRound').append(button(`Play a full round (Round 1, ${ROUND_TO_FIGHT} s, Fight, ${FIGHT_TO_WIN} s, Win)`, () => {
-    sayAsGame(ROUND1);
-    later(ROUND_TO_FIGHT, () => sayAsGame(FIGHT));
-    later(ROUND_TO_FIGHT + FIGHT_TO_WIN, () => sayAsGame(WIN));
-  }, 'big'));
-  const lp = Object.entries(voice.linePresets).map(([k, v]) => `${k}: ${typeof v === 'string' ? v : 'custom'}`).join(', ');
-  $('chosenNote').textContent = `Pack: ${packLabel(voice.pack)}. All lines: ${String(voice.preset)}. Overrides: ${lp || 'none'}.`;
+/** A row of toggle buttons; exactly one is pressed. */
+function toggles(host: HTMLElement, options: [value: string, label: string][], get: () => string, set: (v: string) => void): () => void {
+  const buttons = options.map(([value, label]) => {
+    const b = button(label, () => { set(value); render(); }, 'toggle');
+    b.dataset.value = value;
+    host.append(b);
+    return b;
+  });
+  return () => { for (const b of buttons) b.setAttribute('aria-pressed', String(b.dataset.value === get())); };
 }
 
-// ---- Section 2: pick the Fight voice ----
-interface FightSource { label: string; note: string; clip: string }
-const fightSources: FightSource[] = [
-  { label: 'Kenney Fighter: "Fight"', note: 'the chosen pack', clip: voice.packs.fighter.fight },
-  { label: 'Kenney Voiceover #1: "Go"', note: 'a different word', clip: voice.packs.pack1.fight },
-  ...Object.entries(voice.fightCandidates).map(([label, clip]) => ({ label: `${label}: "Fight"`, note: 'another voice (CC-BY)', clip })),
-];
-const FIGHT_ORDER = ['demon', 'demonPlus', 'hype', 'roar', 'titan', 'stadium', 'deep', 'clean'];
-const fightTreatments = [...FIGHT_ORDER.filter((n) => n in voice.presets), ...presetNames.filter((n) => !FIGHT_ORDER.includes(n))];
+// ---- build the page ----
+const updaters: (() => void)[] = [];
 
-function playFight(src: FightSource, fx: FxChoice): void { sayWith(FIGHT, { fight: src.clip }, fx); }
-function playRoundThenFight(src: FightSource, fx: FxChoice): void {
-  sayWith(ROUND1, voice.packs.fighter, voice.preset);
-  later(ROUND_TO_FIGHT, () => playFight(src, fx));
-}
-{
-  const table = document.createElement('table');
-  const head = table.insertRow();
-  const c = document.createElement('th'); c.textContent = 'Treatment'; head.append(c);
-  for (const s of fightSources) {
-    const th = document.createElement('th');
-    th.innerHTML = '';
-    th.append(s.label, document.createElement('br'));
-    const small = document.createElement('small'); small.textContent = s.note; th.append(small);
-    head.append(th);
+updaters.push(toggles($('voices'),
+  [...packNames.map((p): [string, string] => [p, packInfo(p).label]), [ROBOT, 'Old robot voice (speech synthesis)']],
+  () => sel.pack, (v) => { sel.pack = v; sel.alt = {}; }));
+
+const treatmentOptions = [...presetNames.map((n): [string, string] => [n, n]), [CUSTOM, 'custom (sliders below)'] as [string, string]];
+updaters.push(toggles($('treatments'), treatmentOptions, () => sel.preset, (v) => { sel.preset = v; }));
+updaters.push(toggles($('fightTreatments'), [[SAME, 'same as the rest'], ...treatmentOptions], () => sel.fight, (v) => { sel.fight = v; }));
+
+function renderLines(): void {
+  const host = $('lines');
+  host.textContent = '';
+  for (const l of lines) {
+    const row = document.createElement('div'); row.className = 'line';
+    const name = document.createElement('span'); name.className = 'name'; name.textContent = l.title;
+    row.append(name, button(`"${wordsFor(l)}"`, click(() => say(l)), 'big'));
+    const alts = sel.pack === ROBOT ? undefined : packInfo(sel.pack).alternates?.[l.req.key];
+    if (alts) {
+      const key = l.req.key;
+      const span = document.createElement('span'); span.className = 'alts'; span.textContent = 'use instead: ';
+      const pick = (path: string | undefined) => click(() => {
+        if (path) sel.alt[key] = path; else delete sel.alt[key];
+        render();
+        say(l);
+      });
+      const std = button(`"${packInfo(sel.pack).words[key]}"`, pick(undefined), 'toggle');
+      std.setAttribute('aria-pressed', String(!sel.alt[key]));
+      span.append(std);
+      for (const [words, path] of Object.entries(alts)) {
+        const b = button(`"${words}"`, pick(path), 'toggle');
+        b.setAttribute('aria-pressed', String(sel.alt[key] === path));
+        span.append(b);
+      }
+      row.append(span);
+    }
+    host.append(row);
   }
-  for (const name of fightTreatments) {
-    const tr = table.insertRow();
-    const th = document.createElement('th'); th.className = 'row'; th.textContent = name; tr.append(th);
-    fightSources.forEach((s, i) => {
-      const td = tr.insertCell();
-      if (i === 0) td.className = 'main';
-      td.append(button(`FIGHT (${name})`, () => playFight(s, name), 'big'), button('Round 1 then this', () => playRoundThenFight(s, name)));
-    });
-  }
-  $('fightPick').append(table);
 }
 
-// ---- Section 3: custom sliders (apply to the Fight line) ----
+function playFight(end: Line): void {
+  say(round(1));
+  later(ROUND_TO_FIGHT, () => say(FIGHT));
+  later(ROUND_TO_FIGHT + FIGHT_TO_END, () => say(end));
+}
+$('whole').append(
+  button(`Play a whole fight: Round 1, Fight, Win`, click(() => playFight(WIN)), 'big primary'),
+  button(`Play a whole fight: Round 1, Fight, Lose`, click(() => playFight(LOSE)), 'big primary'),
+);
+$('wholeNote').textContent = `Round 1, then Fight after ${ROUND_TO_FIGHT} s (as in the game), then the result after ${FIGHT_TO_END} s.`;
+
+// ---- custom sliders ----
 const fxKeys: { key: keyof VoiceFx; min: number; max: number; step: number; hint: string }[] = [
   { key: 'rate', min: 0.5, max: 1.2, step: 0.01, hint: 'lower = deeper and slower' },
   { key: 'drive', min: 0, max: 1, step: 0.01, hint: 'distortion / growl' },
@@ -128,65 +204,60 @@ const fxKeys: { key: keyof VoiceFx; min: number; max: number; step: number; hint
   { key: 'layerGain', min: 0, max: 1, step: 0.01, hint: 'second, lower voice: level' },
   { key: 'layerRate', min: 0.4, max: 1, step: 0.01, hint: 'second voice: how much lower' },
 ];
-let custom: VoiceFx = resolveFx(voice.presets, 'demon');
-let customSource = fightSources[0];
-
-const readout = $('readout') as HTMLTextAreaElement;
 const inputs = new Map<keyof VoiceFx, { range: HTMLInputElement; out: HTMLSpanElement }>();
 for (const f of fxKeys) {
-  const label = document.createElement('label'); label.textContent = f.key; label.title = f.hint;
+  const label = document.createElement('label'); label.textContent = f.key;
   const range = document.createElement('input');
   range.type = 'range'; range.min = String(f.min); range.max = String(f.max); range.step = String(f.step);
   const out = document.createElement('span');
   const hint = document.createElement('small'); hint.textContent = f.hint;
-  range.oninput = () => { custom = { ...custom, [f.key]: Number(range.value) }; refresh(); };
+  range.oninput = () => { custom = { ...custom, [f.key]: Number(range.value) }; render(); };
   $('sliders').append(label, range, out, hint);
   inputs.set(f.key, { range, out });
 }
-function refresh(): void {
+const startSel = $('customPreset') as HTMLSelectElement;
+for (const n of presetNames) startSel.add(new Option(n, n));
+startSel.value = 'demon';
+startSel.onchange = () => { custom = resolveFx(voice.presets, startSel.value); render(); };
+
+// ---- readout ----
+function fxText(name: string): string {
+  if (name !== CUSTOM) return `'${name}'`;
+  const diff: Partial<VoiceFx> = {};
+  for (const k of Object.keys(NEUTRAL_FX) as (keyof VoiceFx)[]) if (custom[k] !== NEUTRAL_FX[k]) diff[k] = custom[k];
+  return JSON.stringify(diff);
+}
+function readoutText(): string {
+  if (sel.pack === ROBOT) return 'Old robot voice: no recorded clips (speech synthesis for every line).';
+  const out = [
+    `pack: '${sel.pack}',   // ${packInfo(sel.pack).label}`,
+    `preset: ${fxText(sel.preset)},`,
+    `linePresets: ${sel.fight === SAME ? '{}' : `{ fight: ${fxText(sel.fight)} }`},`,
+  ];
+  const alts = Object.entries(sel.alt);
+  out.push(alts.length ? `alternate clips: ${alts.map(([k, p]) => `${k} -> ${p}`).join(', ')}` : 'alternate clips: none');
+  return out.join('\n');
+}
+$('copy').onclick = () => {
+  const done = (m: string) => { $('copied').textContent = m; };
+  const ta = $('readout') as HTMLTextAreaElement;
+  navigator.clipboard.writeText(ta.value).then(() => done('copied'), () => { ta.select(); done('select and copy manually'); });
+};
+
+function render(): void {
+  for (const u of updaters) u();
+  const robot = sel.pack === ROBOT;
+  for (const id of ['treatments', 'fightTreatments']) {
+    for (const b of $(id).querySelectorAll('button')) b.disabled = robot;
+    $(id).classList.toggle('off', robot);
+  }
+  renderLines();
   for (const f of fxKeys) {
     const i = inputs.get(f.key)!;
     i.range.value = String(custom[f.key]);
     i.out.textContent = String(custom[f.key]) + (f.key === 'highCut' && custom.highCut >= 20000 ? ' (off)' : '');
   }
-  // Only the values that differ from neutral, as they would go in the manifest.
-  const diff: Partial<VoiceFx> = {};
-  for (const k of Object.keys(NEUTRAL_FX) as (keyof VoiceFx)[]) if (custom[k] !== NEUTRAL_FX[k]) diff[k] = custom[k];
-  readout.value = `// custom Fight treatment\n// clip: ${customSource.label} (${customSource.clip})\n`
-    + `linePresets: { fight: ${JSON.stringify(diff)} },`;
+  ($('readout') as HTMLTextAreaElement).value = readoutText();
+  $('copied').textContent = '';
 }
-const srcSel = $('customSource') as HTMLSelectElement;
-fightSources.forEach((s, i) => srcSel.add(new Option(s.label, String(i))));
-srcSel.onchange = () => { customSource = fightSources[Number(srcSel.value)]; refresh(); };
-const presetSel = $('customPreset') as HTMLSelectElement;
-for (const n of fightTreatments) presetSel.add(new Option(n, n));
-presetSel.onchange = () => { custom = resolveFx(voice.presets, presetSel.value); refresh(); };
-$('customPlay').append(
-  button('FIGHT (custom)', () => playFight(customSource, custom), 'big'),
-  button('Round 1 then this', () => playRoundThenFight(customSource, custom)),
-);
-$('copy').onclick = () => {
-  const done = (m: string) => { $('copied').textContent = m; };
-  navigator.clipboard.writeText(readout.value).then(() => done('copied'), () => { readout.select(); done('select and copy manually'); });
-};
-refresh();
-
-// ---- Full grid (collapsed) ----
-{
-  const table = document.createElement('table');
-  const head1 = table.insertRow();
-  const head2 = table.insertRow();
-  const corner = document.createElement('th'); corner.rowSpan = 2; corner.textContent = 'Line'; head1.append(corner);
-  const robotTh = document.createElement('th'); robotTh.rowSpan = 2; robotTh.textContent = 'Old robot voice'; head1.append(robotTh);
-  for (const p of packNames) {
-    const th = document.createElement('th'); th.className = 'pack'; th.colSpan = presetNames.length; th.textContent = packLabel(p); head1.append(th);
-    for (const n of presetNames) { const h = document.createElement('th'); h.textContent = n; head2.append(h); }
-  }
-  for (const l of lines) {
-    const tr = table.insertRow();
-    const th = document.createElement('th'); th.className = 'row'; th.textContent = l.label; tr.append(th);
-    tr.insertCell().append(button('play', () => sayRobot(l)));
-    for (const p of packNames) for (const n of presetNames) tr.insertCell().append(button('play', () => sayWith(l, voice.packs[p], n)));
-  }
-  $('grid').append(table);
-}
+render();

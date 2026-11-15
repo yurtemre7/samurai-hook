@@ -120,7 +120,7 @@ const voicePacks: Record<string, Record<string, string>> = {
     round5: 'assets/voice/round5.ogg',
   },
   // Kenney "Voiceover Pack #1" (CC0), male voice: no numbered rounds, no
-  // perfect or K.O. line (perfect uses "congratulations").
+  // perfect or K.O. line (perfect uses "congratulations"), and "Go" for fight.
   pack1: {
     fight: 'assets/voice/pack1/fight.ogg',
     win: 'assets/voice/pack1/win.ogg',
@@ -128,6 +128,61 @@ const voicePacks: Record<string, Record<string, string>> = {
     timeout: 'assets/voice/pack1/timeout.ogg',
     ko: 'assets/voice/pack1/ko.ogg',
     round: 'assets/voice/pack1/round.ogg',
+  },
+  // Alba MacKenna "Voice Pack: Fighting Game Announcer" (CC-BY 4.0), raw
+  // takes. win = "You win", perfect = "Victory", ko = "You lose", generic
+  // round (10 and up) = "Ready".
+  alba: {
+    fight: 'assets/voice/alba/fight.wav',
+    win: 'assets/voice/alba/win.wav',
+    perfect: 'assets/voice/alba/perfect.wav',
+    timeout: 'assets/voice/alba/timeout.wav',
+    ko: 'assets/voice/alba/ko.wav',
+    round: 'assets/voice/alba/round.wav',
+    round1: 'assets/voice/alba/round1.wav',
+    round2: 'assets/voice/alba/round2.wav',
+    round3: 'assets/voice/alba/round3.wav',
+    round4: 'assets/voice/alba/round4.wav',
+    round5: 'assets/voice/alba/round5.wav',
+    round6: 'assets/voice/alba/round6.wav',
+    round7: 'assets/voice/alba/round7.wav',
+    round8: 'assets/voice/alba/round8.wav',
+    round9: 'assets/voice/alba/round9.wav',
+  },
+  // The same lines from the same pack's FX folder (the author's own processing).
+  albaFx: {
+    fight: 'assets/voice/albaFx/fight.wav',
+    win: 'assets/voice/albaFx/win.wav',
+    perfect: 'assets/voice/albaFx/perfect.wav',
+    timeout: 'assets/voice/albaFx/timeout.wav',
+    ko: 'assets/voice/albaFx/ko.wav',
+    round: 'assets/voice/albaFx/round.wav',
+    round1: 'assets/voice/albaFx/round1.wav',
+    round2: 'assets/voice/albaFx/round2.wav',
+    round3: 'assets/voice/albaFx/round3.wav',
+    round4: 'assets/voice/albaFx/round4.wav',
+    round5: 'assets/voice/albaFx/round5.wav',
+    round6: 'assets/voice/albaFx/round6.wav',
+    round7: 'assets/voice/albaFx/round7.wav',
+    round8: 'assets/voice/albaFx/round8.wav',
+    round9: 'assets/voice/albaFx/round9.wav',
+  },
+  // Aimee Smith "Announcer Voice Pack (Fighting, Female)" (CC-BY 4.0).
+  // win = "K.O.", timeout = "Game set" (no "time" line exists), ko = "Game
+  // over" (no "you lose" exists), generic round (7 and up) = "Ready".
+  aimee: {
+    fight: 'assets/voice/aimee/fight.wav',
+    win: 'assets/voice/aimee/win.wav',
+    perfect: 'assets/voice/aimee/perfect.wav',
+    timeout: 'assets/voice/aimee/timeout.wav',
+    ko: 'assets/voice/aimee/ko.wav',
+    round: 'assets/voice/aimee/round.wav',
+    round1: 'assets/voice/aimee/round1.wav',
+    round2: 'assets/voice/aimee/round2.wav',
+    round3: 'assets/voice/aimee/round3.wav',
+    round4: 'assets/voice/aimee/round4.wav',
+    round5: 'assets/voice/aimee/round5.wav',
+    round6: 'assets/voice/aimee/round6.wav',
   },
 };
 const voicePack = 'fighter';
@@ -164,16 +219,6 @@ export const voice = {
   /** Per-line overrides. The Fight treatment is STILL BEING CHOSEN: `demon`
    *  is the owner's favourite so far; more options are on the audition page. */
   linePresets: { fight: 'demon' } as Record<string, FxChoice>,
-  /** Audition only (not used by the game): other recordings of the word
-   *  "fight", all CC-BY, credited in CREDITS.md. Remove the ones not chosen. */
-  fightCandidates: {
-    'Wozniak, take 1 (male)': 'assets/voice/extra/wozniak-fight1.wav',
-    'Wozniak, take 2 (male)': 'assets/voice/extra/wozniak-fight2.wav',
-    'Alba MacKenna, raw': 'assets/voice/extra/alba-fight.wav',
-    'Alba MacKenna, with her own FX': 'assets/voice/extra/alba-fight-fx.wav',
-    'Aimee Smith (female)': 'assets/voice/extra/aimee-fight.wav',
-    'qubodup (FPS announcer)': 'assets/voice/extra/qubodup-fight.wav',
-  } as Record<string, string>,
 };
 
 // ---------- Fish ----------
