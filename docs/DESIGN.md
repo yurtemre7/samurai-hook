@@ -124,8 +124,15 @@ wave. Squid: ink shots high, low, high. High shots can only be ducked (the
 jump apex stays below them). Striking the fish during a special's tell,
 charge or volley lands, stuns it and costs the special its full cooldown.
 Jumping above the fish's reach also dodges a biter's lunge. A fish with no
-attack and no special never hurts the samurai, which in normal mode includes
+attack and no special never hurts the samurai in normal mode, which includes
 the eel, pufferfish and squid.
+
+**Hard mode is tougher overall** (`hardMode` in `src/manifest.ts`, applied in
+`makeFish`): fish health x1.5, lunge and special damage x1.5, every fish
+hurts on touch (5, then 1 s cooldown; block and dash help, a jump over it
+avoids it; not during its own lunge or charge), and the pufferfish poisons
+on every hit that gets through, spikes included (3 per second for 4 s; a new
+hit refreshes it). So in hard mode no fish is harmless.
 
 Outcomes: fish health zero = "K.O.!", the fish becomes nigiri and is sold.
 Timer zero = "TIME! IT WAS... TOO SLIPPERY." Samurai health zero = "YOU
@@ -149,7 +156,8 @@ Samurai base: quick slash 6, heavy slash 18, health 100.
 
 Six slippery, three biters. Five fish have a dodge-only special (eel,
 pufferfish, swordfish, shark, squid); the eel, pufferfish and squid use it
-in hard mode only. Sardine, mackerel and anglerfish never hurt the samurai.
+in hard mode only. Sardine, mackerel and anglerfish never hurt the samurai
+in normal mode (in hard mode only by touch).
 The specials in the rows below are therefore hard-mode behaviour for the
 three slippery fish. All nine share one behaviour model driven by config
 numbers; only pufferfish, anglerfish and squid have a gimmick. Numbers in

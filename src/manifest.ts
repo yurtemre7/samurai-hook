@@ -185,6 +185,8 @@ export const fish: FishDef[] = [
     slip: { recovery: 2.2, dart: 160 },
     // Spits two spines at head height: crouch.
     special: { kind: 'shot', damage: 8, tell: 0.6, cooldown: 4, speed: 400, pattern: ['high', 'high'], gap: 0.35 },
+    // Hard mode only: its spines, body and spikes poison.
+    poison: { dps: 3, duration: 4 },
     gimmick: 'puff',
     taunts: ['DO NOT TOUCH. SERIOUSLY.', 'I AM INFLATING MY EGO!', 'ONE BITE AND YOU DIE. OF ME.'],
   },
@@ -229,6 +231,18 @@ export const fish: FishDef[] = [
     taunts: ['TECHNICALLY NOT A FISH!', 'INK ABOUT YOUR LIFE CHOICES.', 'I AM ARMED. EIGHT TIMES.'],
   },
 ];
+
+/**
+ * Hard mode (settings panel), applied in makeFish: more fish health, harder hits,
+ * every fish hurts on touch, and fish with `poison` (pufferfish) poison.
+ * Normal mode has none of this, and slippery fish lose their specials.
+ */
+export const hardMode = {
+  hpMult: 1.5,
+  damageMult: 1.5,         // lunges and specials
+  contactDamage: 5,        // any fish body touching the samurai (block and dash help)
+  contactCooldown: 1,      // seconds before touching can hurt again
+};
 
 /** Endless scaling: every `depth` metres the roster repeats, tougher and richer. */
 export const tiers = {
@@ -280,6 +294,7 @@ export const fight = {
     puff: { every: 4.5, duration: 1.6, knockback: 260, stun: 0.5 },
     ink: { every: 6, duration: 3 },
     darkRadius: 150,       // visible radius around the samurai in 'dark' fights
+    contactReach: 6,       // hard mode: px past the walking separation that still counts as touching
     special: {
       minDist: 120,        // a special only starts with at least this much room to the samurai
       aimDist: 260,        // during the tell the fish backs off to this distance (walls permitting)

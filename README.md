@@ -68,6 +68,8 @@ Keybinds (keyboard only): every action has a first and a second key. Choose a ro
 
 The defaults changed slightly: Right Shift and the numpad Enter no longer count as Block and Confirm (they can be bound again). In normal mode the eel, pufferfish and squid never hurt the samurai. In hard mode they use their jump-or-duck specials too. The swordfish and shark attack in both modes.
 
+Hard mode is also tougher overall: fish have 50% more health and their bites and specials hit 50% harder, touching any fish hurts (5, at most once a second; block and dash help, jumping over it avoids it), and the pufferfish poisons on every hit that gets through, including its spikes when you strike it puffed up (3 per second for 4 seconds). Numbers are in `hardMode` in `src/manifest.ts`.
+
 ### Touch (mobile browser, landscape only)
 
 Open the game in a phone browser and turn the phone sideways (in portrait it shows a "turn your phone sideways" message and the game is paused). On-screen buttons appear automatically and change with the screen: a fight shows QUICK, HEAVY, BLOCK and DASH; fishing shows REEL IN and SHOP; the shop shows BUY and BACK. Short hints at the bottom replace the keyboard prompts.

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { FightEvent, FightSim } from '../src/fight/sim';
-import { fight as F, fish as fishDefs } from '../src/manifest';
+import { fight as F, fish as fishDefs, hardMode } from '../src/manifest';
 import type { FightInput } from '../src/types';
 import { createFight } from '../src/fight/sim';
 import { createGameState } from '../src/game/state';
 import { competentBot, DT, idleBot, input, makeFight, mulberry32, NONE, runFight, skipIntro, stateWith, statsAt } from './fightBots';
 
 const def = (id: string) => fishDefs.find((f) => f.id === id)!;
+/** The fish as the fight sees it in hard mode (tests default to hard mode): damage x hardMode.damageMult. */
+const hard = (id: string) => stateWith(true).makeFish(id, 0).def;
 
 /** Steps with `fn` choosing the input until `until` returns true. Returns all events. */
 function run(sim: FightSim, fn: (sim: FightSim) => FightInput, until: (ev: FightEvent[], sim: FightSim) => boolean, maxSec = 30): FightEvent[] {
@@ -185,13 +187,13 @@ describe('biters', () => {
       ? input({ defendHeld: true, defendPressed: s.state.samurai.move !== 'block' }) : NONE), (e) => has('blocked')(e) || has('bitten')(e));
     const b = ev.find((e) => e.type === 'blocked');
     expect(b).toBeDefined();
-    expect(b!.damage).toBeCloseTo(def('piranha').attack!.damage * (1 - F.samurai.blockReduction));
+    expect(b!.damage).toBeCloseTo(hard('piranha').attack!.damage * (1 - F.samurai.blockReduction));
     expect(sim.state.samurai.hp).toBeCloseTo(100 - b!.damage!);
 
     const sim2 = makeFight('piranha', 2);
     skipIntro(sim2);
     const ev2 = run(sim2, () => NONE, has('bitten'));
-    expect(ev2.find((e) => e.type === 'bitten')!.damage).toBe(def('piranha').attack!.damage);
+    expect(ev2.find((e) => e.type === 'bitten')!.damage).toBe(hard('piranha').attack!.damage);
     expect(sim2.state.samurai.move).toBe('hurt');
   });
 
@@ -270,6 +272,52 @@ describe('hard mode', () => {
     }
   });
 
+  it('hard mode: more fish health and harder lunges and specials; normal mode unchanged', () => {
+    for (const id of ['sardine', 'piranha', 'swordfish', 'squid']) {
+      const n = stateWith(false).makeFish(id, 1);
+      const h = stateWith(true).makeFish(id, 1);
+      expect(h.maxHp, id).toBe(Math.round(n.maxHp * hardMode.hpMult));
+      if (def(id).attack) expect(h.def.attack!.damage, id).toBe(def(id).attack!.damage * hardMode.damageMult);
+      if (def(id).attack) expect(n.def.attack!.damage, id).toBe(def(id).attack!.damage);
+      if (def(id).special) expect(h.def.special!.damage, id).toBe(def(id).special!.damage * hardMode.damageMult);
+      expect(n.def.contactDamage, id).toBeUndefined();
+      expect(h.def.contactDamage, id).toBe(hardMode.contactDamage);
+    }
+  });
+
+  /** Walks into the fish until something happens. */
+  const walkInto = (s: FightSim) => input({ moveX: Math.sign(s.state.fish.x - s.state.samurai.x) || 1 });
+
+  it('hard mode: touching any fish hurts, at most once per contactCooldown; normal mode never', () => {
+    const sim = makeFight('sardine', 3);
+    skipIntro(sim);
+    const ev = run(sim, walkInto, has('bitten'), 15);
+    expect(ev.find((e) => e.type === 'bitten')?.damage).toBe(hardMode.contactDamage);
+    // Keep pushing in: no second touch hit inside the cooldown.
+    let t = 0;
+    const again = run(sim, walkInto, (e) => { t += DT; return has('bitten')(e) || t > hardMode.contactCooldown - 0.05; }, 3);
+    expect(again.some((e) => e.type === 'bitten')).toBe(false);
+
+    const calm = makeFight('sardine', 3, statsAt(0), 0, false);
+    skipIntro(calm);
+    for (let i = 0; i < 15 * 60; i++) expect(calm.step(DT, walkInto(calm)).some((e) => e.type === 'bitten')).toBe(false);
+    expect(calm.state.samurai.hp).toBe(100);
+  });
+
+  it('hard mode: a pufferfish hit poisons, and poison keeps hurting after the hit', () => {
+    const P = def('pufferfish').poison!;
+    const sim = makeFight('pufferfish', 2);
+    skipIntro(sim);
+    const ev = run(sim, () => NONE, has('bitten'), 15);
+    expect(ev.some((e) => e.type === 'poison')).toBe(true);
+    expect(sim.state.samurai.poisonLeft).toBeCloseTo(P.duration, 1);
+    const hp = sim.state.samurai.hp;
+    // Crouch and stay put: half a second of poison, nothing else lands.
+    for (let i = 0; i < 30; i++) sim.step(DT, input({ crouch: true }));
+    expect(hp - sim.state.samurai.hp).toBeGreaterThanOrEqual(P.dps * 0.5 - 0.01);
+    expect(stateWith(false).makeFish('pufferfish', 0).def.poison).toBeUndefined();
+  });
+
   it('the mode is saved, defaults to off, survives reset and an old save without the field', () => {
     const store: Record<string, string> = {};
     const storage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } };
@@ -287,8 +335,8 @@ describe('hard mode', () => {
 });
 
 describe('gimmicks', () => {
-  it('hitting a puffed pufferfish bounces and does no damage', () => {
-    const sim = makeFight('pufferfish', 1);
+  it('hitting a puffed pufferfish bounces and does no damage (normal mode: no spines, no poison)', () => {
+    const sim = makeFight('pufferfish', 1, statsAt(0), 0, false);
     skipIntro(sim);
     run(sim, () => NONE, has('puff'));
     expect(sim.state.fish.mode).toBe('puffed');
@@ -302,9 +350,8 @@ describe('gimmicks', () => {
     const x0 = sim.state.samurai.x;
     ev.push(...run(sim, () => NONE, () => sim.state.samurai.move !== 'hurt'));
     expect(Math.abs(sim.state.samurai.x - x0)).toBeGreaterThan(20);
-    // The bounce itself does no damage (only its spine special can hurt).
-    const spines = ev.filter((e) => e.type === 'bitten').reduce((a, e) => a + e.damage!, 0);
-    expect(sim.state.samurai.hp).toBeCloseTo(samHp - spines);
+    expect(ev.some((e) => e.type === 'bitten' || e.type === 'poison')).toBe(false);
+    expect(sim.state.samurai.hp).toBe(samHp);
   });
 
   it('the pufferfish unpuffs after its duration', () => {
@@ -402,7 +449,7 @@ describe('jump and crouch', () => {
     ? input({ moveX: Math.sign(s.state.fish.x - s.state.samurai.x) || 1, defendPressed: true, defendHeld: true }) : NONE);
 
   it('swordfish charge: standing, blocking or dashing gets hit full; jumping over it dodges and opens it up', () => {
-    const dmg = def('swordfish').special!.damage;
+    const dmg = hard('swordfish').special!.damage;
     for (const react of [() => NONE, block, dashWhenNear]) {
       const { ev } = special('swordfish', react);
       expect(ev.find((e) => e.type === 'bitten')?.damage).toBe(dmg);
@@ -414,7 +461,7 @@ describe('jump and crouch', () => {
   });
 
   it('low shot (eel): crouching or blocking gets hit; jumping dodges', () => {
-    const dmg = def('eel').special!.damage;
+    const dmg = hard('eel').special!.damage;
     for (const react of [() => input({ crouch: true }), block]) {
       expect(special('eel', react).ev.find((e) => e.type === 'bitten')?.damage).toBe(dmg);
     }
@@ -424,7 +471,7 @@ describe('jump and crouch', () => {
   });
 
   it('high shot (pufferfish): standing, jumping or blocking gets hit; crouching dodges both spines', () => {
-    const dmg = def('pufferfish').special!.damage;
+    const dmg = hard('pufferfish').special!.damage;
     for (const react of [() => NONE, jumpWhenNear, block]) {
       expect(special('pufferfish', react).ev.find((e) => e.type === 'bitten')?.damage).toBe(dmg);
     }
