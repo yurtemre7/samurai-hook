@@ -129,7 +129,7 @@ export const voice = {
     clean: {},
     deep: { rate: 0.85, lowBoost: 8, highCut: 9000 },
     // Shouted, distorted, short slap echo: made for the "Fight" line.
-    demonPlus: { rate: 0.78, lowBoost: 10, highCut: 6000, drive: 0.75, reverb: 0.3, reverbSeconds: 1.6, echo: 0.22, echoSeconds: 0.12, gain: 4 },
+    demonPlus: { rate: 0.78, lowBoost: 10, highCut: 6000, drive: 0.75, reverb: 0.3, reverbSeconds: 1.6, echo: 0.22, echoSeconds: 0.12, gain: 1 }, // gain 4 -> 1 dB (2026-11-15): "Fight" was louder than the Kenney lines
   } as Record<string, Partial<VoiceFx>>,
   /** Treatment for every line without an override. */
   preset: 'deep' as FxChoice,
