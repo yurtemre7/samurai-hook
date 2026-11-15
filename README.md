@@ -146,8 +146,10 @@ every depth has at least one fish.
 ### Swap a sound or the music
 
 Same idea in `sounds` and `music`: set `src` and `volume`. A sound with
-`src: null` plays a synthesised blip. The spoken announcer is the browser's
-speech synthesis; turn it off or change its pitch in `voice`.
+`src: null` plays a synthesised blip. The announcer plays recorded clips through
+an effect chain (`voice.clips`, `voice.presets`, per-line `voice.linePresets`);
+browser speech synthesis is the fallback when a clip is missing or fails, and
+speaks "Upgrade!" in the shop. Turn it off or change the fallback pitch in `voice`.
 
 ### Prices and scaling
 
@@ -196,7 +198,7 @@ See HANDOVER.md for the full list.
 
 Art, sound and music are CC0 or CC-BY from OpenGameArt and itch.io authors,
 including LuizMelo ("Martial Hero", the samurai). Every file is listed with
-its source and licence in [CREDITS.md](CREDITS.md). Built at a hackathon by
+its source and licence in [CREDITS.md](CREDITS.md). The announcer's "Fight" clip is by Alba MacKenna (CC-BY 4.0). Built at a hackathon by
 Team 1 with Claude Code.
 
 ## Contributing

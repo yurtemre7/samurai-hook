@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { NEUTRAL_FX, dbToGain, driveCurve, isNeutralFx, makeImpulse, resolveFx, resolveLineFx } from '../src/core/announcer';
-import { voice } from '../src/manifest';
+import { NEUTRAL_FX, dbToGain, driveCurve, isNeutralFx, makeImpulse, resolveFx, resolveLineFx, planAnnounce } from '../src/core/announcer';
+import { text, voice } from '../src/manifest';
 
 // Files on disk under public/assets/voice (keys only; nothing is loaded).
 const voiceFiles = new Set(Object.keys(import.meta.glob('../public/assets/voice/**/*.{ogg,wav}')).map((k) => k.replace('../public/', '')));
+const fxOf = (k: string) => resolveLineFx(voice.presets, voice.preset, voice.linePresets, k);
 
 describe('voice fx', () => {
   it('neutral defaults leave the clip untouched', () => {
@@ -22,12 +23,11 @@ describe('voice fx', () => {
     expect(resolveFx(presets, 'deep', { rate: 0.7 }).rate).toBe(0.7);
     expect(resolveFx(presets, 'missing')).toEqual(NEUTRAL_FX);
   });
-  it('manifest presets: clean, deep, arena, demon exist; the others lower the pitch', () => {
-    for (const n of ['clean', 'deep', 'arena', 'demon']) expect(voice.presets[n]).toBeDefined();
-    for (const n of ['deep', 'arena', 'demon']) expect(resolveFx(voice.presets, n).rate).toBeLessThan(1);
-    expect(resolveFx(voice.presets, 'demon').drive).toBeGreaterThan(0);
-    expect(resolveFx(voice.presets, 'arena').reverb).toBeGreaterThan(0);
-    for (const name of Object.keys(voice.packs)) expect(voice.packs[name].fight).toBeTruthy();
+  it('manifest presets: exactly clean, deep, demonPlus; deep and demonPlus lower the pitch', () => {
+    expect(Object.keys(voice.presets).sort()).toEqual(['clean', 'deep', 'demonPlus']);
+    expect(resolveFx(voice.presets, 'deep').rate).toBeLessThan(1);
+    expect(resolveFx(voice.presets, 'demonPlus').rate).toBeLessThan(1);
+    expect(resolveFx(voice.presets, 'demonPlus').drive).toBeGreaterThan(0);
   });
   it('drive curve is the identity at 0 and saturates above', () => {
     expect(Array.from(driveCurve(0, 5))).toEqual([-1, -0.5, 0, 0.5, 1]);
@@ -48,10 +48,8 @@ describe('voice fx', () => {
     // echoFeedback needs echo, layerRate needs layerGain.
     expect(isNeutralFx({ ...NEUTRAL_FX, echoFeedback: 0.5, layerRate: 0.6 })).toBe(true);
   });
-  it('older presets are unchanged by the new parameters', () => {
+  it('the deep preset keeps its values', () => {
     expect(resolveFx(voice.presets, 'deep')).toEqual({ ...NEUTRAL_FX, rate: 0.85, lowBoost: 8, highCut: 9000 });
-    const demon = resolveFx(voice.presets, 'demon');
-    expect(demon).toMatchObject({ rate: 0.72, drive: 0.5, gain: 0, layerGain: 0, echoFeedback: 0, presence: 0 });
   });
   it('resolveFx accepts inline values as well as a preset name', () => {
     expect(resolveFx(voice.presets, { rate: 0.9, gain: 3 })).toEqual({ ...NEUTRAL_FX, rate: 0.9, gain: 3 });
@@ -66,39 +64,33 @@ describe('voice fx', () => {
     expect(resolveLineFx(presets, 'deep', undefined, 'fight').rate).toBe(0.85);
     expect(resolveLineFx(presets, 'deep', { fight: 'missing' }, 'fight')).toEqual(NEUTRAL_FX);
   });
-  it('manifest: active configuration is fighter + deep, with demon for Fight', () => {
-    expect(voice.pack).toBe('fighter');
-    expect(voice.clips).toBe(voice.packs.fighter);
+  it('manifest: Fight uses the Alba clip with demonPlus; every other line uses deep', () => {
+    expect(voice.clips.fight).toBe('assets/voice/alba-fx-fight.wav');
     expect(voice.preset).toBe('deep');
-    expect(voice.linePresets).toEqual({ fight: 'demon' });
-    const fx = (k: string) => resolveLineFx(voice.presets, voice.preset, voice.linePresets, k);
-    expect(fx('fight')).toEqual(resolveFx(voice.presets, 'demon'));
-    for (const k of ['round', 'win', 'perfect', 'timeout', 'ko']) expect(fx(k)).toEqual(resolveFx(voice.presets, 'deep'));
+    expect(voice.linePresets).toEqual({ fight: 'demonPlus' });
+    expect(fxOf('fight')).toEqual(resolveFx(voice.presets, 'demonPlus'));
+    for (const k of ['round', 'win', 'perfect', 'timeout', 'ko']) expect(fxOf(k)).toEqual(resolveFx(voice.presets, 'deep'));
   });
-  it('manifest: the Fight treatments exist and each uses its own feature', () => {
-    for (const n of ['hype', 'roar', 'titan', 'stadium', 'demonPlus']) expect(voice.presets[n]).toBeDefined();
-    const r = (n: string) => resolveFx(voice.presets, n);
-    expect(r('hype').gain).toBeGreaterThan(0);
-    expect(r('hype').presence).toBeGreaterThan(0);
-    expect(r('roar').drive).toBeGreaterThan(r('demon').drive);
-    expect(r('titan').layerGain).toBeGreaterThan(0);
-    expect(r('titan').layerRate).toBeLessThan(1);
-    expect(r('stadium').echoFeedback).toBeGreaterThan(0);
-    expect(r('stadium').echoFeedback).toBeLessThanOrEqual(0.85);
-    expect(r('demonPlus').drive).toBeGreaterThan(r('demon').drive);
-    expect(r('demonPlus').rate).toBeGreaterThan(r('demon').rate);
+  it('manifest: clean is a no-op', () => {
+    expect(isNeutralFx(resolveFx(voice.presets, 'clean'))).toBe(true);
   });
   it('dbToGain', () => {
     expect(dbToGain(0)).toBe(1);
     expect(dbToGain(6)).toBeCloseTo(1.995, 2);
     expect(dbToGain(-20)).toBeCloseTo(0.1);
   });
-  it('manifest: every pack covers every line, and every clip file exists', () => {
-    expect(voiceFiles.size).toBeGreaterThan(20);
-    expect(Object.keys(voice.packs).sort()).toEqual(['aimee', 'alba', 'albaFx', 'fighter', 'pack1']);
-    for (const [name, clips] of Object.entries(voice.packs)) {
-      for (const k of ['fight', 'win', 'perfect', 'timeout', 'ko', 'round']) expect(clips[k], `${name}.${k}`).toBeTruthy();
-      for (const path of Object.values(clips)) expect(voiceFiles.has(path), path).toBe(true);
+  it('manifest: every announce line resolves to a clip file that exists on disk', () => {
+    for (const k of Object.keys(text.announce)) {
+      if (k === 'buy') continue; // "Upgrade!" stays on speech synthesis
+      const plan = planAnnounce({ key: k, round: 1 }, (text.announce as Record<string, string>)[k], voice.clips, false);
+      expect(plan.clip, k).toBeTruthy();
+      expect(voiceFiles.has(plan.clip as string), plan.clip as string).toBe(true);
     }
+    expect(planAnnounce({ key: 'buy' }, text.announce.buy, voice.clips, false).clip).toBeNull();
+  });
+  it('manifest: every clip in the manifest exists, and no unreferenced clip is shipped', () => {
+    const paths = Object.values(voice.clips);
+    for (const path of paths) expect(voiceFiles.has(path), path).toBe(true);
+    expect([...voiceFiles].sort()).toEqual([...paths].sort());
   });
 });

@@ -97,17 +97,19 @@ export const music: Record<string, { src: string | null; volume: number }> = {
  * `buy` ("Upgrade!"), which stays synthesised. Clips are credited in
  * CREDITS.md.
  *
- * `packs` are the available clip sets; `pack` picks the active one (`clips`).
  * Clips are played through a Web Audio effect chain; see `VoiceFx` in
  * src/core/announcer.ts for every setting. `preset` is the treatment for all
  * lines; `linePresets` overrides it per line key (fight, win, perfect,
  * timeout, ko, round), with either a preset name or inline fx values.
  * `clean` is neutral: the clip is played unprocessed.
+ * Shipped choice (owner, 2026-11-15): Kenney "Voiceover Pack: Fighter" (CC0)
+ * with `deep` for every line, except "Fight", which is Alba MacKenna's own FX
+ * take (CC-BY 4.0) with `demonPlus`.
  */
-const voicePacks: Record<string, Record<string, string>> = {
-  // Kenney "Voiceover Pack: Fighter" (CC0): one soft voice.
-  fighter: {
-    fight: 'assets/voice/fight.ogg',
+export const voice = {
+  enabled: true, rate: 1.15, pitch: 0.6, volume: 1,
+  clips: {
+    fight: 'assets/voice/alba-fx-fight.wav', // Alba MacKenna, CC-BY 4.0
     win: 'assets/voice/win.ogg',
     perfect: 'assets/voice/perfect.ogg',
     timeout: 'assets/voice/timeout.ogg',
@@ -118,107 +120,21 @@ const voicePacks: Record<string, Record<string, string>> = {
     round3: 'assets/voice/round3.ogg',
     round4: 'assets/voice/round4.ogg',
     round5: 'assets/voice/round5.ogg',
-  },
-  // Kenney "Voiceover Pack #1" (CC0), male voice: no numbered rounds, no
-  // perfect or K.O. line (perfect uses "congratulations"), and "Go" for fight.
-  pack1: {
-    fight: 'assets/voice/pack1/fight.ogg',
-    win: 'assets/voice/pack1/win.ogg',
-    perfect: 'assets/voice/pack1/perfect.ogg',
-    timeout: 'assets/voice/pack1/timeout.ogg',
-    ko: 'assets/voice/pack1/ko.ogg',
-    round: 'assets/voice/pack1/round.ogg',
-  },
-  // Alba MacKenna "Voice Pack: Fighting Game Announcer" (CC-BY 4.0), raw
-  // takes. win = "You win", perfect = "Victory", ko = "You lose", generic
-  // round (10 and up) = "Ready".
-  alba: {
-    fight: 'assets/voice/alba/fight.wav',
-    win: 'assets/voice/alba/win.wav',
-    perfect: 'assets/voice/alba/perfect.wav',
-    timeout: 'assets/voice/alba/timeout.wav',
-    ko: 'assets/voice/alba/ko.wav',
-    round: 'assets/voice/alba/round.wav',
-    round1: 'assets/voice/alba/round1.wav',
-    round2: 'assets/voice/alba/round2.wav',
-    round3: 'assets/voice/alba/round3.wav',
-    round4: 'assets/voice/alba/round4.wav',
-    round5: 'assets/voice/alba/round5.wav',
-    round6: 'assets/voice/alba/round6.wav',
-    round7: 'assets/voice/alba/round7.wav',
-    round8: 'assets/voice/alba/round8.wav',
-    round9: 'assets/voice/alba/round9.wav',
-  },
-  // The same lines from the same pack's FX folder (the author's own processing).
-  albaFx: {
-    fight: 'assets/voice/albaFx/fight.wav',
-    win: 'assets/voice/albaFx/win.wav',
-    perfect: 'assets/voice/albaFx/perfect.wav',
-    timeout: 'assets/voice/albaFx/timeout.wav',
-    ko: 'assets/voice/albaFx/ko.wav',
-    round: 'assets/voice/albaFx/round.wav',
-    round1: 'assets/voice/albaFx/round1.wav',
-    round2: 'assets/voice/albaFx/round2.wav',
-    round3: 'assets/voice/albaFx/round3.wav',
-    round4: 'assets/voice/albaFx/round4.wav',
-    round5: 'assets/voice/albaFx/round5.wav',
-    round6: 'assets/voice/albaFx/round6.wav',
-    round7: 'assets/voice/albaFx/round7.wav',
-    round8: 'assets/voice/albaFx/round8.wav',
-    round9: 'assets/voice/albaFx/round9.wav',
-  },
-  // Aimee Smith "Announcer Voice Pack (Fighting, Female)" (CC-BY 4.0).
-  // win = "K.O.", timeout = "Game set" (no "time" line exists), ko = "Game
-  // over" (no "you lose" exists), generic round (7 and up) = "Ready".
-  aimee: {
-    fight: 'assets/voice/aimee/fight.wav',
-    win: 'assets/voice/aimee/win.wav',
-    perfect: 'assets/voice/aimee/perfect.wav',
-    timeout: 'assets/voice/aimee/timeout.wav',
-    ko: 'assets/voice/aimee/ko.wav',
-    round: 'assets/voice/aimee/round.wav',
-    round1: 'assets/voice/aimee/round1.wav',
-    round2: 'assets/voice/aimee/round2.wav',
-    round3: 'assets/voice/aimee/round3.wav',
-    round4: 'assets/voice/aimee/round4.wav',
-    round5: 'assets/voice/aimee/round5.wav',
-    round6: 'assets/voice/aimee/round6.wav',
-  },
-};
-const voicePack = 'fighter';
-export const voice = {
-  enabled: true, rate: 1.15, pitch: 0.6, volume: 1,
-  packs: voicePacks,
-  pack: voicePack,
-  clips: voicePacks[voicePack] as Record<string, string>,
+  } as Record<string, string>,
   /** After a recorded "Round N" clip, also speak the fish name with the
-   *  synthesised voice? OPEN QUESTION, awaiting the owner's choice: false
-   *  drops it (the name is on screen anyway), true says it after the clip. */
+   *  synthesised voice? false: the name is on screen anyway. */
   speakFishName: false,
-  /** Effect presets for recorded clips (audition them at /audition.html on
-   *  the dev server). */
+  /** Effect presets for recorded clips. */
   presets: {
     clean: {},
     deep: { rate: 0.85, lowBoost: 8, highCut: 9000 },
-    arena: { rate: 0.85, lowBoost: 8, highCut: 8000, drive: 0.1, reverb: 0.35, reverbSeconds: 2.2, echo: 0.2, echoSeconds: 0.22 },
-    demon: { rate: 0.72, lowBoost: 10, highCut: 5000, drive: 0.5, reverb: 0.3, reverbSeconds: 1.6 },
-    // More energetic treatments, made for the "Fight" line.
-    // Loud and urgent: barely lowered, pushed hard into the limiter, bright slap.
-    hype: { rate: 0.92, gain: 9, presence: 6, drive: 0.25, echo: 0.25, echoSeconds: 0.09 },
-    // Shouted, gritty growl: heavy distortion, short room.
-    roar: { rate: 0.8, drive: 0.85, lowBoost: 8, highCut: 6500, reverb: 0.18, reverbSeconds: 0.7, gain: 3 },
-    // Two voices at once: the clip plus a copy most of an octave lower.
-    titan: { rate: 0.95, layerRate: 0.65, layerGain: 0.7, lowBoost: 5, reverb: 0.3, reverbSeconds: 1.8, gain: 3 },
-    // Deep, huge hall, repeating echo ("FIGHT... ight... ight").
-    stadium: { rate: 0.82, lowBoost: 8, highCut: 8000, reverb: 0.5, reverbSeconds: 3.2, echo: 0.5, echoSeconds: 0.32, echoFeedback: 0.55, gain: 2 },
-    // demon pushed further: more drive, a touch faster, slap echo, louder.
+    // Shouted, distorted, short slap echo: made for the "Fight" line.
     demonPlus: { rate: 0.78, lowBoost: 10, highCut: 6000, drive: 0.75, reverb: 0.3, reverbSeconds: 1.6, echo: 0.22, echoSeconds: 0.12, gain: 4 },
   } as Record<string, Partial<VoiceFx>>,
-  /** Owner's choice (2026-11-15): Kenney Fighter pack, `deep` for every line. */
+  /** Treatment for every line without an override. */
   preset: 'deep' as FxChoice,
-  /** Per-line overrides. The Fight treatment is STILL BEING CHOSEN: `demon`
-   *  is the owner's favourite so far; more options are on the audition page. */
-  linePresets: { fight: 'demon' } as Record<string, FxChoice>,
+  /** Per-line overrides. */
+  linePresets: { fight: 'demonPlus' } as Record<string, FxChoice>,
 };
 
 // ---------- Fish ----------

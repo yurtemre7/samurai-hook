@@ -28,8 +28,16 @@ describe('planAnnounce', () => {
     expect(planAnnounce({ key: 'round', round: 2, fish: 'Fugu' }, 't', clips, true)).toEqual({ clip: 'a/r2.ogg', speech: 'Fugu' });
     expect(planAnnounce({ key: 'round', round: 2, fish: 'Fugu' }, 't', clips, false)).toEqual({ clip: 'a/r2.ogg', speech: null });
   });
-  it('manifest: announce keys have clips, speakFishName is off for now', () => {
+  it('manifest: speakFishName is off', () => {
     expect(voice.speakFishName).toBe(false);
-    for (const k of ['fight', 'win', 'perfect', 'timeout', 'ko', 'round', 'round1', 'round5']) expect(voice.clips[k]).toBeTruthy();
+  });
+  it('manifest: rounds 1-5 use their own clip, above 5 the generic round clip', () => {
+    const clip = (round: number) => planAnnounce({ key: 'round', round }, 't', voice.clips, false).clip;
+    for (let n = 1; n <= 5; n++) expect(clip(n)).toBe(`assets/voice/round${n}.ogg`);
+    for (const n of [6, 7, 12]) expect(clip(n)).toBe('assets/voice/round.ogg');
+  });
+  it('manifest: a missing clip falls back to speech', () => {
+    const { fight: _omit, ...rest } = voice.clips;
+    expect(planAnnounce({ key: 'fight' }, 'Fight!', rest, false)).toEqual({ clip: null, speech: 'Fight!' });
   });
 });
