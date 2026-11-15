@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInputCore } from '../src/input/core';
-import { dragToAxis, padDirections, touchEnabled, DRAG_DEADZONE_PX, DRAG_FULL_PX } from '../src/input/touch';
+import { dragToAxis, padDirections, touchEnabled, DRAG_DEADZONE_PX, DRAG_FULL_PX, swipeDir, sceneButtons, SWIPE_PX, SWIPE_MS } from '../src/input/touch';
 
 const make = () => createInputCore({ getGamepads: () => [] });
 
@@ -226,5 +226,34 @@ describe('touch tap and finger drag (core)', () => {
     expect(c.device).toBe('touch');
     c.keyDown('KeyA', 'a');
     expect(c.device).toBe('keyboard');
+  });
+});
+
+describe('swipe to dash and scene buttons', () => {
+  it('a fast, mostly horizontal swipe dashes that way; slow or vertical does not', () => {
+    expect(swipeDir(SWIPE_PX, 0, 100)).toBe(1);
+    expect(swipeDir(-SWIPE_PX - 5, 10, SWIPE_MS)).toBe(-1);
+    expect(swipeDir(SWIPE_PX - 1, 0, 50)).toBeNull();
+    expect(swipeDir(80, 0, SWIPE_MS + 1)).toBeNull();
+    expect(swipeDir(50, 60, 50)).toBeNull();
+  });
+
+  it('fights show no CONFIRM and no SHOP, so nothing on screen jumps by surprise', () => {
+    expect(sceneButtons('fight')).not.toContain('confirm');
+    expect(sceneButtons('fight')).not.toContain('shop');
+    expect(sceneButtons('fight')).toEqual(expect.arrayContaining(['quick', 'heavy', 'defend', 'dash']));
+    expect(sceneButtons('ocean')).toEqual(['confirm', 'shop']);
+  });
+
+  it('a dash request is handed out for exactly one step', () => {
+    const c = createInputCore({ getGamepads: () => null });
+    c.touchDash(-1);
+    c.update();
+    expect(c.dashDir()).toBe(-1);
+    c.update();
+    expect(c.dashDir()).toBeNull();
+    c.touchDash(0);
+    c.update();
+    expect(c.dashDir()).toBe(0);
   });
 });

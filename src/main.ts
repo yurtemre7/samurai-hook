@@ -58,6 +58,7 @@ const game: Game = {
   go<K extends SceneId>(id: K, params: SceneParams[K]) {
     scene?.exit?.();
     scene = (factories[id] as SceneFactory<K>)(game, params);
+    touch?.setScene(id);
     scene.enter?.();
   },
 };

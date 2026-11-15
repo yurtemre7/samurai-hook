@@ -4,6 +4,9 @@
 // (dragDX), elsewhere it is a small floating stick (walk in fights; up/down brake/sink while fishing).
 // Touching the play area is its own signal (`tapped()`), NOT confirm: only the idle ocean uses it, to
 // cast. Confirm also jumps and reels in, so a stray tap must never become confirm.
+// Buttons follow the scene (`setScene`): fights show QUICK / HEAVY / BLOCK / DASH and no CONFIRM or SHOP;
+// fishing shows REEL IN and SHOP; the shop shows BUY and BACK; cutscene and result show OK.
+// A quick horizontal swipe on the play area is a dash (only fights use it).
 // Landscape only: in portrait a full-screen message covers everything and `blocked()` pauses the game loop.
 import type { Action } from '../types';
 import type { InputCore } from './core';
@@ -47,9 +50,32 @@ export function padDirections(dx: number, dy: number, half: number): PadDir[] {
   return out;
 }
 
+/** A swipe this fast counts as a dash: at least SWIPE_PX of mostly-horizontal travel within SWIPE_MS. */
+export const SWIPE_PX = 40;
+export const SWIPE_MS = 180;
+
+/** Quick horizontal swipe -> dash direction, else null. Pure, for tests. */
+export function swipeDir(dx: number, dy: number, ms: number): -1 | 1 | null {
+  if (!(ms <= SWIPE_MS) || !(Math.abs(dx) >= SWIPE_PX) || Math.abs(dx) <= Math.abs(dy)) return null;
+  return dx < 0 ? -1 : 1;
+}
+
+/** Which buttons each scene shows. */
+export type TouchScene = 'ocean' | 'cutscene' | 'fight' | 'result' | 'shop';
+const SCENE_BUTTONS: Record<TouchScene, { show: string[]; confirm?: string; shop?: string }> = {
+  ocean: { show: ['confirm', 'shop'], confirm: 'REEL IN', shop: 'SHOP' },
+  fight: { show: ['quick', 'heavy', 'defend', 'dash'] },
+  shop: { show: ['confirm', 'shop'], confirm: 'BUY', shop: 'BACK' },
+  cutscene: { show: ['confirm'], confirm: 'OK' },
+  result: { show: ['confirm'], confirm: 'OK' },
+};
+export const sceneButtons = (s: TouchScene) => SCENE_BUTTONS[s].show;
+
 export interface TouchControls {
   /** True while the screen is in portrait: the game loop must not advance. */
   blocked(): boolean;
+  /** Show the buttons that make sense for this scene (and release anything held). */
+  setScene(s: TouchScene): void;
 }
 
 const CSS = `
@@ -64,7 +90,8 @@ const CSS = `
 .sh-cell.on,.sh-btn.on{background:rgba(255,255,255,.78);color:#0b1020}
 .sh-cell.empty{visibility:hidden}
 .sh-cluster{position:absolute;right:calc(env(safe-area-inset-right) + 14px);bottom:calc(env(safe-area-inset-bottom) + 12px);
-  display:grid;grid-template-columns:repeat(2,var(--u));grid-template-rows:repeat(2,var(--u));gap:8px}
+  display:grid;grid-template-columns:repeat(2,var(--u));grid-auto-rows:var(--u);gap:8px;align-content:end}
+.sh-btn.hide{display:none}
 .sh-btn{display:flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;letter-spacing:.03em;
   background:rgba(12,16,28,.5);border:2px solid rgba(255,255,255,.6)}
 .sh-btn.confirm{border-color:#f0c419}
@@ -147,9 +174,11 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   // ---- Buttons ----
   const cluster = mk('sh-cluster');
   const btnHeld = new Map<number, { action: Action; el: HTMLElement }>();
+  const buttons: Record<string, HTMLElement> = {};
   const button = (action: Action, label: string, cls = '') => {
     const el = mk(`sh-btn ${cls}`.trim(), label);
     el.setAttribute('aria-label', label);
+    buttons[action] = el;
     el.addEventListener('pointerdown', (e) => {
       try { el.setPointerCapture(e.pointerId); } catch { /* synthetic events */ }
       if (btnHeld.has(e.pointerId)) return;
@@ -169,10 +198,24 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     el.addEventListener('lostpointercapture', end);
     return el;
   };
+  // DASH: dashes the way the pad or drag points; with no direction held, away from the fish.
+  const dashBtn = mk('sh-btn', 'DASH');
+  dashBtn.setAttribute('aria-label', 'DASH');
+  buttons.dash = dashBtn;
+  dashBtn.addEventListener('pointerdown', () => {
+    const held: -1 | 0 | 1 = padHeld.has('left') ? -1 : padHeld.has('right') ? 1 : 0;
+    const axis = input.moveX();
+    input.touchDash(held !== 0 ? held : Math.abs(axis) > 0.3 ? (axis < 0 ? -1 : 1) : 0);
+    dashBtn.classList.add('on');
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) {
+    dashBtn.addEventListener(ev, () => dashBtn.classList.remove('on'));
+  }
   cluster.append(
     button('defend', 'BLOCK'),
-    button('heavy', 'HEAVY'),
+    dashBtn,
     button('quick', 'QUICK'),
+    button('heavy', 'HEAVY'),
     button('confirm', 'CONFIRM', 'confirm'),
   );
   root.appendChild(cluster);
@@ -191,6 +234,8 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   let ox = 0;
   let oy = 0;
   let lastX = 0;
+  let downAt = 0;
+  let swiped = false;
   const canvas = doc.getElementById('game');
   /** CSS px -> game px (the canvas is 960 game px wide, scaled to fit). */
   const toGame = () => {
@@ -205,6 +250,8 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     ox = e.clientX;
     oy = e.clientY;
     lastX = e.clientX;
+    downAt = e.timeStamp || win.performance.now();
+    swiped = false;
     input.touchTap();
     input.setDragging(true);
     ring.style.left = `${ox}px`;
@@ -215,6 +262,10 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     if (e.pointerId !== dragId) return;
     input.touchDrag((e.clientX - lastX) * toGame());
     lastX = e.clientX;
+    if (!swiped) {
+      const d = swipeDir(e.clientX - ox, e.clientY - oy, (e.timeStamp || win.performance.now()) - downAt);
+      if (d !== null) { swiped = true; input.touchDash(d); }
+    }
     const a = dragToAxis(e.clientX - ox, e.clientY - oy);
     input.setTouchAxis(a.x, a.y);
   });
@@ -247,5 +298,14 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     el?.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 
-  return { blocked };
+  const setScene = (s: TouchScene) => {
+    const cfg = SCENE_BUTTONS[s] ?? SCENE_BUTTONS.ocean;
+    for (const [a, el] of Object.entries(buttons)) el.classList.toggle('hide', !cfg.show.includes(a));
+    if (cfg.confirm) buttons.confirm.textContent = cfg.confirm;
+    if (cfg.shop) buttons.shop.textContent = cfg.shop;
+    releaseAll();
+  };
+  setScene('ocean');
+
+  return { blocked, setScene };
 }

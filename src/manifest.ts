@@ -248,6 +248,7 @@ export const fight = {
   arena: { left: 60, right: 900, floorY: 440 },
   samurai: {
     walkSpeed: 260,
+    touchWalkScale: 1.5,   // walking by touch drag is this much faster (owner's choice, 2026-11-15); keys/pad stay 1
     bodyRadius: 30,
     // reach matches the slash drawn in the sprite (about 226 px forward of his centre)
     quick: { startup: 0.06, active: 0.08, recovery: 0.14, reach: 185 },

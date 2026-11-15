@@ -38,6 +38,8 @@ export interface InputCore extends Input {
   touchDrag(dx: number): void;
   /** Drag started or ended on the play area. */
   setDragging(on: boolean): void;
+  /** Dash request from a quick swipe (-1 / 1) or the DASH button (direction held, else 0 = backward). */
+  touchDash(dir: -1 | 0 | 1): void;
   /** Make touch the current device (the overlay calls this on start, so phone hints show before the first touch). */
   useTouch(): void;
 }
@@ -155,6 +157,8 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   let dragAcc = 0;
   let dragStep = 0;
   let dragOn = false;
+  let dashLatch: -1 | 0 | 1 | null = null;
+  let dashNow: -1 | 0 | 1 | null = null;
 
   const keyActive = (a: Action) => {
     if (keysTapped.has(a) || touchTapped.has(a) || touchHeld.has(a)) return true;
@@ -188,6 +192,11 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       tapLatch = false;
       dragAcc = 0;
       dragOn = false;
+      dashLatch = null;
+    },
+    touchDash(dir) {
+      device = 'touch';
+      dashLatch = dir;
     },
     touchTap() {
       device = 'touch';
@@ -230,6 +239,8 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       tapLatch = false;
       dragStep = dragAcc;
       dragAcc = 0;
+      dashNow = dashLatch;
+      dashLatch = null;
 
       const pad = firstPad(deps.getGamepads);
       const buttons: boolean[] = [];
@@ -271,6 +282,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     dragging: () => dragOn,
     dragDX: () => dragStep,
     tapped: () => tapNow,
+    dashDir: () => dashNow,
     moveX: () => clamp1(digX + stickX + touchX),
     moveY: () => clamp1(digY + stickY + touchY),
     anyPressed: () => {

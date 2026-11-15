@@ -36,6 +36,9 @@ export interface Input {
   dragDX(): number;
   /** Touch only: true on the step a finger touched the play area (not a button). */
   tapped(): boolean;
+  /** Touch only: a dash was asked for this step (quick swipe or DASH button). -1 / 1 = that way,
+   *  0 = no direction given (the fight dashes away from the fish). null = no dash. */
+  dashDir(): -1 | 0 | 1 | null;
 }
 
 export interface Prompt {
@@ -235,6 +238,8 @@ export interface FightInput {
   defendPressed: boolean;
   jump: boolean;         // pressed this step
   crouch: boolean;       // held
+  /** Optional multiplier on walk speed (touch drag walks faster, owner's choice). Default 1. */
+  walkScale?: number;
 }
 
 // ---------- Scenes ----------

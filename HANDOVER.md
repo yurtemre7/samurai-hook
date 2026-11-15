@@ -105,6 +105,17 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
     trailed far behind a thumb and read as lag;
   - is also a small floating stick (8 px dead zone, full at 30 px) for walking
     in fights and braking or sinking faster while fishing.
+  - **dashes** on a quick horizontal swipe (40 px within 180 ms, `swipeDir`);
+    only fights use it.
+  The buttons follow the scene (`setScene`, called from `game.go`): fights show
+  QUICK, HEAVY, BLOCK and DASH, with no CONFIRM or SHOP (Rhaveen: a CONFIRM
+  that makes him jump "makes no sense"); fishing shows REEL IN and SHOP; the
+  shop BUY and BACK; cutscene and result OK. DASH dashes the way the pad or
+  drag points, or away from the fish with no direction (`input.dashDir()`;
+  the fight turns it into the existing defend-plus-direction dash).
+  **Walking by drag is 1.5x faster** than keys or pad
+  (`fight.samurai.touchWalkScale`, owner's choice, so phones are a little
+  easier); bots never set it, so the balance snapshot is unchanged.
   The phone hint text is in `text.touch` in the manifest; the device starts as
   `touch` when the overlay is on, so the hint shows before the first touch. The overlay exists only when
   `(pointer: coarse)` matches or the URL has `?touch=1`; desktop is unchanged.
