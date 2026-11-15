@@ -81,8 +81,15 @@ export const statsAt = (damageLevel: number): SamuraiStats => {
   return { maxHp: samuraiBase.maxHp, quickDamage: samuraiBase.quickDamage * m, heavyDamage: samuraiBase.heavyDamage * m };
 };
 
-export function makeFight(fishId: string, seed = 1, stats: SamuraiStats = statsAt(0), tier = 0): FightSim {
-  const fish = createGameState(null).makeFish(fishId, tier);
+/** A game state with hard mode set. Tests default to hard mode: every fish at full strength. */
+export function stateWith(hard: boolean) {
+  const s = createGameState(null);
+  s.hardMode = hard;
+  return s;
+}
+
+export function makeFight(fishId: string, seed = 1, stats: SamuraiStats = statsAt(0), tier = 0, hard = true): FightSim {
+  const fish = stateWith(hard).makeFish(fishId, tier);
   return createFight(fish, stats, mulberry32(seed));
 }
 
@@ -95,9 +102,9 @@ export function skipIntro(sim: FightSim): FightEvent[] {
 
 export interface FightResult { outcome: FightOutcome | null; timeUsed: number; hpLeft: number; events: FightEvent[]; state: FightState }
 
-export function runFight(fishId: string, bot: Bot, damageLevel = 0, seed = 1): FightResult {
-  const sim = makeFight(fishId, seed, statsAt(damageLevel));
-  const def = createGameState(null).makeFish(fishId, 0).def;
+export function runFight(fishId: string, bot: Bot, damageLevel = 0, seed = 1, hard = true): FightResult {
+  const sim = makeFight(fishId, seed, statsAt(damageLevel), 0, hard);
+  const def = stateWith(hard).makeFish(fishId, 0).def;
   const events: FightEvent[] = [];
   const maxSteps = Math.ceil((def.timer + F.introDelay + 5) * 60);
   for (let i = 0; i < maxSteps && sim.state.phase !== 'over'; i++) {

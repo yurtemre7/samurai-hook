@@ -13,9 +13,13 @@ export interface GamepadLike {
 export interface InputCoreDeps {
   /** Called freshly inside every update(); never cached. */
   getGamepads: () => readonly (GamepadLike | null | undefined)[] | null | undefined;
+  /** Where custom key bindings are kept. Omit for in-memory only. */
+  storage?: { getItem(k: string): string | null; setItem(k: string, v: string): void } | null;
 }
 
 export interface InputCore extends Input {
+  /** Actions a key event would trigger right now, with the current bindings. */
+  actionsFor(code: string, key?: string): Action[];
   /**
    * Feed a keydown: `code` is KeyboardEvent.code (physical position), `key` the optional
    * KeyboardEvent.key (the labelled character). Switches device to keyboard, mapped or not.
@@ -45,34 +49,108 @@ export interface InputCore extends Input {
 }
 
 export const ACTIONS: readonly Action[] = [
-  'left', 'right', 'up', 'down', 'confirm', 'quick', 'heavy', 'defend', 'shop',
+  'left', 'right', 'up', 'down', 'confirm', 'quick', 'heavy', 'defend', 'shop', 'settings',
 ];
 
-export const KEY_MAP: Record<Action, readonly string[]> = {
+/** Two keyboard keys per action: a primary and an optional alternate (null = none). */
+export type KeySlots = [string, string | null];
+export type Bindings = Record<Action, KeySlots>;
+
+export const DEFAULT_BINDINGS: Readonly<Bindings> = {
   left: ['KeyA', 'ArrowLeft'],
   right: ['KeyD', 'ArrowRight'],
   up: ['KeyW', 'ArrowUp'],
   down: ['KeyS', 'ArrowDown'],
-  confirm: ['Space', 'Enter', 'NumpadEnter'],
-  quick: ['KeyJ'],
-  heavy: ['KeyK'],
-  defend: ['KeyL', 'ShiftLeft', 'ShiftRight'],
-  shop: ['KeyE'],
+  confirm: ['Space', 'Enter'],
+  // Mouse<button> codes come from mousedown/mouseup in input.ts: left click quick, right click heavy.
+  quick: ['KeyJ', 'Mouse0'],
+  heavy: ['KeyK', 'Mouse2'],
+  defend: ['KeyL', 'ShiftLeft'],
+  shop: ['KeyE', null],
+  settings: ['Escape', 'Tab'],
 };
 
-/** Labelled-letter bindings (KeyboardEvent.key, lower-cased), so non-QWERTY layouts work too. */
+export const BINDINGS_KEY = 'samurai-hook-keys-v1';
+
+const cloneBindings = (b: Readonly<Bindings>): Bindings => {
+  const out = {} as Bindings;
+  for (const a of ACTIONS) out[a] = [b[a][0], b[a][1]];
+  return out;
+};
+
+/** Keys that can never be bound: the browser's own, the demo shortcuts, modifiers. */
+export function isReservedKey(code: string): boolean {
+  if (!code || code === 'Unidentified' || code === 'Dead' || code === 'Process') return true;
+  if (/^F\d{1,2}$/.test(code)) return true;
+  if (/^(Control|Alt|Meta|OS)(Left|Right)?$/.test(code)) return true;
+  return code === 'ContextMenu' || code === 'Backspace' || code === 'Delete' || code === 'CapsLock'
+    || code === 'NumLock' || code === 'ScrollLock' || code === 'PrintScreen' || code === 'Pause';
+}
+
+/**
+ * Merges stored bindings with the defaults, action by action. An invalid entry (reserved
+ * key, no primary, a repeated key) falls back to its default; if the result still has a
+ * key on two actions, the whole stored map is dropped for the defaults.
+ */
+export function sanitizeBindings(raw: unknown): Bindings {
+  const out = cloneBindings(DEFAULT_BINDINGS);
+  if (!raw || typeof raw !== 'object') return out;
+  const src = raw as Record<string, unknown>;
+  for (const a of ACTIONS) {
+    const e = src[a];
+    if (!Array.isArray(e)) continue;
+    const p = e[0];
+    const s = e[1] ?? null;
+    if (typeof p !== 'string' || isReservedKey(p)) continue;
+    if (s !== null && (typeof s !== 'string' || isReservedKey(s) || s === p)) continue;
+    out[a] = [p, s];
+  }
+  const seen = new Set<string>();
+  for (const a of ACTIONS) {
+    for (const k of out[a]) {
+      if (k === null) continue;
+      if (seen.has(k)) return cloneBindings(DEFAULT_BINDINGS);
+      seen.add(k);
+    }
+  }
+  return out;
+}
+
+/** Labelled-letter bindings (KeyboardEvent.key, lower-cased), so non-QWERTY layouts work too.
+ *  Used only while the keyboard bindings are the defaults. */
 export const LABEL_MAP: Record<string, Action> = {
   w: 'up', a: 'left', s: 'down', d: 'right',
   j: 'quick', k: 'heavy', l: 'defend', e: 'shop',
 };
 
-/** Actions bound to a key event: by physical code, or by labelled letter. Deduplicated. */
-export function actionsForKey(code: string, key?: string): Action[] {
+/** Actions bound to a key event: by physical code, or (default bindings only) by labelled letter. */
+export function actionsForKey(code: string, key?: string, bindings: Readonly<Bindings> = DEFAULT_BINDINGS, labels = true): Action[] {
   const out = new Set<Action>();
-  for (const a of ACTIONS) if (KEY_MAP[a].includes(code)) out.add(a);
-  const label = typeof key === 'string' && key.length === 1 ? LABEL_MAP[key.toLowerCase()] : undefined;
+  for (const a of ACTIONS) if (bindings[a][0] === code || bindings[a][1] === code) out.add(a);
+  const label = labels && typeof key === 'string' && key.length === 1 ? LABEL_MAP[key.toLowerCase()] : undefined;
   if (label) out.add(label);
   return [...out];
+}
+
+const ARROWS: Record<string, string> = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓' };
+const NAMES: Record<string, string> = {
+  Space: 'SPACE', Enter: 'ENTER', NumpadEnter: 'NUM ENTER', Escape: 'ESC', Tab: 'TAB',
+  ShiftLeft: 'L SHIFT', ShiftRight: 'R SHIFT', Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[',
+  BracketRight: ']', Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/', Backslash: '\\',
+  Mouse0: 'LEFT CLICK', Mouse1: 'MID CLICK', Mouse2: 'RIGHT CLICK', Mouse3: 'MOUSE 4', Mouse4: 'MOUSE 5',
+  Insert: 'INS', Home: 'HOME', End: 'END', PageUp: 'PG UP', PageDown: 'PG DN',
+};
+
+/** A short, readable name for a KeyboardEvent.code, e.g. "KeyJ" -> "J". Empty slot -> "-". */
+export function keyName(code: string | null | undefined): string {
+  if (!code) return '-';
+  if (ARROWS[code]) return ARROWS[code];
+  if (NAMES[code]) return NAMES[code];
+  const m = /^(?:Key|Digit)(.)$/.exec(code);
+  if (m) return m[1];
+  const n = /^Numpad(.+)$/.exec(code);
+  if (n) return `NUM ${n[1].replace('Multiply', '*').replace('Add', '+').replace('Subtract', '-').replace('Divide', '/').replace('Decimal', '.')}`;
+  return code.toUpperCase();
 }
 
 /** Standard-mapping button indices. Directions also come from the left stick. */
@@ -86,22 +164,18 @@ export const PAD_MAP: Record<Action, readonly number[]> = {
   heavy: [3],
   defend: [1, 5],
   shop: [3],
-};
-
-export const KEY_GLYPH: Record<Action, string> = {
-  left: 'A', right: 'D', up: 'W', down: 'S',
-  confirm: 'SPACE', quick: 'J', heavy: 'K', defend: 'L', shop: 'E',
+  settings: [8], // Back / Select
 };
 
 export const PAD_GLYPH: Record<Action, string> = {
   left: '←', right: '→', up: '↑', down: '↓',
-  confirm: 'A', quick: 'X', heavy: 'Y', defend: 'B', shop: 'Y',
+  confirm: 'A', quick: 'X', heavy: 'Y', defend: 'B', shop: 'Y', settings: 'SEL',
 };
 
 /** On-screen button symbols for the touch device (the overlay labels itself with words). */
 export const TOUCH_GLYPH: Record<Action, string> = {
   left: '◀', right: '▶', up: '▲', down: '▼',
-  confirm: 'OK', quick: 'QUICK', heavy: 'HEAVY', defend: 'BLOCK', shop: 'SHOP',
+  confirm: 'OK', quick: 'QUICK', heavy: 'HEAVY', defend: 'BLOCK', shop: 'SHOP', settings: 'MENU',
 };
 
 /** Below this the stick reads as 0 for moveX/moveY. */
@@ -160,6 +234,28 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   let dashLatch: -1 | 0 | 1 | null = null;
   let dashNow: -1 | 0 | 1 | null = null;
 
+  // ---- key bindings ----
+  let bind: Bindings = (() => {
+    try {
+      const raw = deps.storage?.getItem(BINDINGS_KEY);
+      if (raw) return sanitizeBindings(JSON.parse(raw));
+    } catch { /* corrupt: defaults */ }
+    return cloneBindings(DEFAULT_BINDINGS);
+  })();
+  /** True once the player changed anything: the labelled-letter fallback then switches off. */
+  let custom = false;
+  const recomputeCustom = () => {
+    custom = ACTIONS.some((a) => bind[a][0] !== DEFAULT_BINDINGS[a][0] || bind[a][1] !== DEFAULT_BINDINGS[a][1]);
+  };
+  recomputeCustom();
+  const saveBindings = () => {
+    recomputeCustom();
+    try { deps.storage?.setItem(BINDINGS_KEY, JSON.stringify(bind)); } catch { /* ignore */ }
+  };
+  let captureCb: ((code: string) => void) | null = null;
+  /** Keys taken by a capture: ignored until released, so autorepeat cannot fire the new binding. */
+  const swallowed = new Set<string>();
+
   const keyActive = (a: Action) => {
     if (keysTapped.has(a) || touchTapped.has(a) || touchHeld.has(a)) return true;
     for (const acts of keysDown.values()) if (acts.includes(a)) return true;
@@ -167,9 +263,53 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   };
 
   const core: InputCore = {
+    actionsFor: (code, key) => actionsForKey(code, key, bind, !custom),
+    get capturing() { return captureCb !== null; },
+    startCapture(onKey) {
+      captureCb = onKey;
+      // Keys already held (the one that opened the capture) must not be captured by their autorepeat.
+      for (const c of keysDown.keys()) swallowed.add(c);
+    },
+    cancelCapture() { captureCb = null; },
+    binding: (a, slot) => bind[a][slot],
+    keyName,
+    rebind(a, slot, code) {
+      if (isReservedKey(code)) return 'reserved';
+      const cur = bind[a][slot];
+      if (cur === code) return 'ok';
+      let owner: [Action, 0 | 1] | null = null;
+      for (const b of ACTIONS) for (const s of [0, 1] as const) if (bind[b][s] === code) owner = [b, s];
+      if (owner) {
+        const [b, s] = owner;
+        // Swap: the other action takes our old key. With nothing to hand over, it may only lose an alternate.
+        if (cur === null && s === 0) return 'refused';
+        (bind[b] as (string | null)[])[s] = cur; // a null only ever lands in an alternate slot (checked above)
+      }
+      bind[a][slot] = code;
+      saveBindings();
+      return owner ? 'swapped' : 'ok';
+    },
+    clearBinding(a) {
+      if (bind[a][1] === null) return false;
+      bind[a][1] = null;
+      saveBindings();
+      return true;
+    },
+    resetBindings() {
+      bind = cloneBindings(DEFAULT_BINDINGS);
+      saveBindings();
+    },
     keyDown(code, key) {
       device = 'keyboard';
-      const acts = actionsForKey(code, key);
+      if (swallowed.has(code)) return [];
+      if (captureCb) {
+        const cb = captureCb;
+        captureCb = null;
+        swallowed.add(code);
+        cb(code);
+        return [];
+      }
+      const acts = actionsForKey(code, key, bind, !custom);
       // Autorepeat (code already held) only re-asserts the hold; it must not latch a fresh tap,
       // or a release right after would linger for one step.
       const repeat = keysDown.has(code);
@@ -178,6 +318,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       return acts;
     },
     keyUp(code) {
+      swallowed.delete(code);
       const acts = keysDown.get(code) ?? [];
       keysDown.delete(code);
       return acts;
@@ -185,6 +326,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     clearKeys() {
       keysDown.clear();
       keysTapped.clear();
+      swallowed.clear();
       touchHeld.clear();
       touchTapped.clear();
       touchX = 0;
@@ -255,8 +397,12 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
         }
         if (ax <= -STICK_DIGITAL) now.add('left');
         if (ax >= STICK_DIGITAL) now.add('right');
-        if (ay <= -STICK_DIGITAL) now.add('up');
-        if (ay >= STICK_DIGITAL) now.add('down');
+        // Up/down only when the tilt is mostly vertical, so a diagonal walk does not
+        // jump or crouch in the fight by accident.
+        if (Math.abs(ay) > Math.abs(ax)) {
+          if (ay <= -STICK_DIGITAL) now.add('up');
+          if (ay >= STICK_DIGITAL) now.add('down');
+        }
       }
 
       // Device switch to gamepad only on a new button press or the stick newly crossing 0.5.
@@ -292,7 +438,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
     get device() {
       return device;
     },
-    glyph: (a) => (device === 'gamepad' ? PAD_GLYPH[a] : device === 'touch' ? TOUCH_GLYPH[a] : KEY_GLYPH[a]),
+    glyph: (a) => (device === 'gamepad' ? PAD_GLYPH[a] : device === 'touch' ? TOUCH_GLYPH[a] : keyName(bind[a][0])),
   };
   return core;
 }

@@ -3,11 +3,11 @@ import type { FishInstance, GameState, UpgradeDef, UpgradeId, UpgradeInfo } from
 
 const SAVE_KEY = 'samurai-hook-save-v1';
 
-interface SaveData { gold: number; round: number; levels: Record<UpgradeId, number> }
+interface SaveData { gold: number; round: number; levels: Record<UpgradeId, number>; hard: boolean }
 
 export interface Storage { getItem(k: string): string | null; setItem(k: string, v: string): void }
 
-const fresh = (): SaveData => ({ gold: 0, round: 0, levels: { damage: 0, depth: 0, gold: 0 } });
+const fresh = (): SaveData => ({ gold: 0, round: 0, levels: { damage: 0, depth: 0, gold: 0 }, hard: false });
 
 export function upgradeCost(def: UpgradeDef, level: number): number {
   return Math.round(def.baseCost * Math.pow(def.growth, level));
@@ -25,7 +25,7 @@ export function createGameState(storage: Storage | null): GameState {
     const raw = storage?.getItem(SAVE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<SaveData>;
-      data = { ...fresh(), ...parsed, levels: { ...fresh().levels, ...(parsed.levels ?? {}) } };
+      data = { ...fresh(), ...parsed, levels: { ...fresh().levels, ...(parsed.levels ?? {}) }, hard: parsed.hard === true };
     }
   } catch { /* corrupt save: start fresh */ }
 
@@ -46,8 +46,11 @@ export function createGameState(storage: Storage | null): GameState {
     if (!d) throw new Error(`Unknown fish "${fishId}"`);
     const t = Math.max(0, Math.floor(tier));
     const prefix = t === 0 ? '' : (tiers.prefixes[t] ?? `${tiers.prefixes[tiers.prefixes.length - 1]} x${t}`);
+    // The one place the mode is applied: without hard mode a slippery fish loses its
+    // special, so the fight sim, health bar and tell drawing all see a harmless fish.
+    const effective = d.category === 'slippery' && !data.hard && d.special ? { ...d, special: undefined } : d;
     return {
-      def: d,
+      def: effective,
       tier: t,
       name: `${prefix} ${d.name}`.trim().toUpperCase(),
       maxHp: Math.round(d.hp * Math.pow(tiers.hpMult, t)),
@@ -58,6 +61,8 @@ export function createGameState(storage: Storage | null): GameState {
   return {
     get gold() { return data.gold; },
     get round() { return data.round; },
+    get hardMode() { return data.hard; },
+    set hardMode(on: boolean) { data.hard = !!on; save(); },
     get maxDepth() { return maxDepth(); },
     get samurai() {
       return {
@@ -96,7 +101,8 @@ export function createGameState(storage: Storage | null): GameState {
       save();
       return earned;
     },
-    reset() { data = fresh(); save(); },
-    loadPreset(preset) { data = { ...fresh(), gold: preset.gold, levels: { ...preset.levels } }; save(); },
+    // The mode is a setting, not progress: wiping or loading a preset keeps it.
+    reset() { data = { ...fresh(), hard: data.hard }; save(); },
+    loadPreset(preset) { data = { ...fresh(), hard: data.hard, gold: preset.gold, levels: { ...preset.levels } }; save(); },
   };
 }

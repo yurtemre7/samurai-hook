@@ -48,16 +48,25 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 
 | Action | Keyboard | Gamepad |
 |---|---|---|
-| Move / steer the hook | A D or arrow keys (W S or up/down to brake / sink faster) | left stick or d-pad |
+| Move / steer the hook | A D or arrow keys (S or down to sink faster) | left stick or d-pad |
+| Reel the hook back in | Space, Enter, W or up arrow | A, or up on d-pad / stick |
 | Confirm, drop hook, skip | Space or Enter | A |
 | Drop hook (also) | S or down arrow | down on stick / d-pad |
 | Fight: jump | W, up arrow or Space | A, or up on stick / d-pad |
 | Fight: crouch (hold) | S or down arrow | down on stick / d-pad |
-| Quick slash | J | X |
-| Heavy slash | K | Y |
+| Quick slash | J or left click | X |
+| Heavy slash | K or right click | Y |
 | Defend: hold to block, tap with a direction to dash-dodge | L or Shift | B or RB |
 | Shop (at the surface) | E | Y |
 | Shop: choose an upgrade | A D or left/right arrows | left stick or d-pad |
+| Settings (at the boat and in the shop): open / close | Esc or Tab | Select (Back) |
+| Settings: choose a row, change it | W S, then A D | d-pad up / down, then left / right |
+
+The settings panel has music volume, sound effects volume (this includes the announcer), **hard mode** and a **keybinds** page. Volumes, the mode and the keys are remembered.
+
+Keybinds (keyboard only): every action has a first and a second key. Choose a row with W S, the first or second key with A D, press Space or Enter, then press the new key. Esc cancels, Backspace while changing a second key clears it, and a key already used elsewhere swaps places with it. F-keys, Ctrl, Alt, Meta, Backspace and Delete cannot be bound. "Reset all keys to default" is the last row. The gamepad layout is fixed. The prompts at the bottom follow your keys.
+
+The defaults changed slightly: Right Shift and the numpad Enter no longer count as Block and Confirm (they can be bound again). In normal mode the eel, pufferfish and squid never hurt the samurai. In hard mode they use their jump-or-duck specials too. The swordfish and shark attack in both modes.
 
 ### Touch (mobile browser, landscape only)
 
