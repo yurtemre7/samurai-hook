@@ -280,3 +280,17 @@ describe('fight tap to slash', () => {
     expect(core.pressed('heavy')).toBe(false);
   });
 });
+
+describe('fight pause on touch', () => {
+  it('fights show a PAUSE button that sends the settings action once per tap', () => {
+    expect(sceneButtons('fight')).toContain('settings');
+    expect(sceneButtons('ocean')).not.toContain('settings');
+    const core = createInputCore({ getGamepads: () => [] });
+    core.touchDown('settings');
+    core.update();
+    expect(core.pressed('settings')).toBe(true);
+    core.update();
+    expect(core.pressed('settings')).toBe(false); // held, not pressed again
+    core.touchUp('settings');
+  });
+});

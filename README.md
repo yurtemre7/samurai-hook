@@ -61,6 +61,7 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 | Shop: choose an upgrade | A D or left/right arrows | left stick or d-pad |
 | Settings (at the boat and in the shop): open / close | Esc or Tab | Select (Back) |
 | Settings: choose a row, change it | W S, then A D | d-pad up / down, then left / right |
+| Pause / resume a fight | Esc or Tab (Space or Enter also resume) | Select (Back), A resumes |
 
 The settings panel has music volume, sound effects volume (this includes the announcer), **hard mode** and a **keybinds** page. Volumes, the mode and the keys are remembered.
 
@@ -82,6 +83,7 @@ Open the game in a phone browser and turn the phone sideways (in portrait it sho
 | Walk in a fight | drag a finger (1.5x walking speed), or ◀ ▶ |
 | Dash in a fight | a quick swipe left or right, or DASH (with no direction held it dashes away from the fish) |
 | Quick slash, heavy slash, block | QUICK, HEAVY, BLOCK (hold) |
+| Pause / resume a fight | PAUSE (top right) |
 | Quick slash (no button) | tap the screen anywhere that is not a button |
 | Heavy slash (no button) | touch and hold still for a third of a second |
 | Jump | a quick swipe up, or ▲ |

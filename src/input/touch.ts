@@ -81,7 +81,7 @@ export function tapSlash(travelPx: number, ms: number): 'quick' | 'heavy' | null
 export type TouchScene = 'ocean' | 'cutscene' | 'fight' | 'result' | 'shop';
 const SCENE_BUTTONS: Record<TouchScene, { show: string[]; confirm?: string; shop?: string }> = {
   ocean: { show: ['confirm', 'shop'], confirm: 'REEL IN', shop: 'SHOP' },
-  fight: { show: ['quick', 'heavy', 'defend', 'dash'] },
+  fight: { show: ['quick', 'heavy', 'defend', 'dash', 'settings'] },
   shop: { show: ['confirm', 'shop'], confirm: 'BUY', shop: 'BACK' },
   cutscene: { show: ['confirm'], confirm: 'OK' },
   result: { show: ['confirm'], confirm: 'OK' },
@@ -249,6 +249,8 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   );
   root.appendChild(cluster);
   root.appendChild(button('shop', 'SHOP', 'shop'));
+  // Fights only, in SHOP's top-right spot (SHOP is hidden there): pauses and resumes.
+  root.appendChild(button('settings', 'PAUSE', 'shop'));
 
   // ---- Landscape only ----
   const mq = win.matchMedia('(orientation: portrait)');
