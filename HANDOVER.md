@@ -14,7 +14,7 @@ Last updated: 2026-11-14 (session 2: cleanups merged; keyboard, announcer and pl
   (`.github/workflows/pages.yml`). Asset paths go through `assetUrl()` in
   `src/core/assets.ts`, so the build works under the `/<repo>/` sub-path.
 - How to run: `npm install`, then `npm run dev` and open
-  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (49 tests).
+  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (58 tests).
   README.md has controls and how to add a fish or swap an asset.
 - Keep the working copy on a normal local disk. Inside a cloud drive mount
   (pCloud Drive was tried) `npm install` fails: the drive cannot create
@@ -70,7 +70,6 @@ these land, or the work will collide.** Each pull request updates this file.
 
 | Work | Branch | Files it touches | Why |
 |---|---|---|---|
-| Keyboard fix | `fix/keyboard-wasd` | `src/input/*`, `Prompt` in `src/types.ts`, the prompt lines in `src/scenes/fight.ts` and `shop.ts`, `tests/input.test.ts` | A player on Chrome on a Mac reported that W A S D did nothing in the fight while the arrow keys and J K L E worked. Cause not confirmed; see Known issues. |
 | Recorded announcer | (not pushed yet) | `src/core/audio.ts`, new `src/core/announcer.ts`, `voice` in `src/manifest.ts`, `AudioSys.announce` in `src/types.ts`, announce calls in `cutscene.ts`, `fight.ts`, `result.ts`, new `public/assets/voice/`, `CREDITS.md` | The player found the speech-synthesis announcer robotic. Goes to the team as a pull request for review, because the robot voice was a deliberate joke. Music and other sounds are not changed. |
 | Swordfish and anglerfish sprites, glowing lure | (not pushed yet) | `public/assets/fish/`, the two sprite lines in `src/manifest.ts`, the darkness code in `src/scenes/fight.ts`, `CREDITS.md` | Replace the two placeholder fish. The lure glow is visual only. |
 
@@ -203,13 +202,20 @@ Session 2 decisions by Rhaveen (2026-11-14):
 - `npm test` prints a large balance table; that is intended.
 - Open question for the team: is the stand-in squid acceptable, or should
   it stay a placeholder until a better sprite is found?
-- **W A S D in the fight (reported by Rhaveen, Chrome on a Mac):** A and D
-  did not move the samurai while the arrow keys and J K L E worked. Not
-  reproduced by the orchestrator. Two unconfirmed causes are both being
-  fixed on `fix/keyboard-wasd`: macOS press-and-hold interrupting a held
-  letter (the arrows were the only keys the game claimed with
-  `preventDefault`), and a non-QWERTY layout. `?debug=keys` on that branch
-  shows what the browser reports.
+- **W A S D in the fight (reported by Rhaveen, Chrome on a Mac), fixed:** A
+  and D did not move the samurai while the arrow keys and J K L E worked.
+  The fix does two things, and Rhaveen confirmed on 2026-11-15 that held A
+  and D now walk. Which of the two was the cause on that machine was never
+  isolated: (1) the game now claims every bound key with `preventDefault`
+  (no modifiers held), as it already did for the arrows, so macOS
+  press-and-hold cannot interrupt a held letter; (2) W A S D J K L E are
+  also bound by the printed letter (`KeyboardEvent.key`), not only by key
+  position, for non-QWERTY layouts. Also: an autorepeat key-down no longer
+  latches a fresh tap, and the fight and shop hints show `A D` only, since
+  up and down do nothing there.
+- **Key debugger:** add `?debug=keys` to the URL to see what the browser
+  reports for each key event and which action it mapped to. Use it first
+  for any future "key does nothing" report.
 - Pull requests have no automated checks; tests run only on pushes to
   `main`, as part of the deploy.
 - Scripted browser checks cannot watch fights in motion when the browser
