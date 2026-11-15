@@ -114,6 +114,8 @@ export interface AudioSys {
   unlock(): void;
   play(id: string): void;
   music(id: string | null): void;
+  /** Holds the current music where it is (true) or lets it play on from there (false). Fight pause. */
+  pauseMusic(paused: boolean): void;
   /** Announcer line. Plays the recorded clip for `clip` when the manifest has
    *  one, else speaks `text` with browser speech synthesis (silent if
    *  unsupported). Announcer lines never overlap. */

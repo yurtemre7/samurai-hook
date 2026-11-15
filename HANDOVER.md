@@ -152,11 +152,14 @@ block merging.
     them): left/right dash, up jumps (one press of `up`), down crouches
     (holds `down` until the finger lifts). Rhaveen: all controls should work
     by touch, not only by buttons.
-  - **fight pause (branch `feat/fight-pause`):** the settings action (Esc /
+  - **fight pause (merged #58; music pause on branch `feat/pause-music`):** the settings action (Esc /
     Tab, pad Select, a touch PAUSE button in SHOP's top-right spot, fights
     only) pauses a fight: the sim, timer and animations stop, the screen dims
     and shows PAUSED. Settings again or confirm (Space / Enter / A) resumes;
-    that press is used up, so resuming does not jump. Music keeps playing.
+    that press is used up, so resuming does not jump. The music pauses too
+    and plays on from the same spot (`audio.pauseMusic`; key presses, which
+    call `unlock()`, do not restart it while held; `audio.music()` on a scene
+    change always releases it).
     Done in `src/scenes/fight.ts` (no sim change). Checked in the browser on
     the keyboard (timer and fish frozen, Space resumes without a jump); the
     touch button only by a unit test (the hidden browser pane froze the loop).

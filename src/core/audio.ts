@@ -40,6 +40,7 @@ export function createAudio(
     try { localStorage.setItem(VOLUME_KEY, JSON.stringify({ music: musicVol, sfx: sfxVol })); } catch { /* ignore */ }
   };
   let wantedMusic: string | null = null;
+  let musicHeld = false; // fight pause: the music stays where it is until released
   let unlocked = false;
   let musicFailed = 0;
   // Announcer: clips are fetched (starting now, so they are ready by the first
@@ -145,7 +146,7 @@ export function createAudio(
       currentMusicId = null;
       setTimeout(() => { if (unlocked && wantedMusic === id && currentMusicId === null) startMusic(id); }, 3000);
     });
-    el.play().catch(() => { /* blocked or missing: stay silent */ });
+    if (!musicHeld) el.play().catch(() => { /* blocked or missing: stay silent */ });
     currentMusic = el;
   }
 
@@ -163,7 +164,7 @@ export function createAudio(
       // (created outside a gesture, phone call, lock screen); resuming inside a gesture fixes it.
       if (unlocked) {
         if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => { /* ignore */ });
-        if (wantedMusic && currentMusic?.paused) void currentMusic.play().catch(() => { /* ignore */ });
+        if (wantedMusic && !musicHeld && currentMusic?.paused) void currentMusic.play().catch(() => { /* ignore */ });
         return;
       }
       unlocked = true;
@@ -205,7 +206,13 @@ export function createAudio(
     },
     music(id) {
       wantedMusic = id;
+      musicHeld = false; // a scene change always lets the music play
       if (unlocked) startMusic(id);
+    },
+    pauseMusic(paused) {
+      musicHeld = paused;
+      if (paused) currentMusic?.pause();
+      else if (unlocked && currentMusic?.paused) void currentMusic.play().catch(() => { /* ignore */ });
     },
     announce(line, req?: AnnounceRequest) {
       if (!voice.enabled || !unlocked || sfxVol <= 0) return;
