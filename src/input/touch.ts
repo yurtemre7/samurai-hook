@@ -97,10 +97,14 @@ const CSS = `
 .sh-cell.on,.sh-btn.on{background:rgba(255,255,255,.78);color:#0b1020}
 .sh-cell.empty{visibility:hidden}
 .sh-cluster{position:absolute;right:calc(env(safe-area-inset-right) + 14px);bottom:calc(env(safe-area-inset-bottom) + 12px);
-  display:grid;grid-template-columns:repeat(2,var(--u));grid-auto-rows:var(--u);gap:8px;align-content:end}
+  width:calc(var(--u) * 2 + 8px);display:flex;flex-wrap:wrap-reverse;justify-content:flex-end;gap:8px}
+.sh-cluster .sh-btn{width:var(--u);height:var(--u);flex:none}
 .sh-btn.hide{display:none}
-.sh-btn{display:flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;letter-spacing:.03em;
-  background:rgba(12,16,28,.5);border:2px solid rgba(255,255,255,.6)}
+.sh-btn{position:relative;border-radius:50%;color:#fff;
+  background:rgba(12,16,28,.5);border:2px solid rgba(255,255,255,.6);box-sizing:border-box;overflow:hidden}
+.sh-btn>.sh-lbl{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;
+  text-align:center;line-height:1;pointer-events:none}
+.sh-btn.small>.sh-lbl{font-size:11px}
 .sh-btn.confirm{border-color:#f0c419}
 .sh-btn.shop{position:absolute;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 14px);
   width:72px;height:48px;border-radius:12px}
@@ -127,10 +131,16 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   ring.className = 'sh-ring';
   root.appendChild(ring);
 
+  /** Button text sits in a span pinned to the exact centre, so it stays centred even if it is wider than the button. */
+  const setLabel = (el: HTMLElement, text: string) => {
+    let lbl = el.querySelector<HTMLElement>(':scope > .sh-lbl');
+    if (!lbl) { lbl = doc.createElement('span'); lbl.className = 'sh-lbl'; el.textContent = ''; el.appendChild(lbl); }
+    lbl.textContent = text;
+  };
   const mk = (cls: string, text = '') => {
     const e = doc.createElement('div');
     e.className = cls;
-    if (text) e.textContent = text;
+    if (text) setLabel(e, text);
     return e;
   };
 
@@ -218,12 +228,14 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave'] as const) {
     dashBtn.addEventListener(ev, () => dashBtn.classList.remove('on'));
   }
+  // The cluster fills from the bottom-right (flex wrap-reverse): QUICK HEAVY on the bottom row,
+  // BLOCK DASH above; a lone button (REEL IN, OK, BUY) sits in the bottom-right corner.
   cluster.append(
-    button('defend', 'BLOCK'),
-    dashBtn,
+    button('confirm', 'CONFIRM', 'confirm'),
     button('quick', 'QUICK'),
     button('heavy', 'HEAVY'),
-    button('confirm', 'CONFIRM', 'confirm'),
+    button('defend', 'BLOCK'),
+    dashBtn,
   );
   root.appendChild(cluster);
   root.appendChild(button('shop', 'SHOP', 'shop'));
@@ -316,8 +328,11 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   const setScene = (s: TouchScene) => {
     const cfg = SCENE_BUTTONS[s] ?? SCENE_BUTTONS.ocean;
     for (const [a, el] of Object.entries(buttons)) el.classList.toggle('hide', !cfg.show.includes(a));
-    if (cfg.confirm) buttons.confirm.textContent = cfg.confirm;
-    if (cfg.shop) buttons.shop.textContent = cfg.shop;
+    if (cfg.confirm) {
+      setLabel(buttons.confirm, cfg.confirm);
+      buttons.confirm.classList.toggle('small', cfg.confirm.length > 6); // two-word labels like REEL IN
+    }
+    if (cfg.shop) setLabel(buttons.shop, cfg.shop);
     releaseAll();
   };
   setScene('ocean');
