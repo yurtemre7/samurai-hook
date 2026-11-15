@@ -41,3 +41,16 @@ describe('planAnnounce', () => {
     expect(planAnnounce({ key: 'fight' }, 'Fight!', rest, false)).toEqual({ clip: null, speech: 'Fight!' });
   });
 });
+
+import { leadInSeconds } from '../src/core/announcer';
+
+describe('leadInSeconds', () => {
+  it('finds the silent lead-in, keeps a small margin, and handles silence and empty input', () => {
+    const sr = 1000;
+    const s = new Float32Array(500); for (let i = 150; i < 500; i++) s[i] = 0.5;
+    expect(leadInSeconds(s, sr)).toBeCloseTo(0.14, 5);
+    expect(leadInSeconds(new Float32Array(100), sr)).toBe(0);
+    expect(leadInSeconds([0.5, 0.5], sr)).toBe(0);
+    expect(leadInSeconds([], sr)).toBe(0);
+  });
+});
