@@ -124,7 +124,7 @@ config numbers; only pufferfish, anglerfish and squid have a gimmick.
 | Track | Effect per level | Cost |
 |---|---|---|
 | Damage | +25% of base damage | 20 x 1.5^level |
-| Max depth | +15 m (starts at 25 m) | 30 x 1.45^level |
+| Max depth | +15 m (starts at 135 m) | 30 x 1.45^level |
 | Gold bonus | +15% gold per fish | 40 x 1.6^level |
 
 Past 170 m the roster repeats: each tier multiplies fish health by 2.2 and

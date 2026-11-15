@@ -270,7 +270,7 @@ export const fight = {
 // ---------- Ocean tuning ----------
 
 export const ocean = {
-  startDepth: 25,          // max depth at upgrade level 0, metres
+  startDepth: 135,         // max depth at level 0, metres: shark band (115-150 m) reachable from the first cast, squid (starts 140 m) needs one depth upgrade
   pxPerMetre: 14,
   surfaceY: 150,           // screen y of the water line when the camera is at the top
   hook: { sinkSpeed: 150, fastSinkSpeed: 300, brakeSpeed: 60, reelSpeed: 260, steerSpeed: 260, radius: 12 },

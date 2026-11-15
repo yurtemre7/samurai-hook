@@ -3,7 +3,7 @@
 Shared source of truth for project status. Read this before starting any
 work, and update it in the same commit as the work.
 
-Last updated: 2026-11-15 (session 2: recorded announcer up for review)
+Last updated: 2026-11-15 (starting depth raised to 135 m)
 
 ## Current state
 
@@ -16,6 +16,11 @@ Last updated: 2026-11-15 (session 2: recorded announcer up for review)
 - How to run: `npm install`, then `npm run dev` and open
   http://localhost:5173. Checks: `npm run typecheck`, `npm test` (84 tests).
   README.md has controls and how to add a fish or swap an asset.
+- Starting depth raised from 25 m to 135 m on 2026-11-15, at the owner
+  Rhaveen's request, so everything up to the shark (Hojiro, 115-150 m) is
+  reachable from the first cast. The giant squid (Daioika, from 140 m) still
+  needs one depth upgrade. The depth upgrade price curve and fish stats were
+  not changed.
 - Keep the working copy on a normal local disk. Inside a cloud drive mount
   (pCloud Drive was tried) `npm install` fails: the drive cannot create
   symlinks or run the build tool's binary.
