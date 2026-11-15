@@ -49,8 +49,8 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
   const H = game.height;
   const floorY = F.arena.floorY;
   const fishColor = sprites[fish.def.sprite]?.placeholder.color ?? '#9fd0ff';
-  // "biter" here means "can hurt the samurai": a lunge or a special attack.
-  const biter = !!(fish.def.attack || fish.def.special);
+  // "biter" here means "can hurt the samurai": a lunge, a special attack or (hard mode) touch.
+  const biter = !!(fish.def.attack || fish.def.special || fish.def.contactDamage);
 
   const fx = new Fx();
   const look = createLook();
@@ -117,6 +117,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
         lag.samHold = HP_LAG_DELAY;
         break;
       case 'dodged': fx.popup(text.dodged, e.x, e.y - 90, 30, '#5ad8ff'); break;
+      case 'poison': fx.popup('POISONED!', e.x, e.y - 120, 30, '#7dff5a'); break;
       case 'bounce':
         game.audio.play('block');
         fx.popup(text.bounce, e.x, e.y - 60, 44, '#ffe14a');

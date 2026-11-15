@@ -217,6 +217,7 @@ export function drawSamurai(ctx: CanvasRenderingContext2D, assets: Assets, state
   if (s.invulnerable) alpha = Math.floor(look.rt * 30) % 2 ? 0.3 : 0.85;
   let tint: string | undefined;
   if (s.move === 'hurt') tint = Math.floor(look.rt * 20) % 2 ? '#ffffff' : '#ff6060';
+  else if (s.poisonLeft > 0 && Math.floor(look.rt * 4) % 2) tint = '#6fe04a'; // slow green pulse while poisoned
   else if (s.move === 'heavy' && s.stage === 'startup' && s.moveTime > F.samurai.heavy.startup * 0.75) tint = '#fff2a0';
   drawSamuraiSprite(ctx, assets, id, s.x, flip, tr, animTime, alpha, tint);
 

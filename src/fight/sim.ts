@@ -4,7 +4,7 @@
 // Coordinates: x in px on the 960-wide arena (`fight.arena`). Fish `y` is the
 // height above the floor (0 = on the floor). Event `x, y` are SCREEN px (y is
 // already converted with `arena.floorY`), ready for popups and particles.
-import { fight as F } from '../manifest';
+import { fight as F, hardMode } from '../manifest';
 import type { FightInput, FightOutcome, FishInstance, SamuraiStats } from '../types';
 
 export interface FightState {
@@ -27,6 +27,8 @@ export interface FightState {
     invulnerable: boolean;
     /** Landed hits and whiffed slashes (slips and bounces count as neither). */
     hits: number; misses: number;
+    /** Seconds of poison left (hard-mode pufferfish), 0 when none. */
+    poisonLeft: number;
   };
   fish: {
     x: number; y: number;
@@ -65,7 +67,7 @@ export type FightEventType =
   | 'fightStart' | 'quick' | 'heavyStart' | 'heavySwing' | 'hit' | 'heavyHit' | 'slip'
   | 'tell' | 'attack' | 'bitten' | 'blocked' | 'dodged' | 'bounce' | 'puff' | 'unpuff'
   | 'ink' | 'dash' | 'win' | 'timeout' | 'ko'
-  | 'jump' | 'aim' | 'charge' | 'shoot';
+  | 'jump' | 'aim' | 'charge' | 'shoot' | 'poison';
 
 export type FightEvent = { type: FightEventType; x: number; y: number; damage?: number };
 
@@ -101,7 +103,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     hitStop: 0,
     samurai: {
       x: mid - 160, facing: 1, y: 0, hp: stats.maxHp, maxHp: stats.maxHp,
-      move: 'idle', stage: null, moveTime: 0, invulnerable: false, hits: 0, misses: 0,
+      move: 'idle', stage: null, moveTime: 0, invulnerable: false, hits: 0, misses: 0, poisonLeft: 0,
     },
     fish: {
       x: mid + 160, y: 0, facing: -1, hp: inst.maxHp, maxHp: inst.maxHp,
@@ -124,6 +126,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
   let knockV = 0; // px/s, decays linearly over knockLeft
   let knockLeft = 0;
   let vy = 0; // px/s upward
+  let contactCd = 0; // hard mode: seconds before touching the fish can hurt again
 
   // ---- hidden fish state ----
   let arc: Arc | null = null;     // slip dart, corner escape or lunge
@@ -216,8 +219,28 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       hurtSamurai(S.hurtStun, away * S.hurtKnockback);
       buffered = null;
       emit('bitten', s.x, samMidY - s.y, dmg);
+      poisonSamurai();
     }
     if (s.hp <= 0) endFight('ko');
+  }
+
+  /** A fish with `poison` (hard-mode pufferfish) poisons on every hit that gets through; a new hit refreshes it. */
+  function poisonSamurai() {
+    if (!def.poison) return;
+    if (s.poisonLeft <= 0) emit('poison', s.x, samMidY - s.y);
+    s.poisonLeft = def.poison.duration;
+  }
+
+  /** Hard mode: touching the fish's body hurts, at most once per `contactCooldown`. */
+  function touchContact(dt: number) {
+    contactCd = Math.max(0, contactCd - dt);
+    if (!def.contactDamage || contactCd > 0) return;
+    if (f.mode === 'attack' || f.mode === 'charge') return; // those hit through their own rules
+    const touchingX = Math.abs(f.x - s.x) <= S.bodyRadius + def.size * 0.5 + FF.contactReach;
+    const touchingY = f.y < s.y + bodyTop() && f.y + def.size * 2 > s.y;
+    if (!touchingX || !touchingY) return;
+    contactCd = hardMode.contactCooldown;
+    hitSamurai(def.contactDamage, f.x, true);
   }
 
   function strikeConnects(reach: number): boolean {
@@ -234,6 +257,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       const away = -sign(f.x - s.x);
       hurtSamurai(FF.puff.stun, away * FF.puff.knockback);
       emit('bounce', (s.x + f.x) / 2, fishScreenY());
+      poisonSamurai(); // pricked by the spikes
       return;
     }
     if (f.slipReady) {
@@ -692,6 +716,13 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     updateSamurai(dt, input);
     if (state.phase === 'fighting') updateFish(dt);
     if (state.phase === 'fighting') updateProjectiles(dt);
+    if (state.phase === 'fighting') touchContact(dt);
+    if (state.phase === 'fighting' && s.poisonLeft > 0) {
+      const tick = Math.min(dt, s.poisonLeft);
+      s.poisonLeft = Math.max(0, s.poisonLeft - dt);
+      s.hp = Math.max(0, s.hp - def.poison!.dps * tick);
+      if (s.hp <= 0) endFight('ko');
+    }
 
     if (state.phase === 'fighting') {
       state.timeLeft = Math.max(0, state.timeLeft - dt);

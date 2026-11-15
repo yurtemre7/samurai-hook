@@ -1,5 +1,5 @@
-import { fish as fishDefs, ocean, samurai as samuraiBase, tiers, upgrades as upgradeDefs } from '../manifest';
-import type { FishInstance, GameState, UpgradeDef, UpgradeId, UpgradeInfo } from '../types';
+import { fish as fishDefs, hardMode, ocean, samurai as samuraiBase, tiers, upgrades as upgradeDefs } from '../manifest';
+import type { FishDef, FishInstance, GameState, UpgradeDef, UpgradeId, UpgradeInfo } from '../types';
 
 const SAVE_KEY = 'samurai-hook-save-v1';
 
@@ -46,14 +46,22 @@ export function createGameState(storage: Storage | null): GameState {
     if (!d) throw new Error(`Unknown fish "${fishId}"`);
     const t = Math.max(0, Math.floor(tier));
     const prefix = t === 0 ? '' : (tiers.prefixes[t] ?? `${tiers.prefixes[tiers.prefixes.length - 1]} x${t}`);
-    // The one place the mode is applied: without hard mode a slippery fish loses its
-    // special, so the fight sim, health bar and tell drawing all see a harmless fish.
-    const effective = d.category === 'slippery' && !data.hard && d.special ? { ...d, special: undefined } : d;
+    // The one place the mode is applied. Normal: slippery fish lose their special and
+    // nothing poisons or hurts on touch. Hard: more health, harder hits, touch damage.
+    const hm = hardMode.damageMult;
+    const effective: FishDef = data.hard
+      ? {
+        ...d,
+        attack: d.attack && { ...d.attack, damage: d.attack.damage * hm },
+        special: d.special && { ...d.special, damage: d.special.damage * hm },
+        contactDamage: hardMode.contactDamage,
+      }
+      : { ...d, special: d.category === 'slippery' ? undefined : d.special, poison: undefined, contactDamage: undefined };
     return {
       def: effective,
       tier: t,
       name: `${prefix} ${d.name}`.trim().toUpperCase(),
-      maxHp: Math.round(d.hp * Math.pow(tiers.hpMult, t)),
+      maxHp: Math.round(d.hp * Math.pow(tiers.hpMult, t) * (data.hard ? hardMode.hpMult : 1)),
       gold: Math.round(d.gold * Math.pow(tiers.goldMult, t)),
     };
   }

@@ -180,6 +180,10 @@ export interface FishDef {
     pattern?: ('low' | 'high')[]; // 'shot' only
     gap?: number;      // 'shot' only: seconds between projectiles
   };
+  /** Hard mode only (set by makeFish): damage when the fish's body touches the samurai. */
+  contactDamage?: number;
+  /** Hard mode only (kept by makeFish): any hit this fish lands also poisons, `dps` for `duration` s. */
+  poison?: { dps: number; duration: number };
   gimmick: Gimmick;
   taunts: string[];
 }

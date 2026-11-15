@@ -8,8 +8,9 @@ announcer, iPhone audio fixes, longer fights; CI pull requests #37, #38 and
 #44 open for review). Rule since 2026-11-15: **every pull request updates
 this file**, and pull requests that change visuals include before/after
 screenshots.
-Open on branch `feat/hard-mode-settings-keybinds`: hard mode, a settings
-panel (volumes, keybinds) and W to reel in; see the section of that name.
+Merged: hard mode, a settings panel (volumes, keybinds) and W to reel in
+(#52); see "Hard mode, settings panel and keybinds". Open on branch
+`feat/hard-mode-tougher`: a tougher hard mode (see "Hard mode: tougher").
 
 ## Current state
 
@@ -212,7 +213,26 @@ block merging.
   attack" became "fish with no attack and no special never hurt the samurai".
   Merged by a teammate on 2026-11-15, so the team accepted it.
 
-### Hard mode, settings panel and keybinds (branch `feat/hard-mode-settings-keybinds`, open PR, for team review)
+### Hard mode: tougher (branch `feat/hard-mode-tougher`, open PR)
+
+- In hard mode (numbers in `hardMode` in `src/manifest.ts`, applied in
+  `makeFish`): fish health x1.5; lunge and special damage x1.5; every fish
+  hurts on touch (`contactDamage` 5, `contactCooldown` 1 s; guardable by
+  block and dash, a jump over it avoids it; skipped while the fish lunges or
+  charges, which hit by their own rules); the pufferfish poisons
+  (`poison` on its manifest entry: 3 per second for 4 s, refreshed by each
+  hit that gets through, including the bounce off its spikes). The samurai
+  pulses green while poisoned and "POISONED!" pops up.
+- Normal mode is unchanged: `makeFish` strips `contactDamage` and `poison`.
+- Tests default to hard mode, so damage expectations now read the hard-mode
+  fish; the bounce test runs in normal mode. New tests: the multipliers,
+  touch damage and its cooldown (and none in normal mode), poison ticking.
+  The balance snapshot was updated on purpose: the bot loses more health,
+  and at blade level 0 it times out against the hard squid 4 times in 5.
+- Checked in the browser: hard pufferfish fight showed POISONED!, a 12
+  damage spine and 240 fish HP. Not played by a person.
+
+### Hard mode, settings panel and keybinds (merged: #52)
 
 - **Behaviour change from #36:** #36 merged with the eel, pufferfish and
   squid able to hurt the samurai. Now that only happens in hard mode; normal
