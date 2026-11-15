@@ -148,6 +148,10 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
 
   return {
     enter() {
+      // Dev only: lets browser tests read the hook state ('idle' | 'sinking' | 'reeling') and position.
+      if (import.meta.env?.DEV && typeof window !== 'undefined') {
+        (window as unknown as { __ocean?: unknown }).__ocean = { get mode() { return mode; }, get hx() { return hx; }, get hy() { return hy; } };
+      }
       game.audio.music('ocean');
       ensureChunks();
     },

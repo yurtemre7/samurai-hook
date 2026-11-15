@@ -32,6 +32,8 @@ export function createAudio(
   const voiceBroken = new Set<string>();
   const fetched = new Map<string, Promise<ArrayBuffer | null>>();
   const decoded = new Map<string, Promise<AudioBuffer | null>>();
+  /** Paths whose AudioBuffer has finished decoding (for the ?debug=perf readout). */
+  const ready = new Set<string>();
   let voiceCurrent: VoicePlayback | null = null;
   let voiceToken = 0;
 
@@ -58,7 +60,7 @@ export function createAudio(
         try { return await ctx.decodeAudioData(data.slice(0)); } catch { voiceBroken.add(path); return null; }
       });
       decoded.set(path, p);
-      void p.then((b) => { if (!b) decoded.delete(path); });
+      void p.then((b) => { if (b) ready.add(path); else decoded.delete(path); });
     }
     return p;
   }
@@ -151,7 +153,7 @@ export function createAudio(
       const vTotal = Object.keys(voice.clips).length;
       const sTotal = Object.values(sounds).filter((d) => d.src).length;
       let vReady = 0;
-      for (const p of Object.values(voice.clips)) if (decoded.has(p)) vReady += 1;
+      for (const p of Object.values(voice.clips)) if (ready.has(p)) vReady += 1;
       return `audio ${ogg} ctx ${ctx ? ctx.state : 'none'} voice ${vReady}/${vTotal} sfx ${sfxBuffers.size}/${sTotal}` +
         ` music ${currentMusic ? (currentMusic.paused ? 'paused' : 'playing') : 'none'}${musicFailed ? ` (failed ${musicFailed})` : ''}`;
     },

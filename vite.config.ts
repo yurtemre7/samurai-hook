@@ -12,6 +12,6 @@ export default defineConfig({
   define: { __COMMIT__: JSON.stringify(commit()) },
   test: {
     // Agent worktrees live under .claude/; their copies of the tests must not run here.
-    exclude: ['node_modules/**', 'dist/**', '.claude/**'],
+    exclude: ['node_modules/**', 'dist/**', '.claude/**', 'e2e/**'],
   },
 });

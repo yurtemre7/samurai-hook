@@ -102,7 +102,10 @@ Then open http://localhost:5173.
 |---|---|
 | `npm run typecheck` | TypeScript check |
 | `npm test` | Unit tests (fight logic, economy, input); also prints a balance table |
+| `npm run e2e` | Browser tests (Playwright): desktop Chromium, iPhone WebKit and Android Chromium emulation |
 | `npm run build` | Production build into `dist/` |
+
+First time only, install the test browsers: `npx playwright install chromium webkit`.
 
 Jump straight to a scene while developing: `http://localhost:5173/?scene=fight&fish=shark&tier=0` (`scene` is one of ocean, cutscene, fight, result, shop). `game` is available in the browser console, for example `game.state.reset()`. Add `?debug=keys` to see which action each key press maps to.
 
