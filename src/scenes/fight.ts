@@ -340,7 +340,16 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
         defendPressed: game.input.pressed('defend'),
         jump: game.input.pressed('up') || game.input.pressed('confirm'),
         crouch: game.input.held('down'),
+        // Touch: dragging walks faster (owner's choice); keys and pad stay at normal speed.
+        walkScale: game.input.dragging() ? F.samurai.touchWalkScale : 1,
       };
+      // Touch dash (quick swipe or DASH button) = defend tapped with a direction, like the keyboard.
+      // No direction given: dash away from the fish.
+      const dash = game.input.dashDir();
+      if (dash !== null) {
+        input.defendPressed = true;
+        input.moveX = dash !== 0 ? dash : -state.samurai.facing;
+      }
       const frozen = state.hitStop > 0;
       const fishHpBefore = state.fish.hp;
       const events = sim.step(dt, input);

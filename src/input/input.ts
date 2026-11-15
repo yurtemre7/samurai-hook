@@ -1,11 +1,10 @@
 // Keyboard + gamepad input. Thin browser wrapper around the pure core in core.ts.
-import type { Input } from '../types';
-import { actionsForKey, createInputCore, type GamepadLike } from './core';
+import { actionsForKey, createInputCore, type GamepadLike, type InputCore } from './core';
 import { createKeyDebug, keysDebugEnabled } from './debug';
 
 const NO_SCROLL = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 
-export function createInput(target: Window = window): Input {
+export function createInput(target: Window = window): InputCore {
   const core = createInputCore({
     // Looked up on every call: tests and tools may replace navigator.getGamepads at runtime.
     getGamepads: () => {
