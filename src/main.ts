@@ -1,6 +1,7 @@
 import { createAssets } from './core/assets';
 import { createAudio } from './core/audio';
 import { loadKanjiFont } from './core/fonts';
+import { createPerf } from './core/perf';
 import { createGameState } from './game/state';
 import { createInput } from './input/input';
 import { createTouchControls, touchEnabled } from './input/touch';
@@ -61,6 +62,10 @@ const game: Game = {
   },
 };
 
+// ?debug=perf readout (no-op otherwise): fps, worst frame, touch-to-game delay, build.
+const perf = createPerf();
+window.addEventListener('pointerdown', (e) => perf.touched(e.timeStamp || performance.now()), true);
+
 // Browsers block audio until the first user gesture.
 for (const ev of ['keydown', 'pointerdown', 'touchend', 'gamepadconnected'] as const) {
   window.addEventListener(ev, () => game.audio.unlock());
@@ -82,6 +87,7 @@ function start(): void {
 let last = performance.now();
 let acc = 0;
 function frame(now: number): void {
+  perf.frame(now);
   if (touch?.blocked()) {
     // Portrait on a phone: no steps, no input. Keep the clock moving so rotating back does not jump.
     last = now;
@@ -93,6 +99,7 @@ function frame(now: number): void {
   last = now;
   while (acc >= STEP) {
     game.input.update();
+    if (game.input.anyPressed() || game.input.tapped() || game.input.dragDX() !== 0) perf.consumed(performance.now());
     if (game.input.anyPressed()) game.audio.unlock();
     scene?.update(STEP);
     time += STEP;

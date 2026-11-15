@@ -157,7 +157,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       boatBob = Math.sin(game.time * 1.6) * L.boatBobPx;
 
       if (mode === 'idle') {
-        if (input.pressed('confirm') || input.pressed('down')) {
+        if (input.pressed('confirm') || input.pressed('down') || input.tapped()) {
           game.audio.play('splash');
           mode = 'sinking';
         } else if (input.pressed('shop')) {
@@ -166,7 +166,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         }
       } else {
         const h = ocean.hook;
-        hx = clamp(hx + input.moveX() * h.steerSpeed * dt, L.hookSteerMargin, W - L.hookSteerMargin);
+        // Touch: the hook follows the finger (capped); keys, pad and stick use the steer speed.
+        const step = input.dragging()
+          ? clamp(input.dragDX(), -h.touchSteerMaxSpeed * dt, h.touchSteerMaxSpeed * dt)
+          : input.moveX() * h.steerSpeed * dt;
+        hx = clamp(hx + step, L.hookSteerMargin, W - L.hookSteerMargin);
         const my = input.moveY();
         if (mode === 'sinking') {
           if (input.pressed('confirm')) {
@@ -352,6 +356,10 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
             ? [{ action: 'move', label: 'STEER' }, { action: 'confirm', label: 'REEL IN' }]
             : [{ action: 'move', label: 'STEER' }];
       drawPrompts(ctx, game.input, prompts);
+      if (game.input.device === 'touch') {
+        const hint = mode === 'idle' ? text.touch.cast : mode === 'sinking' ? text.touch.steer : text.touch.reeling;
+        drawOutlinedText(ctx, hint, W / 2, H - 24, { size: 20, align: 'center', color: '#ffffff' });
+      }
     },
   };
 

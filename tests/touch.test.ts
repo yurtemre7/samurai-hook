@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInputCore } from '../src/input/core';
-import { dragToAxis, padDirections, touchEnabled } from '../src/input/touch';
+import { dragToAxis, padDirections, touchEnabled, DRAG_DEADZONE_PX, DRAG_FULL_PX } from '../src/input/touch';
 
 const make = () => createInputCore({ getGamepads: () => [] });
 
@@ -132,10 +132,10 @@ describe('touch axis in the core', () => {
 describe('dragToAxis', () => {
   it('dead zone is zero, full deflection is 1, clamped beyond', () => {
     expect(dragToAxis(0, 0)).toEqual({ x: 0, y: 0 });
-    expect(dragToAxis(10, 0)).toEqual({ x: 0, y: 0 });
-    expect(dragToAxis(80, 0).x).toBeCloseTo(1);
+    expect(dragToAxis(DRAG_DEADZONE_PX, 0)).toEqual({ x: 0, y: 0 });
+    expect(dragToAxis(DRAG_FULL_PX, 0).x).toBeCloseTo(1);
     expect(dragToAxis(-500, 0).x).toBeCloseTo(-1);
-    expect(dragToAxis(45, 0).x).toBeCloseTo(0.5);
+    expect(dragToAxis((DRAG_DEADZONE_PX + DRAG_FULL_PX) / 2, 0).x).toBeCloseTo(0.5);
   });
   it('keeps direction and never exceeds length 1 on diagonals', () => {
     const a = dragToAxis(300, 300);
@@ -177,5 +177,54 @@ describe('touchEnabled', () => {
     expect(touchEnabled('', true)).toBe(true);
     expect(touchEnabled('?touch=1', false)).toBe(true);
     expect(touchEnabled('?touch=0', false)).toBe(false);
+  });
+});
+
+describe('touch tap and finger drag (core)', () => {
+  const mk = () => createInputCore({ getGamepads: () => null });
+
+  it('a touch on the play area is tapped() for exactly one step and is not confirm', () => {
+    const c = mk();
+    c.touchTap();
+    c.update();
+    expect(c.tapped()).toBe(true);
+    expect(c.pressed('confirm')).toBe(false);
+    expect(c.held('up')).toBe(false);
+    expect(c.device).toBe('touch');
+    c.update();
+    expect(c.tapped()).toBe(false);
+  });
+
+  it('finger travel is summed between steps and handed out once', () => {
+    const c = mk();
+    c.setDragging(true);
+    c.touchDrag(12);
+    c.touchDrag(-2);
+    c.touchDrag(Number.NaN);
+    c.update();
+    expect(c.dragging()).toBe(true);
+    expect(c.dragDX()).toBe(10);
+    c.update();
+    expect(c.dragDX()).toBe(0);
+  });
+
+  it('clearKeys drops a pending tap and drag', () => {
+    const c = mk();
+    c.touchTap();
+    c.setDragging(true);
+    c.touchDrag(30);
+    c.clearKeys();
+    c.update();
+    expect(c.tapped()).toBe(false);
+    expect(c.dragging()).toBe(false);
+    expect(c.dragDX()).toBe(0);
+  });
+
+  it('useTouch makes touch the device before any input; a key switches back', () => {
+    const c = mk();
+    c.useTouch();
+    expect(c.device).toBe('touch');
+    c.keyDown('KeyA', 'a');
+    expect(c.device).toBe('keyboard');
   });
 });

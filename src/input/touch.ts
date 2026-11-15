@@ -1,14 +1,16 @@
 // Touch controls for mobile browsers: a DOM overlay (not drawn on the canvas) that feeds the
 // pure input core. Left thumb: 4-way pad. Right thumb: QUICK / HEAVY / BLOCK / CONFIRM. SHOP top right.
-// Fishing and walking are steered by dragging a finger anywhere that is not a button.
-// Tapping the canvas deliberately does nothing: confirm also jumps and reels in, so stray taps would misfire.
+// Dragging a finger anywhere that is not a button: in the ocean the hook follows the finger 1:1
+// (dragDX), elsewhere it is a small floating stick (walk in fights; up/down brake/sink while fishing).
+// Touching the play area is its own signal (`tapped()`), NOT confirm: only the idle ocean uses it, to
+// cast. Confirm also jumps and reels in, so a stray tap must never become confirm.
 // Landscape only: in portrait a full-screen message covers everything and `blocked()` pauses the game loop.
 import type { Action } from '../types';
 import type { InputCore } from './core';
 
 /** Dead zone and full-deflection distance of the drag, in CSS px. */
-export const DRAG_DEADZONE_PX = 10;
-export const DRAG_FULL_PX = 80;
+export const DRAG_DEADZONE_PX = 8;
+export const DRAG_FULL_PX = 30;
 
 /** Overlay on when the primary pointer is coarse (a phone) or `?touch=1` forces it on desktop. */
 export function touchEnabled(search: string, coarse: boolean): boolean {
@@ -188,6 +190,13 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   let dragId: number | null = null;
   let ox = 0;
   let oy = 0;
+  let lastX = 0;
+  const canvas = doc.getElementById('game');
+  /** CSS px -> game px (the canvas is 960 game px wide, scaled to fit). */
+  const toGame = () => {
+    const w = canvas?.getBoundingClientRect().width ?? 0;
+    return w > 0 ? 960 / w : 1;
+  };
   const onGlass = (t: EventTarget | null) =>
     t instanceof Element && !!t.closest('.sh-btn, .sh-pad, .sh-portrait');
   doc.addEventListener('pointerdown', (e) => {
@@ -195,12 +204,17 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     dragId = e.pointerId;
     ox = e.clientX;
     oy = e.clientY;
+    lastX = e.clientX;
+    input.touchTap();
+    input.setDragging(true);
     ring.style.left = `${ox}px`;
     ring.style.top = `${oy}px`;
     ring.style.display = 'block';
   });
   doc.addEventListener('pointermove', (e) => {
     if (e.pointerId !== dragId) return;
+    input.touchDrag((e.clientX - lastX) * toGame());
+    lastX = e.clientX;
     const a = dragToAxis(e.clientX - ox, e.clientY - oy);
     input.setTouchAxis(a.x, a.y);
   });
@@ -209,6 +223,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     dragId = null;
     ring.style.display = 'none';
     input.setTouchAxis(0, 0);
+    input.setDragging(false);
   };
   doc.addEventListener('pointerup', dragEnd);
   doc.addEventListener('pointercancel', dragEnd);
@@ -227,7 +242,8 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   doc.addEventListener('visibilitychange', releaseAll);
   mq.addEventListener('change', releaseAll);
 
-  for (const el of [root, portrait, doc.getElementById('game')]) {
+  input.useTouch(); // phone hints from the first frame, before any touch
+  for (const el of [root, portrait, canvas]) {
     el?.addEventListener('contextmenu', (e) => e.preventDefault());
   }
 

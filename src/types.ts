@@ -30,6 +30,12 @@ export interface Input {
   readonly device: Device;
   /** Short glyph text for an action on the current device, e.g. "J" or "X". */
   glyph(a: Action): string;
+  /** Touch only: a finger is dragging on the play area (not on a button). */
+  dragging(): boolean;
+  /** Touch only: horizontal finger travel during the last step, in game px (960-wide canvas). */
+  dragDX(): number;
+  /** Touch only: true on the step a finger touched the play area (not a button). */
+  tapped(): boolean;
 }
 
 export interface Prompt {

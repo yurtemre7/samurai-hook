@@ -86,16 +86,27 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
   mobile BROWSER only (no manifest, service worker or wrapper app); LANDSCAPE
   ONLY; steering the hook is by dragging a finger, everything else by
   on-screen buttons; tapping the canvas never means confirm (confirm also
-  jumps and reels in, so stray taps would misfire).
+  jumps and reels in, so stray taps would misfire). After the first phone
+  test (iPhone, Chrome): touching the water should cast without CONFIRM, and
+  steering the hook felt laggy.
 - **How it works:** `InputCore` has a third source: `touchDown/touchUp(action)`
   (same held, edge and tap-latch rules as keys) and `setTouchAxis(x, y)` (added
   to keys/stick in `moveX/moveY`, clamped). `Device` gained `'touch'`;
   `clearKeys()` also releases touch. `src/input/touch.ts` builds a DOM overlay
   (pad, QUICK / HEAVY / BLOCK / CONFIRM, SHOP) with Pointer Events tracked per
   `pointerId`; the pad hit-tests with pointer capture so sliding changes
-  direction (diagonals allowed). A finger down anywhere that is not a button is
-  a floating-joystick drag: 10 px dead zone, full deflection at 80 px, circular.
-  It only feeds `setTouchAxis`, never an action. The overlay exists only when
+  direction (diagonals allowed). A finger down anywhere that is not a button:
+  - **casts** if the ocean is idle (`input.tapped()`, its own signal, read only
+    by the idle ocean; never `confirm`, so no jump in a fight or reel-in while
+    sinking);
+  - **steers the hook 1:1** while fishing: finger travel converted to game px
+    (`input.dragDX()`), capped at `ocean.hook.touchSteerMaxSpeed` (1200 px/s).
+    The first version used a joystick capped at `steerSpeed` (260 px/s), which
+    trailed far behind a thumb and read as lag;
+  - is also a small floating stick (8 px dead zone, full at 30 px) for walking
+    in fights and braking or sinking faster while fishing.
+  The phone hint text is in `text.touch` in the manifest; the device starts as
+  `touch` when the overlay is on, so the hint shows before the first touch. The overlay exists only when
   `(pointer: coarse)` matches or the URL has `?touch=1`; desktop is unchanged.
   The prompt bar is hidden while `device === 'touch'`.
 - **Portrait:** a full-screen CSS message covers the page, and `main.ts` skips
@@ -106,6 +117,9 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
   iOS Safari quirks (audio unlock on first touch, address-bar and
   `visualViewport` resize, notch safe areas), thumb comfort and button size,
   and performance. Only synthetic pointer events in a desktop browser.
+- **Lag diagnosis:** `?debug=perf` shows the build's short commit, fps, the
+  worst frame of the last second and the delay from a touch to the game step
+  that used it. Ask testers to open the preview with it if anything feels slow.
 
 ### Jump, crouch and dodge-only specials (branch `feat/jump-crouch-dodge`, for team review)
 

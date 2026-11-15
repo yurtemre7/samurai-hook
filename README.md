@@ -65,14 +65,16 @@ Open the game in a phone browser and turn the phone sideways (in portrait it sho
 
 | Action | Touch |
 |---|---|
-| Steer the hook, walk in a fight | drag a finger anywhere that is not a button (up to brake, down to sink faster) |
+| Drop the hook | touch the water |
+| Steer the hook | drag a finger on the water: the hook follows it (drag up to brake, down to sink faster) |
+| Walk in a fight | drag a finger, or the ◀ ▶ buttons |
 | Direction pad (fight: up jumps, down crouches) | left thumb, the four arrows; slide between them without lifting |
 | Quick slash, heavy slash | QUICK, HEAVY (right thumb) |
 | Defend: hold to block, with a direction to dash-dodge | BLOCK |
 | Confirm, drop hook, skip | CONFIRM (tapping the game itself does nothing) |
 | Shop | SHOP (top right) |
 
-To try it on a desktop browser, add `?touch=1` to the URL.
+To try it on a desktop browser, add `?touch=1` to the URL. If it feels slow on a phone, add `?debug=perf` to see frames per second and touch delay.
 
 ### Demo shortcuts
 

@@ -32,6 +32,14 @@ export interface InputCore extends Input {
   touchUp(action: Action): void;
   /** Analog drag, each -1..1 (clamped). Added to keys/stick in moveX/moveY. Non-zero switches device to touch. */
   setTouchAxis(x: number, y: number): void;
+  /** A finger touched the play area (not a button): `tapped()` is true for exactly one step. */
+  touchTap(): void;
+  /** Finger travel in game px since the last call; summed and handed out once per step by `dragDX()`. */
+  touchDrag(dx: number): void;
+  /** Drag started or ended on the play area. */
+  setDragging(on: boolean): void;
+  /** Make touch the current device (the overlay calls this on start, so phone hints show before the first touch). */
+  useTouch(): void;
 }
 
 export const ACTIONS: readonly Action[] = [
@@ -142,6 +150,11 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   const touchTapped = new Set<Action>();
   let touchX = 0;
   let touchY = 0;
+  let tapLatch = false;
+  let tapNow = false;
+  let dragAcc = 0;
+  let dragStep = 0;
+  let dragOn = false;
 
   const keyActive = (a: Action) => {
     if (keysTapped.has(a) || touchTapped.has(a) || touchHeld.has(a)) return true;
@@ -172,6 +185,23 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       touchTapped.clear();
       touchX = 0;
       touchY = 0;
+      tapLatch = false;
+      dragAcc = 0;
+      dragOn = false;
+    },
+    touchTap() {
+      device = 'touch';
+      tapLatch = true;
+    },
+    touchDrag(dx) {
+      if (Number.isFinite(dx)) dragAcc += dx;
+    },
+    setDragging(on) {
+      dragOn = on;
+      if (on) device = 'touch';
+    },
+    useTouch() {
+      device = 'touch';
     },
     touchDown(a) {
       device = 'touch';
@@ -196,6 +226,10 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       }
       keysTapped.clear();
       touchTapped.clear();
+      tapNow = tapLatch;
+      tapLatch = false;
+      dragStep = dragAcc;
+      dragAcc = 0;
 
       const pad = firstPad(deps.getGamepads);
       const buttons: boolean[] = [];
@@ -234,6 +268,9 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
 
     held: (a) => now.has(a),
     pressed: (a) => now.has(a) && !prev.has(a),
+    dragging: () => dragOn,
+    dragDX: () => dragStep,
+    tapped: () => tapNow,
     moveX: () => clamp1(digX + stickX + touchX),
     moveY: () => clamp1(digY + stickY + touchY),
     anyPressed: () => {

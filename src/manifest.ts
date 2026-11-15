@@ -299,7 +299,10 @@ export const ocean = {
   startDepth: 135,         // max depth at level 0, metres: shark band (115-150 m) reachable from the first cast, squid (starts 140 m) needs one depth upgrade
   pxPerMetre: 14,
   surfaceY: 150,           // screen y of the water line when the camera is at the top
-  hook: { sinkSpeed: 150, fastSinkSpeed: 300, brakeSpeed: 60, reelSpeed: 260, steerSpeed: 260, radius: 12 },
+  hook: { sinkSpeed: 150, fastSinkSpeed: 300, brakeSpeed: 60, reelSpeed: 260, steerSpeed: 260, radius: 12,
+    // Touch: the hook follows the finger 1:1, but never faster than this (game px/s). Keyboard and
+    // gamepad still use steerSpeed. Raise it (or set Infinity) for a fully free finger.
+    touchSteerMaxSpeed: 1200 },
   fishPerScreen: 8,
   catchRadiusScale: 0.8,   // multiplied by the fish's half-width
   /** Screen layout and look of the ocean scene (px unless noted); cosmetic. */
@@ -396,6 +399,11 @@ export const upgrades: UpgradeDef[] = [
 // {fish}, {round}, {gold}, {title} are filled in by the scenes.
 
 export const text = {
+  touch: {
+    cast: 'TOUCH THE WATER TO DROP YOUR HOOK',
+    steer: 'DRAG TO STEER  ·  CONFIRM TO REEL IN',
+    reeling: 'DRAG TO STEER',
+  },
   title: 'SAMURAI HOOK',
   cutscene: { round: 'ROUND {round}!', versus: 'SAMURAI  VS  {fish}', fight: 'FIGHT!' },
   samuraiLines: [
