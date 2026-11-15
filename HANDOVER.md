@@ -3,7 +3,7 @@
 Shared source of truth for project status. Read this before starting any
 work, and update it in the same commit as the work.
 
-Last updated: 2026-11-14 (session 2: cleanups merged; keyboard, announcer and placeholder fish in progress)
+Last updated: 2026-11-15 (session 2: recorded announcer up for review)
 
 ## Current state
 
@@ -14,7 +14,7 @@ Last updated: 2026-11-14 (session 2: cleanups merged; keyboard, announcer and pl
   (`.github/workflows/pages.yml`). Asset paths go through `assetUrl()` in
   `src/core/assets.ts`, so the build works under the `/<repo>/` sub-path.
 - How to run: `npm install`, then `npm run dev` and open
-  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (58 tests).
+  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (84 tests).
   README.md has controls and how to add a fish or swap an asset.
 - Keep the working copy on a normal local disk. Inside a cloud drive mount
   (pCloud Drive was tried) `npm install` fails: the drive cannot create
@@ -70,17 +70,47 @@ Last updated: 2026-11-14 (session 2: cleanups merged; keyboard, announcer and pl
   that included a real controller is not confirmed.
 - **Not verified:** a real controller, a human actually playing (all input
   was scripted, so feel and difficulty for people are untested), and sound
-  (calls are made; nobody has listened to the files or the spoken announcer).
+  (calls are made; the announcer was auditioned by Rhaveen on 2026-11-15, the
+  other sound effects have still not been reviewed by ear).
 
 ## In progress
 
-Session 2 (2026-11-14), run by Rhaveen with a Claude orchestrator and
-subagents. **Please do not edit the files listed here on another branch until
-these land, or the work will collide.** Each pull request updates this file.
+Nothing is in flight from session 2 except open pull requests (check GitHub).
 
-| Work | Branch | Files it touches | Why |
-|---|---|---|---|
-| Recorded announcer | (not pushed yet) | `src/core/audio.ts`, new `src/core/announcer.ts`, `voice` in `src/manifest.ts`, `AudioSys.announce` in `src/types.ts`, announce calls in `cutscene.ts`, `fight.ts`, `result.ts`, new `public/assets/voice/`, `CREDITS.md` | The player found the speech-synthesis announcer robotic. Goes to the team as a pull request for review, because the robot voice was a deliberate joke. Music and other sounds are not changed. |
+### Announcer (session 2, for team review)
+
+The fight announcer now plays **recorded clips through a Web Audio effect
+chain** instead of browser speech synthesis. This replaces the flat robot
+voice, which was a deliberate joke in the original design; Rhaveen found it
+robotic and asked for an arcade fighting-game announcer, so this change is
+for the team to accept or reject.
+
+- **Voices (chosen by ear by Rhaveen on 2026-11-15 on a dev-only audition
+  page, since removed):** every line is Kenney's "Voiceover Pack: Fighter"
+  (CC0) with the `deep` treatment, except **"Fight", which is Alba
+  MacKenna's own-FX recording (CC-BY 4.0, credit required, see CREDITS.md)
+  with the `demonPlus` treatment**. Rhaveen chose a second voice for "Fight"
+  knowingly, for more energy.
+- **Where to change it:** `voice` in `src/manifest.ts`. `clips` maps each
+  line to a file; `preset` is the treatment for all lines; `linePresets`
+  overrides it per line; `presets` holds the treatment numbers (pitch via
+  `rate`, `drive`, `lowBoost`, `highCut`, `reverb`, `echo`, `gain`, ...).
+  The effect chain is `src/core/voicefx.ts`; which clip a line uses is the
+  pure `planAnnounce` in `src/core/announcer.ts`.
+- **Still speech synthesis:** the fallback when a clip is missing or fails
+  to load, and "Upgrade!" in the shop (no recording exists).
+- **Fish names are no longer spoken** (`voice.speakFishName: false`); no
+  recording can say them and the name is on screen. Set it to `true` to
+  have the synthesised voice say the name after the recorded "Round N".
+  Rhaveen has not given a clear answer on this, so treat it as open.
+- **Rounds:** recorded "Round one" to "Round five"; from round 6 the generic
+  clip says "Ready".
+- **Win lines:** there is no "K.O." recording in this pack, so a win says
+  "You win", a perfect win "Flawless victory", a time-out "Time", a loss
+  "You lose".
+- Rejected along the way: packs under CC-BY-SA (VoiceBosch), which would
+  force share-alike on the game's assets; Aimee Smith's and Kenney's other
+  pack (auditioned, not chosen); Wozniak and qubodup (too few lines).
 
 The repository was renamed to `samurai-hook` on 2026-11-15 (issue #19), so
 the play link is now https://yurtemre7.github.io/samurai-hook/ and the old
@@ -230,7 +260,8 @@ Session 2 decisions by Rhaveen (2026-11-14):
   idea); the squid sprite stays as it is.
 - The anglerfish's lure should glow through the darkness (visual only).
 - Finish the placeholder fish first; redraw the whole roster later.
-- The fight music stays. Only the announcer voice is being replaced, and that
+- The fight music stays. Only the announcer voice is replaced (see
+  "Announcer" above), and that
   change is for the team to review.
 - Pull requests are reviewed by teammates before merging, except
   behaviour-preserving cleanups, documentation and the placeholder-fish
