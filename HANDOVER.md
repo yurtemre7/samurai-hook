@@ -87,8 +87,27 @@ Pages address is a 404. GitHub redirects the old repository URL, but it is
 cleaner to run `git remote set-url origin
 https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
 
-Open request to the repository owner: a playable preview link on every pull
-request (issue #21).
+### Deployment and pull request previews
+
+- **Every pull request is tested, built and published** by
+  `.github/workflows/preview.yml` to the `gh-pages` branch under
+  `pr-preview/pr-<number>/`, and a bot comments the play link on the PR
+  (`https://yurtemre7.github.io/samurai-hook/pr-preview/pr-<number>/`). The
+  folder is removed when the PR closes. This also gives every PR a test run.
+  Pull requests from forks are skipped (their token is read-only).
+- **One step is left for the repository owner (issue #21):** Settings, Pages,
+  Build and deployment, Source: change "GitHub Actions" to "Deploy from a
+  branch", branch `gh-pages`, folder `/ (root)`. Until then the preview links
+  in PR comments are 404, because Pages is not serving that branch yet. Do it
+  only after this change has been merged and the deploy on `main` has run
+  once, so that `gh-pages` has the main build at its root.
+- **`main` is published both ways for now** by
+  `.github/workflows/pages.yml`: to the root of `gh-pages` and as a Pages
+  artifact, so the live site keeps updating before and after the switch.
+  After the switch the artifact deploy fails without blocking anything;
+  remove the `deploy` job and the two Pages steps from `pages.yml` then.
+- Two third-party actions are used, pinned to major versions:
+  `rossjrw/pr-preview-action@v1` and `JamesIves/github-pages-deploy-action@v4`.
 
 ## Pending (in priority order)
 
@@ -232,8 +251,9 @@ Session 2 decisions by Rhaveen (2026-11-14):
 - **Key debugger:** add `?debug=keys` to the URL to see what the browser
   reports for each key event and which action it mapped to. Use it first
   for any future "key does nothing" report.
-- Pull requests have no automated checks; tests run only on pushes to
-  `main`, as part of the deploy.
+- Pull requests are tested and built by the PR preview workflow (see
+  "Deployment and pull request previews"). The preview links only work once
+  the owner has switched the Pages source to the `gh-pages` branch.
 - Scripted browser checks cannot watch fights in motion when the browser
   pane is hidden, because a hidden page pauses its game loop. PR #20 was
   checked by tests, the balance table and still screenshots only.
