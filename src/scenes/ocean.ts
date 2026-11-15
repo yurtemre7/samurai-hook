@@ -173,7 +173,8 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         return;
       }
       if (mode === 'idle') {
-        if (input.pressed('confirm') || input.pressed('down') || input.tapped()) {
+        // Touch the water (finger) or click it (mouse) to cast, like a phone.
+        if (input.pressed('confirm') || input.pressed('down') || input.tapped() || input.clicked()) {
           game.audio.play('splash');
           mode = 'sinking';
         } else if (input.pressed('shop')) {

@@ -63,6 +63,8 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 | Settings: choose a row, change it | W S, then A D | d-pad up / down, then left / right |
 | Pause / resume a fight | Esc or Tab (Space or Enter also resume) | Select (Back), A resumes |
 
+**Mouse:** everything on screen can be clicked. Any key hint in the bottom bar does what its key does (SPACE DROP HOOK, E SHOP, ESC SETTINGS, ...). The settings panel: click the tab to open it, click a row, click the volume bar to set the level, click HARD MODE to switch it, click a key slot on the keybinds page and then press the new key (or click to bind the mouse button), click the title to go back, click outside to close. Shop: click a board to pick it, click it again to buy. Click the water to drop the hook, click the result screen to continue, click a paused fight to resume.
+
 The settings panel has music volume, sound effects volume (this includes the announcer), **hard mode** and a **keybinds** page. Volumes, the mode and the keys are remembered.
 
 Keybinds (keyboard only): every action has a first and a second key. Choose a row with W S, the first or second key with A D, press Space or Enter, then press the new key. Esc cancels, Backspace while changing a second key clears it, and a key already used elsewhere swaps places with it. F-keys, Ctrl, Alt, Meta, Backspace and Delete cannot be bound. "Reset all keys to default" is the last row. The gamepad layout is fixed. The prompts at the bottom follow your keys.

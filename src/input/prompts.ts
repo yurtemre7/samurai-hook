@@ -194,6 +194,13 @@ export function drawPrompts(ctx: CanvasRenderingContext2D, input: Input, prompts
   }
 
   let x = Math.round(W / 2 - total / 2);
+  // Each item (but MOVE) is clickable: report where it is on screen, squeeze included.
+  const sx = (v: number) => W / 2 + (v - W / 2) * scale;
+  input.setPromptHits(prompts.flatMap((p, i) => {
+    if (p.action === 'move') return [];
+    const left = x + widths.slice(0, i).reduce((s, w) => s + w + ITEM_GAP, 0);
+    return [{ x0: sx(left - ITEM_GAP / 2), x1: sx(left + widths[i] + ITEM_GAP / 2), y0: BAND_Y, y1: BAND_Y + BAND_H, action: p.action }];
+  }));
   items.forEach((it, i) => {
     it.draw(x);
     ctx.fillStyle = '#f4f1ea';

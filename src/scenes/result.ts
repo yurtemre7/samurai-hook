@@ -50,7 +50,7 @@ export function createResultScene(game: Game, params: SceneParams['result']): Sc
     update(dt) {
       t += dt;
       if (outcome === 'win' && !coined && t >= R.goldAt) { coined = true; game.audio.play('coin'); }
-      if ((t > R.lock && game.input.pressed('confirm')) || t >= R.auto) leave();
+      if ((t > R.lock && (game.input.pressed('confirm') || game.input.clicked())) || t >= R.auto) leave();
     },
     render(ctx) {
       if (outcome === 'win') {
