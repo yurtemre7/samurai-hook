@@ -31,17 +31,18 @@ const SAMURAI_SHOULDER = 80; // px above the floor where the sword arc is centre
 
 const SAM_SPRITE: Record<FightState['samurai']['move'], string> = {
   idle: 'samuraiIdle', walk: 'samuraiWalk', dash: 'samuraiWalk', quick: 'samuraiQuick',
-  heavy: 'samuraiHeavy', block: 'samuraiBlock', hurt: 'samuraiHurt',
-  // No jump or crouch art: existing frames, bent by samuraiTransform.
-  jump: 'samuraiWalk', crouch: 'samuraiIdle',
+  heavy: 'samuraiHeavy', block: 'samuraiBlock', hurt: 'samuraiHurt', crouch: 'samuraiCrouch',
+  // Rising; drawSamurai swaps in samuraiFall on the way down.
+  jump: 'samuraiJump',
 };
-const JUMP_AIRTIME = (2 * F.samurai.jump.speed) / F.samurai.jump.gravity;
 
 /** A remembered past pose; `on` = draw it (dashing samurai, slipping fish). */
 export interface Ghost { x: number; y: number; rot: number; flip: boolean; on: boolean }
 
 /** Per-frame visual memory the scene keeps for the fighters. */
 export interface Look {
+  /** Samurai height last drawn, and whether he was last going up (picks the jump or the fall art). */
+  samAir: { y: number; rising: boolean };
   /** World animation clock (frozen during hit-stop). */
   wt: number;
   /** Real clock. */
@@ -51,15 +52,14 @@ export interface Look {
   fishTilt: number;
   fishVx: number;
   puff: number;
-  /** Length of the current vulnerable window, the ring's full circle (the sim's `vulnLeft` is the part still open). */
-  vulnTotal: number;
   blockFlash: number;
 }
 
 export function createLook(): Look {
   return {
+    samAir: { y: 0, rising: true },
     wt: 0, rt: 0, samGhosts: [], fishGhosts: [], fishTilt: FISH_STAND_TILT, fishVx: 0,
-    puff: 0, vulnTotal: 1, blockFlash: 0,
+    puff: 0, blockFlash: 0,
   };
 }
 
@@ -153,15 +153,8 @@ function samuraiTransform(s: FightState['samurai'], wt: number) {
     case 'dash': rot = s.facing * 0.22; sx = 1.12; sy = 0.92; break;
     case 'block': sy = 0.95; sx = 1.03; break;
     case 'hurt': rot = -s.facing * 0.25; break;
-    case 'jump': {
-      // Stretch on take-off, tuck at the top, lean forward on the way down.
-      const p = Math.min(1, s.moveTime / JUMP_AIRTIME);
-      rot = s.facing * (-0.12 + 0.3 * p);
-      sy = p < 0.2 ? 1.08 : 0.9;
-      sx = p < 0.2 ? 0.94 : 1.05;
-      break;
-    }
-    case 'crouch': sy = F.samurai.crouchHeight / F.samurai.standHeight + 0.08; sx = 1.12; break;
+    case 'jump': break; // the jump and fall art carry the pose; only lifted by s.y below
+    case 'crouch': break; // the crouch art is already low and breathes on its own
     case 'quick':
       if (s.stage === 'startup') { rot = -s.facing * 0.08; }
       else if (s.stage === 'active') { rot = s.facing * 0.16; sx = 1.1; }
@@ -195,7 +188,13 @@ function drawSamuraiSprite(
 
 export function drawSamurai(ctx: CanvasRenderingContext2D, assets: Assets, state: FightState, look: Look): void {
   const s = state.samurai;
-  const id = SAM_SPRITE[s.move];
+  // The sim has no vertical speed: compare with the height last drawn. Unchanged
+  // (hit-stop) keeps the last direction; on the deck the next way is up.
+  const air = look.samAir;
+  if (s.y <= 0) air.rising = true;
+  else if (s.y !== air.y) air.rising = s.y > air.y;
+  air.y = s.y;
+  const id = s.move === 'jump' && !air.rising ? 'samuraiFall' : SAM_SPRITE[s.move];
   const flip = s.facing === -1;
   const tr = samuraiTransform(s, look.wt);
   const animTime = s.move === 'quick' || s.move === 'heavy' || s.move === 'hurt' ? s.moveTime : look.wt;
@@ -434,7 +433,7 @@ export function drawFish(
 export function drawFishMarks(ctx: CanvasRenderingContext2D, state: FightState, fish: FishInstance, look: Look): void {
   const f = state.fish;
   const pose = fishPose(state, fish, look);
-  if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, f.vulnLeft, look);
+  if (f.mode === 'vulnerable') drawDizzy(ctx, pose, f.facing, f.vulnLeft, f.vulnTotal, look);
   if (f.mode === 'tell') {
     const p = f.tellProgress;
     const size = 34 + 58 * p;
@@ -566,7 +565,7 @@ function drawWetShine(ctx: CanvasRenderingContext2D, pose: Pose, look: Look): vo
 }
 
 /** Vulnerable: sweat drop, orbiting dizzy stars and a shrinking window ring. */
-function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vulnLeft: number, look: Look): void {
+function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vulnLeft: number, vulnTotal: number, look: Look): void {
   const topY = pose.cy - pose.ext - 14;
   // Sweat drop sliding down beside the head.
   const sx = pose.cx - facing * pose.hw * 0.55;
@@ -593,7 +592,7 @@ function drawDizzy(ctx: CanvasRenderingContext2D, pose: Pose, facing: number, vu
   ctx.restore();
 
   // Window ring: how long the fish stays open.
-  const frac = look.vulnTotal > 0 ? Math.max(0, Math.min(1, vulnLeft / look.vulnTotal)) : 0;
+  const frac = vulnTotal > 0 ? Math.max(0, Math.min(1, vulnLeft / vulnTotal)) : 0;
   const rx = pose.cx;
   const ry = topY - 28;
   ctx.save();

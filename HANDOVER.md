@@ -8,6 +8,8 @@ announcer, iPhone audio fixes, longer fights; CI pull requests #37, #38 and
 #44 open for review). Rule since 2026-11-15: **every pull request updates
 this file**, and pull requests that change visuals include before/after
 screenshots.
+Open on branch `feat/hard-mode-settings-keybinds`: hard mode, a settings
+panel (volumes, keybinds) and W to reel in; see the section of that name.
 
 ## Current state
 
@@ -34,8 +36,7 @@ screenshots.
   cast. The giant squid (Daioika, from 140 m) still needs one depth upgrade.
 - **Fight timers +25% (Rhaveen: fights felt too short):** every fish's
   `timer` in `src/manifest.ts`, rounded: 20 -> 25, 25 -> 31, 30 -> 38,
-  40 -> 50 s. For everyone; there is no difficulty setting and no audio
-  settings screen (both asked about and declined for now).
+  40 -> 50 s. For everyone, in both normal and hard mode.
 - Keep the working copy on a normal local disk. Inside a cloud drive mount
   (pCloud Drive was tried) `npm install` fails: the drive cannot create
   symlinks or run the build tool's binary.
@@ -195,25 +196,109 @@ block merging.
   spines at head height. Shark: tail-slap floor wave. Squid: ink shots high,
   low, high. Projectiles are drawn above the darkness and ink.
 - Jumping above `size x clearScale` also dodges a biter's lunge.
+- With Down held, a defend tap dashes only on a clear sideways push
+  (`fight.samurai.dash.crouchMinX`, 0.65; standing it is still 0.3). A stick
+  held down with a slight lean used to dash him out of the crouch and into a
+  high shot. Keys, d-pad, touch swipes and the DASH button send a full
+  sideways value and behave as before; a touch drag plus BLOCK now needs the
+  same clear push. Settled by unit tests; no real controller was used.
 - Striking the fish during a special's tell, charge or volley lands (it
   cannot slip then), stuns it and still costs the special its full cooldown.
-- `docs/DESIGN.md` (4-button duel, "slippery fish never attack") is still
-  not updated for this; it should be.
+- `docs/DESIGN.md` (4-button duel, "slippery fish never attack") is not
+  updated on `main`; branch `feat/hard-mode-settings-keybinds` updates it.
 - **This reverses a team decision:** "slippery fish stay harmless"
   (Rhaveen, 2026-11-14). The eel, pufferfish and squid can now hurt the
   samurai, so their fights show his health bar. The test "slippery fish never
   attack" became "fish with no attack and no special never hurt the samurai".
   Merged by a teammate on 2026-11-15, so the team accepted it.
+
+### Hard mode, settings panel and keybinds (branch `feat/hard-mode-settings-keybinds`, open PR, for team review)
+
+- **Behaviour change from #36:** #36 merged with the eel, pufferfish and
+  squid able to hurt the samurai. Now that only happens in hard mode; normal
+  mode (the default) makes them harmless again, as before #36.
+- `docs/DESIGN.md` now describes jump, crouch and the dodge-only specials
+  (controls tables, move list, specials paragraph). If the team rejects the
+  change, revert those parts.
+- **Gamepad diagonal fix (2026-11-15):** a stick tilt only counts as `up` /
+  `down` when it is mostly vertical (`|y| > |x|`, in `src/input/core.ts`),
+  so walking with a slightly diagonal stick no longer jumps or crouches.
+  New test in `tests/input.test.ts`. Typecheck clean and 99 tests pass
+  (checked 2026-11-15, Node 26.13.1 installed in `D:\Fafas Arbeit\nodejs`).
+  Not tried in a browser or on a real pad.
+- **Hard mode keeps the team decision intact (2026-11-15):** "slippery fish
+  stay harmless" (Rhaveen, 2026-11-14) still holds in normal mode, which is
+  the default. A **hard mode** switch (settings panel) gives the eel,
+  pufferfish and squid their specials, so they can hurt and their fights show
+  the samurai's health bar. The swordfish and shark are biters and keep their
+  specials in both modes (the request named only slippery fish; the team can
+  overrule this). The mode is applied in one place: `makeFish` in
+  `src/game/state.ts` drops `special` from slippery fish when it is off, so
+  the sim, health bar and tell drawing all follow. It is saved in the game
+  save (`hard`; an old save without it loads as off) and survives `reset()`
+  and `loadPreset()`. No gold bonus or other reward for hard mode. The ocean
+  re-makes a hooked fish, so a mode change applies even to fish already
+  swimming. Tests run in hard mode by default (`stateWith(hard)` in
+  `tests/fightBots.ts`) so the special tests test something; the new "hard
+  mode" tests cover normal mode (harmless, also in higher tiers) and the
+  save. The printed balance table is hard mode.
+- **Settings panel (2026-11-15, `src/ui/settings.ts`):** a small tab with
+  music volume, sound effects volume (announcer included) and hard mode.
+  Bottom-left on the ocean screen (only while the boat is idle), top-left in
+  the shop. New input action `settings`: Esc or Tab, pad Select (button 8).
+  W S choose a row, A D change it (10 % steps), Esc / E / B close. Volumes
+  are kept by `src/core/audio.ts` in their own localStorage key
+  (`samurai-hook-volume-v1`), so wiping the save keeps them. The tab shows
+  "HARD" when the mode is on. Not reachable in the fight or during a cast.
+  Checked in the browser (keyboard only): panel in ocean and shop, SFX
+  volume 80 % kept after a reload, normal-mode eel has no special and shows
+  "cannot be harmed", hard-mode eel shows the health bar. **Not verified:**
+  that the volume really changes what you hear (no one listened), a real pad,
+  and a fight in hard mode played to the end.
+- **Keybinds page (2026-11-15):** a fourth row in the settings panel opens a
+  page with all ten actions, each with a first and a second keyboard key.
+  Enter on a row, then press the new key. Esc cancels, Backspace while
+  changing a second key clears it, a key used elsewhere swaps with it, no
+  action can lose its first key, and F-keys, Ctrl / Alt / Meta, Backspace and
+  Delete are refused (`isReservedKey` in `src/input/core.ts`). The last row
+  resets to defaults. **Keyboard only: the gamepad layout is still fixed**
+  (heavy and shop share a button on purpose and the d-pad is hard-coded).
+  Bindings live in the core per instance (`DEFAULT_BINDINGS`, `rebind`,
+  capture mode) and are saved under `samurai-hook-keys-v1`, separate from the
+  save, so F4 keeps them. A bad or partly stored map merges with the defaults
+  action by action. The labelled-letter fallback for non-QWERTY layouts only
+  applies while the keys are the defaults. Prompts and the move hint now draw
+  the player's keys (`keyName`). Defaults changed slightly: Right Shift and
+  numpad Enter are no longer bound (the panel shows every binding). The
+  settings panel hints are generated from the keys too. Escape cannot be
+  bound (it cancels a capture). 110 tests pass. Quick and Heavy keep the team's mouse buttons as their default second keys (left click, right click) and clicks can be bound too. In the browser: rebinding
+  Quick slash to U showed U in the fight prompt and survived a reload.
+  **Not verified:** that the old key really does nothing in a played fight
+  (covered by a unit test), other layouts, and a gamepad in the panel.
+- Ocean controls: S or down drops the hook, and W or up reels it in (Space
+  still does both). The brake on up is gone on the keyboard; a gentle analogue
+  stick tilt still slows the sink. The prompt bar shows each once.
 - No jump or crouch art exists: the poses are the walk and idle frames,
   stretched and squashed by `samuraiTransform`.
+  **No longer true:** jump, fall and crouch have real art (`jump.png`,
+  `fall.png` and `crouch.png` in `public/assets/samurai/`) and nothing is
+  stretched or squashed. Jump and Fall are the Martial Hero pack's own frames
+  (the pack has them; they were just never cut into strips). The crouch
+  is derived from the idle frames by `tools/samurai-sprites.mjs`: edit the
+  script and re-run it, do not hand-edit the PNGs (`--pack <Sprites dir>`
+  re-cuts jump and fall from the downloaded pack). Rising or falling is picked
+  from the height last drawn (`Look.samAir` in
+  `src/scenes/fight/fighters.ts`). Checked on still previews only, not in
+  motion. The crouch reads as a low kneel and its legs are the weak part; the
+  art has not been approved by the team.
 - Verified: 91 tests (new ones: jump arc, clear heights vs. tells, each
   special hits when standing / blocking / dashing and misses when dodged
   right, no jump timing clears a high shot, lunge jumped over); the bot
   still wins every fish at every damage level. In the browser (scripted
   keys): crouch under pufferfish spines, jump over a squid ink wave, jump
   over the swordfish charge, the JUMP! tell and red band; no console errors.
-- **Not verified:** a human playing it; any gamepad (a diagonal stick tilt
-  may jump or crouch by accident); projectiles drawn over real ink splats
+- **Not verified:** a human playing it; any real gamepad (the diagonal tilt
+  is handled in code, untested on hardware); projectiles drawn over real ink splats
   (the draw order puts them on top, but no screenshot caught both at once).
 
 README and store text (session 2, 2026-11-15): README.md was rewritten in a
@@ -254,7 +339,8 @@ for the team to accept or reject.
   The effect chain is `src/core/voicefx.ts`; which clip a line uses is the
   pure `planAnnounce` in `src/core/announcer.ts`.
 - **Still speech synthesis:** the fallback when a clip is missing or fails
-  to load, and "Upgrade!" in the shop (no recording exists).
+  to load. The shop's spoken "Upgrade!" was removed after a playtest (it
+  sounded odd next to the recorded announcer); the coin sound stays.
 - **Fish names are no longer spoken** (`voice.speakFishName: false`); no
   recording can say them and the name is on screen. Set it to `true` to
   have the synthesised voice say the name after the recorded "Round N".
@@ -295,7 +381,42 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
 - **Owner action:** add `e2e` to the required status checks next to `test`
   (open PR #37).
 
+### Regression guard for game feel
+
+`tests/balance-snapshot.test.ts` has a scripted bot fight every fish at
+damage levels 0, 3, 6 and 10 with five seeds, and compares each result
+(win or loss, seconds used, health left, hits, misses) with the committed
+snapshot in `tests/__snapshots__/`. Fights are deterministic, so a failure
+means the game now plays differently. Added 2026-11-15 at Rhaveen's request
+("no regressions") because several people now change the game.
+
+- **If you changed difficulty on purpose** (tuning, a new fish, a new move),
+  run `npx vitest run -u tests/balance-snapshot.test.ts` and commit the
+  updated snapshot in the same pull request. Reviewers then see in the diff
+  exactly which fights got easier or harder.
+- **If you did not mean to change gameplay** and it fails, your change has
+  a side effect on fights. Find it before merging.
+- CI never writes snapshots, so a missing or changed snapshot fails `test`.
+- It is a guard, not a full proof: a change that does not alter how the bot
+  wins (for example +4 health on the sardine, still three hits) passes.
+
 ### Deployment, CI and pull request previews
+
+- **CI (`.github/workflows/ci.yml`):** every pull request (forks included)
+  and every push to `main` runs `npm ci`, `npm test` and `npm run build`
+  (which type-checks) in one job named `test`. Added 2026-11-15 because
+  several people now work on the game at once.
+- **Making it a merge gate needs the repository owner** (only an admin can):
+  Settings, Rules, Rulesets, New ruleset, New branch ruleset. Name it
+  `main`, Enforcement: Active, Target branches: add the default branch.
+  Tick "Require a pull request before merging" and "Require status checks
+  to pass"; under the latter tick "Require branches to be up to date before
+  merging" and add the check `test` (it appears in the list after the
+  workflow has run once). Save. Until this exists the check is advisory:
+  a red `test` does not block the merge button. As of 2026-11-15 `main` has
+  no protection at all.
+- `preview.yml` also runs the tests, but only for branches in this repo and
+  only to publish the preview; `ci.yml` is the check to rely on.
 
 - **Every pull request is tested, built and published** by
   `.github/workflows/preview.yml` to the `gh-pages` branch under
@@ -361,10 +482,7 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
    table (bot results per fish and damage level). Known soft spots: early
    fish die in 1 or 2 hits from damage level 6; bite damage does not grow
    with tier; a straight hook drop can miss every fish.
-6. The "OPEN" ring's full circle still uses an estimated window length
-   (`look.vulnTotal` in `src/scenes/fight.ts`); only the remaining time is
-   exact. Add `vulnTotal` to the fight state to finish it.
-7. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
+6. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
    and reel-speed upgrades, parry, a boss, a bestiary. **Electric eel**
    (suggested by Rhaveen, 2026-11-14): the eel charges up with a visible
    crackle, then shocks a circle around itself; back off or dash to avoid it,
@@ -383,6 +501,14 @@ see `tools/README-fonts.md` (`python3 tools/font-chars.py`, then
 `sh tools/subset-fonts.sh`; the full font must be downloaded again into
 `candidates/fonts/`). Yuji Syuku and Dela Gothic One were also tried and
 not chosen.
+
+The "OPEN" ring (the old Pending item 6) is done: the fight state carries
+`fish.vulnTotal`, the full length of the current vulnerable window, and the
+ring reads it; the scene no longer estimates it. This also fixes a ring that
+could start partly drained when a hit interrupted an attack after a longer
+window (the estimate kept the larger of the two lengths). No gameplay number
+changed and the bot balance table is identical. Checked by tests only; the
+ring was not looked at in a browser.
 
 Done in session 2 (PR #20, merged): the old items 5, 7, 8 and 9. The result
 screen's G-to-RYO swap is gone; the fight texts, cutscene and result timings

@@ -1,5 +1,132 @@
 import { describe, expect, it } from 'vitest';
-import { applyDeadzone, createInputCore, type GamepadLike } from '../src/input/core';
+import {
+  ACTIONS, applyDeadzone, BINDINGS_KEY, createInputCore, DEFAULT_BINDINGS, isReservedKey, keyName, sanitizeBindings,
+  type GamepadLike,
+} from '../src/input/core';
+
+function memStore(initial: Record<string, string> = {}) {
+  const data = { ...initial };
+  return { data, getItem: (k: string) => data[k] ?? null, setItem: (k: string, v: string) => { data[k] = v; } };
+}
+
+describe('key bindings', () => {
+  const press = (input: ReturnType<typeof createInputCore>, code: string, key?: string) => {
+    input.keyDown(code, key);
+    input.update();
+    const hit = ACTIONS.filter((a) => input.pressed(a));
+    input.keyUp(code);
+    input.update();
+    return hit;
+  };
+  const fresh = (storage = memStore()) => ({ storage, input: createInputCore({ getGamepads: () => [], storage }) });
+
+  it('a rebind changes what the key fires, and the old key goes dead', () => {
+    const { input } = fresh();
+    expect(press(input, 'KeyJ', 'j')).toEqual(['quick']);
+    expect(input.rebind('quick', 0, 'KeyU')).toBe('ok');
+    expect(press(input, 'KeyU', 'u')).toEqual(['quick']);
+    expect(press(input, 'KeyJ', 'j')).toEqual([]); // not even through the labelled-letter fallback
+    expect(input.glyph('quick')).toBe('U');
+  });
+
+  it('binding a key another action uses swaps the two', () => {
+    const { input } = fresh();
+    expect(input.rebind('quick', 0, 'KeyK')).toBe('swapped'); // K was heavy
+    expect(input.binding('quick', 0)).toBe('KeyK');
+    expect(input.binding('heavy', 0)).toBe('KeyJ');
+    expect(press(input, 'KeyK', 'k')).toEqual(['quick']);
+    expect(press(input, 'KeyJ', 'j')).toEqual(['heavy']);
+  });
+
+  it('no action can end up without a primary key', () => {
+    const { input } = fresh();
+    // shop has no alternate: giving its slot 2 heavy's only key would leave heavy empty.
+    expect(input.rebind('shop', 1, 'KeyK')).toBe('refused');
+    expect(input.binding('heavy', 0)).toBe('KeyK');
+    // ...but taking an alternate key from another action is fine.
+    expect(input.rebind('shop', 1, 'ArrowLeft')).toBe('swapped');
+    expect(input.binding('left', 1)).toBeNull();
+    expect(input.binding('left', 0)).toBe('KeyA');
+    expect(input.clearBinding('shop')).toBe(true);
+    expect(input.clearBinding('shop')).toBe(false);
+    for (const a of ACTIONS) expect(input.binding(a, 0)).toBeTruthy();
+  });
+
+  it('reserved keys are refused', () => {
+    const { input } = fresh();
+    for (const code of ['F2', 'F4', 'F12', 'ControlLeft', 'AltRight', 'MetaLeft', 'Backspace', 'Delete', '', 'Unidentified']) {
+      expect(isReservedKey(code), code).toBe(true);
+      expect(input.rebind('quick', 0, code), code).toBe('reserved');
+    }
+    expect(input.binding('quick', 0)).toBe('KeyJ');
+  });
+
+  it('capture hands the next key over, fires nothing, and ignores its autorepeat', () => {
+    const { input } = fresh();
+    let got = '';
+    input.startCapture((c) => { got = c; });
+    expect(input.capturing).toBe(true);
+    expect(input.keyDown('KeyJ', 'j')).toEqual([]);
+    expect(got).toBe('KeyJ');
+    expect(input.capturing).toBe(false);
+    input.keyDown('KeyJ', 'j'); // autorepeat before the keyup
+    input.update();
+    expect(input.held('quick')).toBe(false);
+    expect(input.pressed('quick')).toBe(false);
+    input.keyUp('KeyJ');
+    expect(press(input, 'KeyJ', 'j')).toEqual(['quick']); // released: it works again
+  });
+
+  it('a key held when capture starts is not captured by its autorepeat', () => {
+    const { input } = fresh();
+    input.keyDown('Space');
+    input.update();
+    let got = '';
+    input.startCapture((c) => { got = c; });
+    input.keyDown('Space'); // autorepeat of the key that opened the capture
+    expect(got).toBe('');
+    expect(input.capturing).toBe(true);
+    input.keyDown('KeyZ');
+    expect(got).toBe('KeyZ');
+  });
+
+  it('bindings are saved, survive a restart, and reset restores the defaults', () => {
+    const { input, storage } = fresh();
+    input.rebind('quick', 0, 'KeyU');
+    const again = createInputCore({ getGamepads: () => [], storage });
+    expect(again.binding('quick', 0)).toBe('KeyU');
+    expect(press(again, 'KeyJ', 'j')).toEqual([]);
+    again.resetBindings();
+    expect(createInputCore({ getGamepads: () => [], storage }).binding('quick', 0)).toBe('KeyJ');
+    expect(press(again, 'KeyJ', 'j')).toEqual(['quick']);
+  });
+
+  it('a partial or damaged stored map merges with the defaults', () => {
+    expect(sanitizeBindings({ quick: ['KeyU', null] }).quick).toEqual(['KeyU', null]);
+    expect(sanitizeBindings({ quick: ['KeyU', null] }).heavy).toEqual(DEFAULT_BINDINGS.heavy);
+    expect(sanitizeBindings({ quick: ['F5', null] }).quick).toEqual(DEFAULT_BINDINGS.quick); // reserved: back to default
+    expect(sanitizeBindings({ quick: [null, null] }).quick).toEqual(DEFAULT_BINDINGS.quick);
+    expect(sanitizeBindings({ quick: ['KeyK', null] })).toEqual(DEFAULT_BINDINGS); // KeyK also heavy's: all dropped
+    expect(sanitizeBindings('junk')).toEqual(DEFAULT_BINDINGS);
+    const store = memStore({ [BINDINGS_KEY]: '{not json' });
+    expect(createInputCore({ getGamepads: () => [], storage: store }).binding('quick', 0)).toBe('KeyJ');
+  });
+
+  it('key names', () => {
+    expect(keyName('KeyJ')).toBe('J');
+    expect(keyName('Digit5')).toBe('5');
+    expect(keyName('Space')).toBe('SPACE');
+    expect(keyName('ArrowLeft')).toBe('←');
+    expect(keyName('ShiftLeft')).toBe('L SHIFT');
+    expect(keyName('Mouse0')).toBe('LEFT CLICK');
+    expect(keyName(null)).toBe('-');
+  });
+
+  it('the labelled-letter fallback still works on the defaults (non-QWERTY layouts)', () => {
+    const { input } = fresh();
+    expect(press(input, 'KeyZ', 'j')).toEqual(['quick']); // another layout's key that prints "j"
+  });
+});
 
 function makePad(): GamepadLike & { buttons: { pressed: boolean }[]; axes: number[] } {
   return {
@@ -206,6 +333,40 @@ describe('device switching', () => {
     pad.axes[1] = -0.7;
     input.update();
     expect(input.device).toBe('gamepad');
+  });
+
+  it('settings: Escape or Tab, and the pad Select button', () => {
+    const { input, pad } = setup();
+    input.keyDown('Escape');
+    input.update();
+    expect(input.pressed('settings')).toBe(true);
+    input.keyUp('Escape');
+    input.update();
+    input.keyDown('Tab');
+    input.update();
+    expect(input.pressed('settings')).toBe(true);
+    input.keyUp('Tab');
+    input.update();
+    pad.buttons[8].pressed = true;
+    input.update();
+    expect(input.pressed('settings')).toBe(true);
+    expect(input.device).toBe('gamepad');
+  });
+
+  it('a diagonal stick tilt walks but does not jump or crouch', () => {
+    const { input, pad } = setup();
+    pad.axes[0] = 0.9;
+    pad.axes[1] = 0.6;
+    input.update();
+    expect(input.held('right')).toBe(true);
+    expect(input.held('down')).toBe(false);
+    pad.axes[1] = -0.6;
+    input.update();
+    expect(input.held('up')).toBe(false);
+    pad.axes[0] = 0.1;
+    pad.axes[1] = 0.9;
+    input.update();
+    expect(input.held('down')).toBe(true);
   });
 
   it('stick drift does not flicker the device', () => {

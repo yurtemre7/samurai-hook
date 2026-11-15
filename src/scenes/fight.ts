@@ -59,7 +59,6 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
   let overT = -1;  // seconds since the fight ended, -1 before
   let left = false;
   let worldStep = 0;
-  let prevMode = state.fish.mode;
   let lastFishX = state.fish.x;
   const lag = { sam: 1, fish: 1, samHold: 0, fishHold: 0 };
   let dark: HTMLCanvasElement | null = null;
@@ -148,17 +147,6 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
     const vx = dt > 0 ? (f.x - lastFishX) / dt : 0;
     lastFishX = f.x;
     look.fishVx += (vx - look.fishVx) * Math.min(1, dt * 12);
-
-    // Track the length of the vulnerable window (the ring's full circle); the sim gives what is left.
-    if (f.mode !== prevMode) {
-      if (f.mode === 'vulnerable' && prevMode === 'slip') look.vulnTotal = fish.def.slip.recovery;
-      else if (f.mode === 'vulnerable' && prevMode === 'attack') look.vulnTotal = F.fish.lungeRecovery;
-      else if (f.mode === 'vulnerable' && prevMode === 'charge') look.vulnTotal = F.fish.special.chargeRecovery;
-      else if (f.mode === 'stunned' && (prevMode === 'tell' || prevMode === 'attack' || prevMode === 'aim' || prevMode === 'charge' || prevMode === 'shoot')) {
-        look.vulnTotal = Math.max(f.vulnLeft, look.vulnTotal);
-      }
-      prevMode = f.mode;
-    }
 
     const tiltTarget = FISH_TILT_BY_MODE[f.mode];
     look.fishTilt += (tiltTarget - look.fishTilt) * Math.min(1, dt * 10);

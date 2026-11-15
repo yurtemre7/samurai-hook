@@ -35,6 +35,10 @@ export const sprites: Record<string, SpriteDef> = {
   samuraiHeavy: { src: 'assets/samurai/heavy.png', w: 456, h: 173, facing: 'right', frames: 6, fps: 10, placeholder: { shape: 'samurai', color: '#f39c12', label: 'HEAVY' } },
   samuraiBlock: { src: 'assets/samurai/block.png', w: 456, h: 173, facing: 'right', placeholder: { shape: 'samurai', color: '#7f8c8d', label: 'BLOCK' } },
   samuraiHurt:  { src: 'assets/samurai/hurt.png', w: 456, h: 173, facing: 'right', frames: 4, fps: 12, placeholder: { shape: 'samurai', color: '#ffffff', label: 'OW' } },
+  samuraiJump:  { src: 'assets/samurai/jump.png', w: 456, h: 173, facing: 'right', frames: 2, fps: 10, placeholder: { shape: 'samurai', color: '#c0392b', label: 'JUMP' } },
+  samuraiFall:  { src: 'assets/samurai/fall.png', w: 456, h: 173, facing: 'right', frames: 2, fps: 10, placeholder: { shape: 'samurai', color: '#c0392b', label: 'FALL' } },
+  // Made from the idle frames by tools/samurai-sprites.mjs (frame for frame, so it breathes in step with idle).
+  samuraiCrouch: { src: 'assets/samurai/crouch.png', w: 456, h: 173, facing: 'right', frames: 8, fps: 8, placeholder: { shape: 'samurai', color: '#c0392b', label: 'DUCK' } },
   // In the boat he is the same fighter, resting: his idle strip at a slow breath,
   // drawn smaller with his legs hidden behind the gunwale (see src/scenes/ocean.ts).
   samuraiSit:   { src: 'assets/samurai/idle.png', w: 266, h: 101, facing: 'right', frames: 8, fps: 4, placeholder: { shape: 'samurai', color: '#c0392b' } },
@@ -93,9 +97,8 @@ export const music: Record<string, { src: string | null; volume: number }> = {
  * Announcer. Recorded clips are played when present and loaded; otherwise the
  * line in `text.announce` is spoken by browser speech synthesis (rate / pitch /
  * volume below), so the game is never silent. Round clips: the game looks up
- * `round<N>` first, then the generic `round`, then speech. No clip exists for
- * `buy` ("Upgrade!"), which stays synthesised. Clips are credited in
- * CREDITS.md.
+ * `round<N>` first, then the generic `round`, then speech. Clips are
+ * credited in CREDITS.md.
  *
  * Clips are played through a Web Audio effect chain; see `VoiceFx` in
  * src/core/announcer.ts for every setting. `preset` is the treatment for all
@@ -256,7 +259,9 @@ export const fight = {
     quick: { startup: 0.06, active: 0.08, recovery: 0.14, reach: 185 },
     heavy: { startup: 0.45, active: 0.1, recovery: 0.3, reach: 215 },
     blockReduction: 0.65,   // fraction of damage removed while blocking
-    dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5 },
+    // crouchMinX: with Down held, a defend tap dashes only past this |moveX| (standing: 0.3), so a stick
+    // leaning a little sideways stays crouched. Full-tilt stick within ~42 deg of level; keys, d-pad, touch give 1.
+    dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5, crouchMinX: 0.65 },
     hurtStun: 0.25,
     hurtKnockback: 240,    // px/s pushed away on a bite, decays over hurtStun
     blockPush: 120,        // px/s pushed back on a blocked bite, decays over 0.15 s
@@ -431,7 +436,6 @@ export const text = {
     perfect: 'Perfect!',
     timeout: 'Time! Too slippery!',
     ko: 'You got bitten!',
-    buy: 'Upgrade!',
   },
   shop: {
     title: 'MINATO DOJO SHOP',

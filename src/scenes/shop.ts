@@ -1,6 +1,7 @@
 import { drawPrompts } from '../input/prompts';
 import { text } from '../manifest';
 import { drawOutlinedText, fill } from '../ui/hud';
+import { createSettingsPanel } from '../ui/settings';
 import type { Game, Scene, SceneParams, UpgradeInfo } from '../types';
 import {
   GOLD, INK, PAPER, VERMILION, W, deck, duskSea, duskSky, fillPattern, hanko, inkText, kanji,
@@ -41,6 +42,8 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
   let brokeRow = 0;
   let stamp = 99;            // seconds since the last purchase (cosmetic)
   let lifted = [0, 0, 0];    // eased lift per board
+  // Top-left: the sky beside the stall is empty there; the purse is top-right.
+  const settings = createSettingsPanel(game, { x: 12, y: 12, panel: 'below' });
 
   return {
     update(dt) {
@@ -50,13 +53,13 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
       stamp += dt;
       lifted = lifted.map((v, i) => v + ((i === sel ? 1 : 0) - v) * Math.min(1, dt * 14));
       if (t < LOCK) return;
+      if (settings.update(dt)) return;
       const rows = game.state.upgrades();
       if (game.input.pressed('left')) { sel = (sel + rows.length - 1) % rows.length; game.audio.play('uiMove'); }
       if (game.input.pressed('right')) { sel = (sel + 1) % rows.length; game.audio.play('uiMove'); }
       if (game.input.pressed('confirm')) {
         if (game.state.buy(rows[sel].id)) {
           game.audio.play('buy');
-          game.audio.announce(text.announce.buy);
           flash = 0.5;
           flashRow = sel;
           stamp = 0;
@@ -97,10 +100,12 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
       drawPurse(ctx, game.state.gold);
       if (broke > 0) drawBrokeSign(ctx, Math.min(W - 125, boardX(brokeRow) + BOARD_W / 2), BOARD_Y + BOARD_H - 46, broke);
 
+      settings.render(ctx);
       drawPrompts(ctx, game.input, [
         { action: 'move', label: 'SELECT', keys: 'horizontal' },
         { action: 'confirm', label: 'BUY' },
         { action: 'shop', label: 'BACK' },
+        { action: 'settings', label: 'SETTINGS' },
       ]);
     },
   };

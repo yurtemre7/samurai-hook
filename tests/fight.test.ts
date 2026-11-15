@@ -4,7 +4,7 @@ import { fight as F, fish as fishDefs } from '../src/manifest';
 import type { FightInput } from '../src/types';
 import { createFight } from '../src/fight/sim';
 import { createGameState } from '../src/game/state';
-import { competentBot, DT, idleBot, input, makeFight, mulberry32, NONE, runFight, skipIntro, statsAt } from './fightBots';
+import { competentBot, DT, idleBot, input, makeFight, mulberry32, NONE, runFight, skipIntro, stateWith, statsAt } from './fightBots';
 
 const def = (id: string) => fishDefs.find((f) => f.id === id)!;
 
@@ -155,6 +155,39 @@ describe('the slip', () => {
     expect(sim.state.fish.vulnLeft).toBe(0);
   });
 
+  it('vulnTotal is 0 with no window, slip.recovery once a slip ends', () => {
+    const sim = makeFight('sardine', 6);
+    skipIntro(sim);
+    expect(sim.state.fish.vulnTotal).toBe(0);
+    run(sim, approachAnd('quick', quickReach), has('slip'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    expect(sim.state.fish.vulnTotal).toBe(def('sardine').slip.recovery);
+    run(sim, () => NONE, () => sim.state.fish.mode === 'roam');
+    expect(sim.state.fish.vulnTotal).toBe(0);
+  });
+
+  it('a hit inside an open window leaves vulnTotal unchanged', () => {
+    const recovery = def('sardine').slip.recovery;
+    const sim = makeFight('sardine', 4);
+    skipIntro(sim);
+    run(sim, approachAnd('quick', quickReach), has('slip'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    run(sim, approachAnd('heavy', heavyReach), has('heavyHit'), 3);
+    expect(sim.state.fish.mode).toBe('stunned');
+    expect(sim.state.fish.vulnLeft).toBeGreaterThan(0);
+    expect(sim.state.fish.vulnTotal).toBe(recovery);
+    // Through 'stunned' and back to 'vulnerable': the total holds while the window is open.
+    let sawVulnerableAgain = false;
+    run(sim, () => NONE, () => {
+      const f = sim.state.fish;
+      if (f.vulnLeft > 0) expect(f.vulnTotal).toBe(recovery);
+      if (f.mode === 'vulnerable') sawVulnerableAgain = true;
+      return f.mode === 'roam';
+    });
+    expect(sawVulnerableAgain).toBe(true);
+    expect(sim.state.fish.vulnTotal).toBe(0);
+  });
+
   it('a whiffed slash counts as a miss', () => {
     const sim = makeFight('sardine', 1);
     skipIntro(sim);
@@ -223,6 +256,35 @@ describe('biters', () => {
     expect(sim.state.fish.mode).toBe('stunned');
   });
 
+  it('after a lunge ends, vulnTotal is lungeRecovery', () => {
+    const sim = makeFight('piranha', 2);
+    skipIntro(sim);
+    run(sim, () => NONE, has('attack'));
+    run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+    expect(sim.state.fish.vulnTotal).toBe(F.fish.lungeRecovery);
+    expect(sim.state.fish.vulnLeft).toBe(F.fish.lungeRecovery);
+  });
+
+  it('a hit that interrupts a tell or an aim opens a window as long as the vulnLeft it starts with', () => {
+    for (const [id, cue] of [['shark', 'tell'], ['eel', 'aim']] as const) {
+      const sim = makeFight(id, 2);
+      skipIntro(sim);
+      run(sim, () => NONE, has(cue));
+      expect(sim.state.fish.vulnTotal).toBe(0);
+      let start = -1;
+      run(sim, approachAnd('quick', F.samurai.quick.reach + def(id).size * 0.5 - 6), (e) => {
+        // The sim sets vulnLeft on the hit, then counts it down in the same step.
+        if (has('hit')(e)) start = sim.state.fish.vulnLeft + DT;
+        return start >= 0;
+      }, 2);
+      expect(sim.state.fish.mode, id).toBe('stunned');
+      expect(start).toBeCloseTo(F.fish.lungeRecovery, 9);
+      expect(sim.state.fish.vulnTotal).toBe(F.fish.lungeRecovery);
+      run(sim, () => NONE, () => sim.state.fish.mode === 'vulnerable');
+      expect(sim.state.fish.vulnTotal).toBe(F.fish.lungeRecovery);
+    }
+  });
+
   it('fish with no attack and no special never hurt the samurai', () => {
     for (const id of ['sardine', 'mackerel', 'anglerfish']) {
       expect(def(id).attack ?? def(id).special).toBeUndefined();
@@ -230,6 +292,59 @@ describe('biters', () => {
       expect(r.events.some((e) => e.type === 'tell' || e.type === 'bitten')).toBe(false);
       expect(r.hpLeft).toBe(100);
     }
+  });
+});
+
+describe('hard mode', () => {
+  const SLIPPERY_WITH_SPECIAL = ['eel', 'pufferfish', 'squid'];
+
+  it('normal mode: slippery fish stay harmless, however long the fight', () => {
+    for (const id of SLIPPERY_WITH_SPECIAL) {
+      expect(def(id).special, `${id} has a special in the manifest`).toBeDefined();
+      expect(stateWith(false).makeFish(id, 0).def.special).toBeUndefined();
+      const r = runFight(id, idleBot, 0, 1, false);
+      expect(r.events.some((e) => e.type === 'aim' || e.type === 'shoot' || e.type === 'bitten'), id).toBe(false);
+      expect(r.hpLeft, id).toBe(100);
+    }
+  });
+
+  it('normal mode: the same holds for the tougher tiers', () => {
+    for (const id of SLIPPERY_WITH_SPECIAL) expect(stateWith(false).makeFish(id, 2).def.special).toBeUndefined();
+  });
+
+  it('normal mode keeps the specials of the biters: swordfish and shark still attack', () => {
+    for (const id of ['swordfish', 'shark']) expect(stateWith(false).makeFish(id, 0).def.special).toBeDefined();
+  });
+
+  it('hard mode: eel, pufferfish and squid use their specials and can hurt', () => {
+    for (const id of SLIPPERY_WITH_SPECIAL) {
+      expect(stateWith(true).makeFish(id, 0).def.special, id).toBeDefined();
+      const r = runFight(id, idleBot, 0, 1, true);
+      expect(r.events.some((e) => e.type === 'bitten'), id).toBe(true);
+      expect(r.hpLeft, id).toBeLessThan(100);
+    }
+  });
+
+  it('hard mode never gives sardine, mackerel or anglerfish an attack', () => {
+    for (const id of ['sardine', 'mackerel', 'anglerfish']) {
+      const r = runFight(id, idleBot, 0, 1, true);
+      expect(r.hpLeft, id).toBe(100);
+    }
+  });
+
+  it('the mode is saved, defaults to off, survives reset and an old save without the field', () => {
+    const store: Record<string, string> = {};
+    const storage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } };
+    const a = createGameState(storage);
+    expect(a.hardMode).toBe(false);
+    a.hardMode = true;
+    expect(createGameState(storage).hardMode).toBe(true);
+    a.reset();
+    expect(createGameState(storage).hardMode).toBe(true);
+    a.loadPreset({ gold: 10, levels: { damage: 1, depth: 0, gold: 0 } });
+    expect(a.hardMode).toBe(true);
+    store['samurai-hook-save-v1'] = JSON.stringify({ gold: 5, round: 1, levels: { damage: 0, depth: 0, gold: 0 } });
+    expect(createGameState(storage).hardMode).toBe(false);
   });
 });
 
@@ -312,7 +427,7 @@ describe('jump and crouch', () => {
   it('no jump timing clears a single high shot', () => {
     const P = F.fish.special.projectile.high;
     for (let lead = 0.05; lead <= 0.7; lead += 0.05) {
-      const inst = createGameState(null).makeFish('pufferfish', 0);
+      const inst = stateWith(true).makeFish('pufferfish', 0);
       inst.def = { ...inst.def, gimmick: 'none', special: { ...inst.def.special!, pattern: ['high'] } };
       const sim = createFight(inst, statsAt(0), mulberry32(2));
       skipIntro(sim);
@@ -358,6 +473,8 @@ describe('jump and crouch', () => {
     expect(ev.some((e) => e.type === 'dodged')).toBe(true);
     expect(sim.state.samurai.hp).toBe(hp0);
     expect(sim.state.fish.mode).toBe('vulnerable');
+    expect(sim.state.fish.vulnTotal).toBe(F.fish.special.chargeRecovery);
+    expect(sim.state.fish.vulnLeft).toBe(F.fish.special.chargeRecovery);
   });
 
   it('low shot (eel): crouching or blocking gets hit; jumping dodges', () => {
@@ -411,6 +528,31 @@ describe('competent bot', () => {
     }
   });
 
+  it('keeps 0 < vulnLeft <= vulnTotal on every step, and vulnTotal steady within a window', () => {
+    for (const { id } of fishDefs) {
+      const sim = makeFight(id, 3);
+      const d = createGameState(null).makeFish(id, 0).def;
+      const bot = competentBot();
+      let prev = { left: 0, total: 0 };
+      let windows = 0;
+      while (sim.state.phase !== 'over') {
+        sim.step(DT, sim.state.phase === 'fighting' ? bot(sim.state, d) : NONE);
+        const { vulnLeft: left, vulnTotal: total } = sim.state.fish;
+        if (left > 0) {
+          expect(left, d.id).toBeLessThanOrEqual(total);
+          // Same window (still open, only counting down): the ring's full circle stays put.
+          if (prev.left > 0 && left <= prev.left) expect(total, d.id).toBe(prev.total);
+          else windows++;
+        } else {
+          expect(left, d.id).toBe(0);
+          expect(total, d.id).toBe(0);
+        }
+        prev = { left, total };
+      }
+      expect(windows, d.id).toBeGreaterThan(0);
+    }
+  });
+
   for (const id of ['sardine', 'mackerel', 'piranha']) {
     it(`beats the ${id} at base stats before the timer`, () => {
       for (let seed = 1; seed <= 5; seed++) {
@@ -418,6 +560,90 @@ describe('competent bot', () => {
         expect(r.outcome).toBe('win');
         expect(r.timeUsed).toBeLessThan(def(id).timer);
       }
+    });
+  }
+});
+
+describe('dash out of a crouch', () => {
+  const minX = F.samurai.dash.crouchMinX;
+
+  /** A sardine fight with the samurai already crouched. */
+  function crouched(): FightSim {
+    const sim = makeFight('sardine', 1);
+    skipIntro(sim);
+    for (let i = 0; i < 5; i++) sim.step(DT, input({ crouch: true }));
+    expect(sim.state.samurai.move).toBe('crouch');
+    return sim;
+  }
+  /** Defend tapped (and held) with `moveX`, crouch held or not. */
+  const tap = (moveX: number, crouch = true) => input({ moveX, crouch, defendPressed: true, defendHeld: true });
+
+  /** Steps one defend tap and checks it dashed the way `moveX` points. */
+  function expectDash(sim: FightSim, moveX: number, crouch = true) {
+    const x0 = sim.state.samurai.x;
+    const ev = sim.step(DT, tap(moveX, crouch));
+    expect(ev.some((e) => e.type === 'dash')).toBe(true);
+    expect(sim.state.samurai.move).toBe('dash');
+    expect(sim.state.samurai.invulnerable).toBe(true);
+    run(sim, () => NONE, () => sim.state.samurai.move !== 'dash', 1);
+    expect(Math.sign(sim.state.samurai.x - x0)).toBe(Math.sign(moveX));
+    expect(Math.abs(sim.state.samurai.x - x0)).toBeGreaterThan(F.samurai.dash.distance * 0.8);
+  }
+
+  /** Steps one defend tap and checks the samurai stayed crouched where he was, with no dash side effects. */
+  function expectStay(sim: FightSim, moveX: number) {
+    const x0 = sim.state.samurai.x;
+    const ev = sim.step(DT, tap(moveX));
+    expect(ev.some((e) => e.type === 'dash')).toBe(false);
+    expect(sim.state.samurai.move).toBe('crouch');
+    expect(sim.state.samurai.x).toBe(x0);
+    expect(sim.state.samurai.invulnerable).toBe(false);
+  }
+
+  it('the threshold is above a full-tilt stick diagonal and below a full push (keys, d-pad, touch dash)', async () => {
+    // Imported here, not at the top, so this block stays self-contained.
+    const { applyDeadzone } = await import('../src/input/core');
+    expect(minX).toBeGreaterThan(applyDeadzone(Math.SQRT1_2));
+    expect(minX).toBeLessThan(1);
+  });
+
+  for (const mx of [0.33, -0.33]) {
+    it(`a slight lean (moveX ${mx}) and a defend tap stays crouched; held defend does not block`, () => {
+      const sim = crouched();
+      const x0 = sim.state.samurai.x;
+      expectStay(sim, mx);
+      // Keeps crouching with the lean and defend held: no dash, no block, no walking.
+      for (let i = 0; i < 30; i++) {
+        const ev = sim.step(DT, input({ moveX: mx, crouch: true, defendHeld: true }));
+        expect(ev.some((e) => e.type === 'dash')).toBe(false);
+        expect(sim.state.samurai.move).toBe('crouch');
+        expect(sim.state.samurai.x).toBe(x0);
+      }
+      // The refused tap did not start the cooldown: a full push on the very next step dashes.
+      const again = crouched();
+      expectStay(again, mx);
+      expectDash(again, Math.sign(mx));
+    });
+  }
+
+  for (const mx of [1, -1]) {
+    it(`a full sideways push (moveX ${mx}) dashes out of the crouch, as before`, () => {
+      expectDash(crouched(), mx);
+    });
+  }
+
+  for (const mx of [0.33, -0.33]) {
+    it(`standing, moveX ${mx} and a defend tap still dashes (the 0.3 cutoff is unchanged)`, () => {
+      const sim = makeFight('sardine', 1);
+      skipIntro(sim);
+      expectDash(sim, mx, false);
+    });
+  }
+
+  for (const s of [1, -1]) {
+    it(`crouching: just below the threshold stays down, just above dashes (side ${s})`, () => {
+      expectStay(crouched(), s * (minX - 0.01));
+      expectDash(crouched(), s * (minX + 0.01));
     });
   }
 });
