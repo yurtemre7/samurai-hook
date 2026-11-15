@@ -318,6 +318,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       if (state.phase !== 'over') {
         if (game.input.pressed('settings') || (paused && game.input.pressed('confirm'))) {
           paused = !paused;
+          game.audio.pauseMusic(paused);
           game.audio.play('uiMove');
         }
         if (paused) { look.rt += dt; return; }
