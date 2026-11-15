@@ -258,8 +258,9 @@ export const fight = {
     hurtKnockback: 240,    // px/s pushed away on a bite, decays over hurtStun
     blockPush: 120,        // px/s pushed back on a blocked bite, decays over 0.15 s
     buffer: 0.12,          // seconds a slash pressed during another move is remembered
-    // Jump: apex about 145 px, 0.76 s in the air. Up / W / Space; ground only, no strikes in the air.
-    jump: { speed: 760, gravity: 2000, airSpeed: 220 },
+    // Jump: apex 120 px, 0.7 s in the air. Up / W / Space; ground only, no strikes in the air.
+    // The apex stays below the top of a high shot, so those can only be ducked.
+    jump: { speed: 690, gravity: 1980, airSpeed: 220 },
     standHeight: 120,      // hurtbox height above his feet
     crouchHeight: 60,      // hurtbox height while crouching (Down / S held)
   },
@@ -283,8 +284,9 @@ export const fight = {
       chargeRecovery: 1.4, // seconds vulnerable after a charge hits the wall
       shootRecovery: 0.3,  // seconds after the last projectile before roaming again
       lungeDelay: 0.8,     // no lunge for this long after a special
-      // low: along the floor, jump over it (top 36 px). high: head height, crouch under it (bottom 86 px).
-      projectile: { low: { y: 18, r: 18 }, high: { y: 100, r: 14 } },
+      // low: along the floor, jump over it (top 36 px). high: head height, crouch under it
+      // (bottom 98 px; top 126 px is above the jump apex, so jumping never clears it).
+      projectile: { low: { y: 18, r: 18 }, high: { y: 112, r: 14 } },
     },
   },
   hitStop: 0.06,           // freeze on a landed hit, seconds

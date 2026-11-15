@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import type { FightEvent, FightSim } from '../src/fight/sim';
 import { fight as F, fish as fishDefs } from '../src/manifest';
 import type { FightInput } from '../src/types';
-import { competentBot, DT, idleBot, input, makeFight, NONE, runFight, skipIntro } from './fightBots';
+import { createFight } from '../src/fight/sim';
+import { createGameState } from '../src/game/state';
+import { competentBot, DT, idleBot, input, makeFight, mulberry32, NONE, runFight, skipIntro, statsAt } from './fightBots';
 
 const def = (id: string) => fishDefs.find((f) => f.id === id)!;
 
@@ -302,8 +304,26 @@ describe('jump and crouch', () => {
       if (d.special) expect(d.special.tell).toBeGreaterThan(rise * 4);
     }
     const high = F.fish.special.projectile.high;
-    expect(high.y - high.r).toBeGreaterThan(F.samurai.crouchHeight);
-    expect(high.y + high.r).toBeLessThan(F.samurai.standHeight);
+    expect(high.y - high.r).toBeGreaterThan(F.samurai.crouchHeight); // crouching clears it
+    expect(high.y - high.r).toBeLessThan(F.samurai.standHeight);     // standing gets hit
+    expect(high.y + high.r).toBeGreaterThan(apex);                   // no jump clears it
+  });
+
+  it('no jump timing clears a single high shot', () => {
+    const P = F.fish.special.projectile.high;
+    for (let lead = 0.05; lead <= 0.7; lead += 0.05) {
+      const inst = createGameState(null).makeFish('pufferfish', 0);
+      inst.def = { ...inst.def, gimmick: 'none', special: { ...inst.def.special!, pattern: ['high'] } };
+      const sim = createFight(inst, statsAt(0), mulberry32(2));
+      skipIntro(sim);
+      run(sim, () => NONE, has('shoot'));
+      // Jump when the shot is `lead` seconds from the samurai's body.
+      const ev = run(sim, (s) => {
+        const p = s.state.projectiles[0];
+        return input({ jump: !!p && Math.abs(p.x - s.state.samurai.x) - F.samurai.bodyRadius - P.r < Math.abs(p.vx) * lead });
+      }, (e, s) => has('bitten')(e) || has('dodged')(e) || s.state.projectiles.length === 0, 4);
+      expect(ev.some((e) => e.type === 'bitten'), `lead ${lead.toFixed(2)} s`).toBe(true);
+    }
   });
 
   /** Waits for the special to come out, then holds `react` until it resolves. */

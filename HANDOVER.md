@@ -84,9 +84,11 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
 
 - **Controls:** in the fight, W / up / Space (pad: A or up) jumps, S / down
   (pad: down) held crouches. No new `Action`: `up`, `confirm` and `down` are
-  reused. Jump is ground-only, about 145 px high, 0.76 s in the air, with air
+  reused. Jump is ground-only, 120 px high, 0.7 s in the air, with air
   steering; no slashing, blocking or dashing in the air. Crouch halves the
-  hurtbox (`standHeight` 120, `crouchHeight` 60 in `fight.samurai`).
+  hurtbox (`standHeight` 120, `crouchHeight` 60 in `fight.samurai`). The
+  apex stays below the top of a high shot (126 px), so high shots can only
+  be ducked; a test checks every jump timing.
 - **Specials** (`special` on a `FishDef`, tuning in `fight.fish.special`):
   the fish backs off to `aimDist`, flashes purple and shows JUMP! / DUCK!
   plus a danger band at the hit height, then attacks. Block and dash
@@ -96,6 +98,10 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
   spines at head height. Shark: tail-slap floor wave. Squid: ink shots high,
   low, high. Projectiles are drawn above the darkness and ink.
 - Jumping above `size x clearScale` also dodges a biter's lunge.
+- Striking the fish during a special's tell, charge or volley lands (it
+  cannot slip then), stuns it and still costs the special its full cooldown.
+- `docs/DESIGN.md` (4-button duel, "slippery fish never attack") is not
+  updated yet; update it once the team accepts this change.
 - **This reverses a team decision:** "slippery fish stay harmless"
   (Rhaveen, 2026-11-14). The eel, pufferfish and squid can now hurt the
   samurai, so their fights show his health bar. The test "slippery fish never
@@ -103,12 +109,15 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
   Needs the team's OK before merging.
 - No jump or crouch art exists: the poses are the walk and idle frames,
   stretched and squashed by `samuraiTransform`.
-- Verified: 90 tests (new ones: jump arc, clear heights vs. tells, each
+- Verified: 91 tests (new ones: jump arc, clear heights vs. tells, each
   special hits when standing / blocking / dashing and misses when dodged
-  right, lunge jumped over); the bot still wins every fish at every damage
-  level. In the browser (scripted keys): crouch under pufferfish spines, jump
-  over a squid ink wave, swordfish JUMP! tell; no console errors. Not played
-  by a human, and the gamepad path was not tried.
+  right, no jump timing clears a high shot, lunge jumped over); the bot
+  still wins every fish at every damage level. In the browser (scripted
+  keys): crouch under pufferfish spines, jump over a squid ink wave, jump
+  over the swordfish charge, the JUMP! tell and red band; no console errors.
+- **Not verified:** a human playing it; any gamepad (a diagonal stick tilt
+  may jump or crouch by accident); projectiles drawn over real ink splats
+  (the draw order puts them on top, but no screenshot caught both at once).
 
 README and store text (session 2, 2026-11-15): README.md was rewritten in a
 plainer voice around one hook, "nobody reels in a fish without a fight"
@@ -230,7 +239,8 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
    and reel-speed upgrades, parry, a boss, a bestiary. **Electric eel**
    (suggested by Rhaveen, 2026-11-14): the eel charges up with a visible
    crackle, then shocks a circle around itself; back off or dash to avoid it,
-   blocking does not help. Not built; the eel stays slippery for now.
+   blocking does not help. A version is on branch `feat/jump-crouch-dodge`
+   (a floor shock wave to jump over, not a circle).
 
 Bundled kanji font (session 2): the kanji now use Kaisei Tokumin Bold (SIL
 OFL, chosen by Rhaveen on 2026-11-15 because it is closest to the look the
@@ -342,8 +352,9 @@ Session 2 decisions by Rhaveen (2026-11-14):
   press-and-hold cannot interrupt a held letter; (2) W A S D J K L E are
   also bound by the printed letter (`KeyboardEvent.key`), not only by key
   position, for non-QWERTY layouts. Also: an autorepeat key-down no longer
-  latches a fresh tap, and the fight and shop hints show `A D` only, since
-  up and down do nothing there.
+  latches a fresh tap, and the shop hint shows `A D` only, since up and
+  down do nothing there. (The fight hint shows `W A S D` again since W / S
+  jump and crouch.)
 - **Key debugger:** add `?debug=keys` to the URL to see what the browser
   reports for each key event and which action it mapped to. Use it first
   for any future "key does nothing" report.

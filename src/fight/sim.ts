@@ -241,6 +241,8 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     emit(kind === 'quick' ? 'hit' : 'heavyHit', f.x, fishScreenY(), dmg);
     state.hitStop = F.hitStop;
     if (f.hp <= 0) { endFight('win'); return; }
+    // An interrupted special still costs its full cooldown.
+    if (sp && (f.mode === 'aim' || f.mode === 'charge' || f.mode === 'shoot')) specialCd = sp.cooldown;
     if (f.mode === 'tell' || f.mode === 'attack' || f.mode === 'aim' || f.mode === 'charge' || f.mode === 'shoot') f.vulnLeft = Math.max(f.vulnLeft, FF.lungeRecovery);
     arc = null;
     hop = null;
