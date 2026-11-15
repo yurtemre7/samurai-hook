@@ -126,17 +126,13 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
   (`https://yurtemre7.github.io/samurai-hook/pr-preview/pr-<number>/`). The
   folder is removed when the PR closes. This also gives every PR a test run.
   Pull requests from forks are skipped (their token is read-only).
-- **One step is left for the repository owner (issue #21):** Settings, Pages,
-  Build and deployment, Source: change "GitHub Actions" to "Deploy from a
-  branch", branch `gh-pages`, folder `/ (root)`. Until then the preview links
-  in PR comments are 404, because Pages is not serving that branch yet. Do it
-  only after this change has been merged and the deploy on `main` has run
-  once, so that `gh-pages` has the main build at its root.
-- **`main` is published both ways for now** by
-  `.github/workflows/pages.yml`: to the root of `gh-pages` and as a Pages
-  artifact, so the live site keeps updating before and after the switch.
-  After the switch the artifact deploy fails without blocking anything;
-  remove the `deploy` job and the two Pages steps from `pages.yml` then.
+- **GitHub Pages serves the `gh-pages` branch** (Settings, Pages, Source:
+  "Deploy from a branch", `gh-pages`, `/ (root)`; switched on 2026-11-15,
+  issue #21). Do not change it back to "GitHub Actions": the preview links
+  and the live site both depend on it.
+- **`main` is published** by `.github/workflows/pages.yml` to the root of
+  `gh-pages` on every push, after the tests pass. The `pr-preview/` folder is
+  left alone.
 - Two third-party actions are used, pinned to major versions:
   `rossjrw/pr-preview-action@v1` and `JamesIves/github-pages-deploy-action@v4`.
 
@@ -292,8 +288,8 @@ Session 2 decisions by Rhaveen (2026-11-14):
   reports for each key event and which action it mapped to. Use it first
   for any future "key does nothing" report.
 - Pull requests are tested and built by the PR preview workflow (see
-  "Deployment and pull request previews"). The preview links only work once
-  the owner has switched the Pages source to the `gh-pages` branch.
+  "Deployment and pull request previews"); the bot's comment has the play
+  link.
 - Scripted browser checks cannot watch fights in motion when the browser
   pane is hidden, because a hidden page pauses its game loop. PR #20 was
   checked by tests, the balance table and still screenshots only.

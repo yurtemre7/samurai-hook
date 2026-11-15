@@ -1,13 +1,8 @@
 name: Deploy to GitHub Pages
 
-# Publishes main. During the switch to branch-based Pages (needed for PR
-# previews, see preview.yml and HANDOVER.md "Deployment") the build is
-# published BOTH ways, so the live site keeps updating whichever source the
-# repository's Pages setting points at:
-#   1. to the root of the gh-pages branch (the new way), and
-#   2. as a Pages artifact (the old way; fails harmlessly once the Pages
-#      source is "Deploy from a branch" - delete the `deploy` job and the two
-#      Pages steps then).
+# Publishes main to the root of the gh-pages branch, which GitHub Pages serves
+# ("Deploy from a branch"). Pull request previews live beside it in
+# pr-preview/ (see preview.yml and HANDOVER.md "Deployment").
 
 on:
   push:
@@ -16,15 +11,13 @@ on:
 
 permissions:
   contents: write   # push to the gh-pages branch
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,27 +28,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
-      # New way: main at the root of gh-pages; PR previews live in pr-preview/.
       - uses: JamesIves/github-pages-deploy-action@v4
         with:
           folder: dist
           branch: gh-pages
           clean-exclude: pr-preview/
           force: false
-      # Old way (remove after the Pages source is switched to the gh-pages branch).
-      - uses: actions/configure-pages@v5
-        continue-on-error: true
-      - uses: actions/upload-pages-artifact@v3
-        continue-on-error: true
-        with:
-          path: dist
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    continue-on-error: true   # fails once Pages no longer deploys from Actions
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
