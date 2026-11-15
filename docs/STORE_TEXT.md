@@ -2,10 +2,10 @@
 
 These are pasted by hand into GitHub's About box and the itch.io game page. Update them here first, then paste.
 
-## GitHub About (one line, 120 characters max)
+## GitHub About (one line; GitHub allows up to 350 characters)
 
 ```
-A samurai goes fishing, and every fish he hooks wants a duel. Small 2D browser game in TypeScript. Keyboard or gamepad.
+A samurai fishing game where nobody reels in a fish without a fight. Nine fish, from a sardine to a giant squid, and none of them wants to be sushi.
 ```
 
 ## itch.io description
