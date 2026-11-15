@@ -113,10 +113,13 @@ Then open http://localhost:5173.
 |---|---|
 | `npm run typecheck` | TypeScript check |
 | `npm test` | Unit tests (fight logic, economy, input); also prints a balance table |
+| `npm run e2e` | Browser tests (Playwright): desktop Chromium, iPhone WebKit and Android Chromium emulation |
 | `npm run build` | Production build into `dist/` |
 | `npx vitest run -u tests/balance-snapshot.test.ts` | Accept an intended difficulty change (see below) |
 
 A snapshot test pins how a scripted bot does against every fish. If you change difficulty on purpose, update the snapshot with the command above and commit it; if you didn't mean to, a failure there means your change affects fights. Every pull request must pass `npm test` in CI.
+
+First time only, install the test browsers: `npx playwright install chromium webkit`.
 
 Jump straight to a scene while developing: `http://localhost:5173/?scene=fight&fish=shark&tier=0` (`scene` is one of ocean, cutscene, fight, result, shop). `game` is available in the browser console, for example `game.state.reset()`. Add `?debug=keys` to see which action each key press maps to.
 

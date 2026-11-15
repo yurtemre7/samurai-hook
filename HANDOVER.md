@@ -380,6 +380,27 @@ Pages address is a 404. GitHub redirects the old repository URL, but it is
 cleaner to run `git remote set-url origin
 https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
 
+### Browser tests
+
+- **What runs:** Playwright tests in `e2e/`, via `npm run e2e` and the
+  `e2e` job in `.github/workflows/e2e.yml` (every pull request and push to
+  `main`). They use real keyboard, mouse, touch and pointer input, never
+  `?debug=keys`.
+- **Browsers:** desktop Chromium, iPhone 13 landscape (WebKit, Safari's
+  engine) and Pixel 7 landscape (Chromium). Desktop covers load, Space to
+  cast, fight keys and audio files; the two phone projects cover the
+  portrait message, the touch buttons, tap to cast, pad, swipes, DASH and
+  the audio format (`.m4a` when the browser cannot play Ogg).
+- **Dev server, not the build:** the tests run against `vite` (port 4173)
+  because `window.__fight` and `window.__ocean` exist only in dev builds.
+- **Locally:** `npx playwright install chromium webkit` once, then
+  `npm run e2e`. Reports and traces land in `playwright-report/` and
+  `test-results/`.
+- **Real devices are still required.** Emulation is not an iPhone. Before
+  merging a gameplay, controls or audio change, play it on a real phone.
+- **Owner action:** add `e2e` to the required status checks next to `test`
+  (open PR #37).
+
 ### Regression guard for game feel
 
 `tests/balance-snapshot.test.ts` has a scripted bot fight every fish at

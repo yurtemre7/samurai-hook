@@ -3,3 +3,5 @@ dist
 .DS_Store
 .claude/worktrees
 candidates
+test-results
+playwright-report
