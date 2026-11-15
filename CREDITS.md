@@ -23,11 +23,12 @@ was copied unchanged except `music/ocean.mp3` (trimmed to 60 s, fades, MP3 64 kb
 | `public/assets/music/fight.ogg` (8BitBattleLoop) | Fight loop | https://opengameart.org/content/8-bit-battle-loop | Wolfgang_ | CC0 | 2026-11-14 |
 | `public/assets/music/ocean.mp3` (first 60 s of hot_spring_town.ogg) | Calm ocean track | https://opengameart.org/content/hot-springs-town | Kistol | CC0 | 2026-11-14 |
 
-### DRAFT, pending the owner's choice (option B: original art)
+### Original art made for SamuraiHook
 
 Not third-party assets. Drawn by `tools/fish-sprites.mjs` in the style of the
-Fish DB32 sprites (DB32 colours, 1 px black outline, facing left, shown at 2x).
-Remove these rows if found art is chosen instead.
+Fish DB32 sprites (DB32 colours, 1 px black outline, facing left, shown at 2x). Re-create them with
+`node tools/fish-sprites.mjs`. No usable CC0 or CC-BY swordfish or anglerfish
+was found (searched OpenGameArt and itch.io on 2026-11-14).
 
 | File(s) | What | Source | Author | Licence | Checked |
 |---|---|---|---|---|---|
@@ -37,8 +38,6 @@ Remove these rows if found art is chosen instead.
 ## Gaps (still code-drawn or synthesised placeholders)
 
 Sprites
-- `fish.swordfish`: no swordfish in a confirmed CC0/CC-BY pack.
-- `fish.anglerfish`: the only OpenGameArt anglerfish (https://opengameart.org/content/anglerfish) is CC-BY-SA, rejected.
 - `boat`: the CC0 "Wooden Boat" by Kutejnikov is a top-down view, so it does not fit a side-view scene; not used.
 - `hook`: nothing found.
 - `nigiri`: 1j01's CC0 "8x8 Sushi Sprites" has a nigiri, but it sits on an opaque, tightly packed sheet at 8x8 px; not extracted cleanly.
