@@ -2,8 +2,10 @@
 // Same palette and chunky style as the fight stage (src/scenes/fight/stage.ts),
 // drawn locally so the screens do not depend on the fight or ocean modules.
 
+import { KANJI_FONT } from '../../core/fonts';
+
 export const W = 960;
-export const KANJI_FONT = "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif";
+export { KANJI_FONT };
 export const INK = '#1a0a0a';
 export const GOLD = '#ffdd22';
 export const PAPER = '#f3e6c4';

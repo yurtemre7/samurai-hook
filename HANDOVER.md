@@ -80,8 +80,7 @@ these land, or the work will collide.** Each pull request updates this file.
 | Keyboard fix | `fix/keyboard-wasd` | `src/input/*`, `Prompt` in `src/types.ts`, the prompt lines in `src/scenes/fight.ts` and `shop.ts`, `tests/input.test.ts` | A player on Chrome on a Mac reported that W A S D did nothing in the fight while the arrow keys and J K L E worked. Cause not confirmed; see Known issues. |
 | Recorded announcer | (not pushed yet) | `src/core/audio.ts`, new `src/core/announcer.ts`, `voice` in `src/manifest.ts`, `AudioSys.announce` in `src/types.ts`, announce calls in `cutscene.ts`, `fight.ts`, `result.ts`, new `public/assets/voice/`, `CREDITS.md` | The player found the speech-synthesis announcer robotic. Goes to the team as a pull request for review, because the robot voice was a deliberate joke. Music and other sounds are not changed. |
 
-Planned next, not started: boat, hook and nigiri sprites; a bundled Japanese
-font.
+Planned next, not started: boat, hook and nigiri sprites.
 
 The repository was renamed to `samurai-hook` on 2026-11-15 (issue #19), so
 the play link is now https://yurtemre7.github.io/samurai-hook/ and the old
@@ -111,16 +110,27 @@ request (issue #21).
    table (bot results per fish and damage level). Known soft spots: early
    fish die in 1 or 2 hits from damage level 6; bite damage does not grow
    with tier; a straight hook drop can miss every fish.
-6. Kanji in the shop, banners and gauge rely on a Japanese system font
-   (checked on macOS only). Bundling a free font is planned.
-7. The "OPEN" ring's full circle still uses an estimated window length
+6. The "OPEN" ring's full circle still uses an estimated window length
    (`look.vulnTotal` in `src/scenes/fight.ts`); only the remaining time is
    exact. Add `vulnTotal` to the fight state to finish it.
-8. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
+7. Later ideas (docs/DESIGN.md, section 8): equipment with effects, health
    and reel-speed upgrades, parry, a boss, a bestiary. **Electric eel**
    (suggested by Rhaveen, 2026-11-14): the eel charges up with a visible
    crackle, then shocks a circle around itself; back off or dash to avoid it,
    blocking does not help. Not built; the eel stays slippery for now.
+
+Bundled kanji font (session 2): the kanji now use Kaisei Tokumin Bold (SIL
+OFL, chosen by Rhaveen on 2026-11-15 because it is closest to the look the
+game had on a Mac), shipped as a 44 KB subset in `public/assets/fonts/`
+instead of whatever Japanese system font the player has. The setting is
+`fonts.kanji` in `src/manifest.ts`; every kanji draw call uses `KANJI_FONT`
+from `src/core/fonts.ts`, with the old system stack kept as the fallback.
+`src/main.ts` waits for the font alongside the sprites, for at most 3 s.
+**A new kanji will not render in this face until the subset is rebuilt**:
+see `tools/README-fonts.md` (`python3 tools/font-chars.py`, then
+`sh tools/subset-fonts.sh`; the full font must be downloaded again into
+`candidates/fonts/`). Yuji Syuku and Dela Gothic One were also tried and
+not chosen.
 
 Done in session 2 (PR #20, merged): the old items 5, 7, 8 and 9. The result
 screen's G-to-RYO swap is gone; the fight texts, cutscene and result timings

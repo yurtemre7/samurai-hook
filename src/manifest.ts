@@ -4,6 +4,21 @@
 
 import type { FishDef, SoundDef, SpriteDef, UpgradeDef } from './types';
 
+// ---------- Fonts ----------
+// Kanji use a bundled font (subset to the characters the game draws) so they
+// look the same on every machine. Chosen by Rhaveen on 2026-11-15: Kaisei
+// Tokumin Bold. To add a kanji or change the face see tools/README-fonts.md.
+export const fonts = {
+  kanji: 'kaisei-tokumin',
+  files: {
+    'kaisei-tokumin': 'assets/fonts/kaisei-tokumin.woff2',
+  } as Record<string, string>,
+  /** Used after the bundled face (and while it loads / if it fails). */
+  fallback: "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif",
+  /** Give up waiting for the font after this long and start with the fallback. */
+  loadTimeoutMs: 3000,
+};
+
 // ---------- Sprites ----------
 // src: null means "draw the placeholder". Put files under public/assets and
 // record every one in CREDITS.md.

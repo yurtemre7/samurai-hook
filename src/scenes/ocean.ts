@@ -1,4 +1,5 @@
 import { BOAT_GEOM, boatLanternPos } from '../core/assets';
+import { KANJI_FONT } from '../core/fonts';
 import { drawPrompts } from '../input/prompts';
 import { fish as fishDefs, ocean, sprites, text, tiers } from '../manifest';
 import type { FishInstance, Game, Prompt, Scene, SceneParams } from '../types';
@@ -462,7 +463,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
     }
     ctx.restore();
     const cx = x + w / 2 + 1;
-    drawOutlinedText(ctx, '深', cx, y + 22, { size: 18, color: '#fff', font: 'serif', outline: '#5a0a0a' });
+    drawOutlinedText(ctx, '深', cx, y + 22, { size: 18, color: '#fff', font: KANJI_FONT, outline: '#5a0a0a' });
     drawOutlinedText(ctx, String(Math.floor(depthM)), cx, y + 54, { size: 22, color: '#1a0a0a', outline: '#efe2c4' });
     drawOutlinedText(ctx, 'M', cx, y + 76, { size: 14, color: '#b8282e', outline: '#efe2c4' });
   }

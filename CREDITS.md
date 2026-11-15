@@ -1,6 +1,6 @@
 # Credits
 
-All third-party assets are CC0 1.0 (public domain) except `fish/pufferfish.png` (CC-BY 3.0, credit below). Licences were read on each
+All third-party assets are CC0 1.0 (public domain) except `fish/pufferfish.png` (CC-BY 3.0, credit below) and the bundled kanji font (SIL OFL 1.1, with its licence text next to it). Licences were read on each
 asset's own OpenGameArt page (the "License(s)" field) on 2026-11-14; the Kenney
 RPG sounds pack also ships a `license.txt` stating CC0. Credit is not required
 but given here anyway. Sprites were cropped, scaled and cut into strips; audio
@@ -22,6 +22,7 @@ was copied unchanged except `music/ocean.mp3` (trimmed to 60 s, fades, MP3 64 kb
 | `public/assets/sfx/ui_confirm.ogg` (metalClick) | Metal click | https://opengameart.org/content/50-rpg-sound-effects | Kenney (kenney.nl) | CC0 | 2026-11-14 |
 | `public/assets/music/fight.ogg` (8BitBattleLoop) | Fight loop | https://opengameart.org/content/8-bit-battle-loop | Wolfgang_ | CC0 | 2026-11-14 |
 | `public/assets/music/ocean.mp3` (first 60 s of hot_spring_town.ogg) | Calm ocean track | https://opengameart.org/content/hot-springs-town | Kistol | CC0 | 2026-11-14 |
+| `public/assets/fonts/kaisei-tokumin.woff2` (+ `OFL-kaiseitokumin.txt`) | Kaisei Tokumin Bold, subset to the game's kanji and kana (WOFF2). The kanji font | https://github.com/google/fonts/tree/main/ofl/kaiseitokumin (source: https://github.com/Font-Kai/Kaisei) | The Kaisei Project Authors | SIL OFL 1.1 | 2026-11-15 |
 
 ### Original art made for SamuraiHook
 

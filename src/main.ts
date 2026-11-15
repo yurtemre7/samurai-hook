@@ -1,5 +1,6 @@
 import { createAssets } from './core/assets';
 import { createAudio } from './core/audio';
+import { loadKanjiFont } from './core/fonts';
 import { createGameState } from './game/state';
 import { createInput } from './input/input';
 import { demoStart, music, sounds, sprites, voice } from './manifest';
@@ -87,7 +88,7 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
-game.assets.load().then(() => {
+Promise.all([game.assets.load(), loadKanjiFont()]).then(() => {
   start();
   requestAnimationFrame(frame);
 });
