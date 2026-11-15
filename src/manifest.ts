@@ -40,7 +40,7 @@ export const sprites: Record<string, SpriteDef> = {
   // Code-drawn old wooden wasen (src/core/assets.ts), prow facing right.
   boat:         { src: null, w: 280, h: 110, placeholder: { shape: 'boat', color: '#7a4a26' } },
   hook:         { src: null, w: 20, h: 28,  placeholder: { shape: 'hook', color: '#dfe6e9' } },
-  nigiri:       { src: null, w: 72, h: 48,  placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
+  nigiri:       { src: 'assets/props/nigiri.png', w: 72, h: 48, facing: 'right', placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
 
   'fish.sardine':    { ...fishSprite('#b8c6d1', 'SARDINE', 56, 32), src: 'assets/fish/sardine.png', facing: 'left' },
   'fish.mackerel':   { ...fishSprite('#4f8fba', 'MACKEREL', 78, 42), src: 'assets/fish/mackerel.png', facing: 'left' },

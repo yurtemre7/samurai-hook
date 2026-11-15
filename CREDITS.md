@@ -35,13 +35,13 @@ was found (searched OpenGameArt and itch.io on 2026-11-14).
 |---|---|---|---|---|---|
 | `public/assets/fish/swordfish.png` | 75x28 pixel swordfish (Kajiki) | `tools/fish-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
 | `public/assets/fish/anglerfish.png` | 55x44 pixel anglerfish (Anko) with lure | `tools/fish-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
+| `public/assets/props/nigiri.png` | 36x24 pixel salmon nigiri, shown on the win screen | `tools/prop-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
 
 ## Gaps (still code-drawn or synthesised placeholders)
 
 Sprites
 - `boat`: the CC0 "Wooden Boat" by Kutejnikov is a top-down view, so it does not fit a side-view scene; not used.
 - `hook`: nothing found.
-- `nigiri`: 1j01's CC0 "8x8 Sushi Sprites" has a nigiri, but it sits on an opaque, tightly packed sheet at 8x8 px; not extracted cleanly.
 - Samurai: no seated pose (`samuraiSit` reuses idle) and no dedicated block pose (frame 3 of Attack2, sword raised).
 - Rejected: Segel "samurai character" (previous hero, chibi); OpenGameArt "samurai animated" (chibi, 48px); "Hero swordsman" (red-haired kid, not a samurai); itch "Ronin Hack and Slash" and "Samurai Ossan" not fetched (download needs scripted access which was blocked).
 

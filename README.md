@@ -185,8 +185,7 @@ so it works under `/<repo>/` or at a domain root.
 
 ## Known gaps
 
-- The nigiri is still a simple code-drawn placeholder; the squid sprite is a
-  friendly stand-in.
+- The squid sprite is a friendly stand-in.
 - Four sounds (bite, lose, hook-up, shop "denied") are synthesised blips.
 - Kanji use a bundled, subset OFL font (`fonts.kanji` in `src/manifest.ts`; see `tools/README-fonts.md`), falling back to the system's Japanese font.
 - Not yet confirmed on a real controller.
