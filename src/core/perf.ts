@@ -19,7 +19,7 @@ export function perfEnabled(search: string): boolean {
   return new URLSearchParams(search).get('debug') === 'perf';
 }
 
-export function createPerf(doc: Document = document): Perf {
+export function createPerf(doc: Document = document, extra: () => string = () => ''): Perf {
   if (!perfEnabled(doc.defaultView?.location.search ?? '')) return NOOP;
   const el = doc.createElement('pre');
   el.style.cssText =
@@ -49,7 +49,8 @@ export function createPerf(doc: Document = document): Perf {
         windowStart = now;
         el.textContent =
           `build ${commit}\nfps ${fps}  worst frame ${worstShown} ms\n` +
-          `touch -> game ${lastLatency < 0 ? '-' : `${Math.round(lastLatency)} ms`}`;
+          `touch -> game ${lastLatency < 0 ? '-' : `${Math.round(lastLatency)} ms`}` +
+          (extra() ? `\n${extra()}` : '');
       }
     },
     touched(at) {

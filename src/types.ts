@@ -99,6 +99,8 @@ export interface AudioSys {
   /** Announcer line. Plays the recorded clip for `clip` when the manifest has
    *  one, else speaks `text` with browser speech synthesis (silent if
    *  unsupported). Announcer lines never overlap. */
+  /** One line for the ?debug=perf readout: format, context state, what has loaded. */
+  debugInfo?(): string;
   announce(text: string, clip?: import('./core/announcer').AnnounceRequest): void;
 }
 

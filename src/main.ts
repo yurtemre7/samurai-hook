@@ -64,7 +64,7 @@ const game: Game = {
 };
 
 // ?debug=perf readout (no-op otherwise): fps, worst frame, touch-to-game delay, build.
-const perf = createPerf();
+const perf = createPerf(document, () => game.audio.debugInfo?.() ?? '');
 window.addEventListener('pointerdown', (e) => perf.touched(e.timeStamp || performance.now()), true);
 
 // Browsers block audio until the first user gesture.

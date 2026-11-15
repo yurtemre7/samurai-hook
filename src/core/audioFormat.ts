@@ -14,7 +14,9 @@ export function audioPath(path: string): string {
   if (!browserCanPlay) {
     let probe: HTMLAudioElement | null = null;
     try { probe = typeof document === 'undefined' ? null : document.createElement('audio'); } catch { probe = null; }
-    const answer = probe ? probe.canPlayType(OGG_PROBE) : 'maybe';
+    let answer = probe ? probe.canPlayType(OGG_PROBE) : 'maybe';
+    // `?audio=aac` forces the iPhone path (AAC twins) on any browser, for testing.
+    try { if (new URLSearchParams(location.search).get('audio') === 'aac') answer = ''; } catch { /* no location */ }
     browserCanPlay = () => answer;
   }
   return pickAudioPath(path, browserCanPlay);

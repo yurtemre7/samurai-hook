@@ -396,6 +396,18 @@ Session 2 decisions by Rhaveen (2026-11-14):
 
 ## Known issues and open questions
 
+- **Audio after the 2026-11-15 merges (Rhaveen, iPhone):** no "Round 1",
+  no fight music and late sounds on the live site, although the same code had
+  worked on the #39 preview. Probable cause: right after the deploy the new
+  `.m4a` files returned 404 for several minutes, and the game remembered a
+  failed clip for the whole session. Fixed in `fix/audio-robust`: failed loads
+  are retried, music retries after 3 s, all announcer clips and sound effects
+  are decoded right after the first touch (effects now play through Web Audio,
+  so no `<audio>` start-up delay on iOS), and the audio context is resumed on
+  every touch or key. `?audio=aac` forces the iPhone file format on any
+  browser, and `?debug=perf` shows an audio line (format, context state,
+  clips loaded, music state).
+
 - iPhone visitors reported no "Round 1" announcer and no fight music (fishing
   music, an MP3, worked). Probable cause: every silent file is Ogg Vorbis,
   which older iOS WebKit (all iOS browsers) cannot play. Fix: each `.ogg` also

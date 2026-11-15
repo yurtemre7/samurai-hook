@@ -25,6 +25,7 @@ export function createAudio(
   let currentMusicId: string | null = null;
   let wantedMusic: string | null = null;
   let unlocked = false;
+  let musicFailed = 0;
   // Announcer: clips are fetched (starting now, so they are ready by the first
   // line), decoded to AudioBuffers once audio is unlocked, and played through
   // the effect chain in voicefx.ts. `voiceBroken` holds clip paths that failed.
@@ -42,6 +43,9 @@ export function createAudio(
           .then((r) => (r.ok ? r.arrayBuffer() : null))
           .catch(() => null);
       fetched.set(path, p);
+      // A failure is not remembered: the next request tries again (a file can be missing for a
+      // few minutes while a deploy is still publishing).
+      void p.then((d) => { if (!d) fetched.delete(path); });
     }
     return p;
   }
@@ -50,10 +54,11 @@ export function createAudio(
     let p = decoded.get(path);
     if (!p) {
       p = fetchClip(path).then(async (data) => {
-        if (!data || !ctx) { voiceBroken.add(path); return null; }
+        if (!data || !ctx) return null;
         try { return await ctx.decodeAudioData(data.slice(0)); } catch { voiceBroken.add(path); return null; }
       });
       decoded.set(path, p);
+      void p.then((b) => { if (!b) decoded.delete(path); });
     }
     return p;
   }
@@ -76,6 +81,17 @@ export function createAudio(
     el.preload = 'auto';
     el.addEventListener('error', () => broken.add(id));
     clips.set(id, el);
+    void fetchClip(def.src);
+  }
+  // Sound effects decoded for Web Audio: they start with no delay, unlike <audio> elements on iOS.
+  const sfxBuffers = new Map<string, AudioBuffer>();
+  function decodeAll(): void {
+    for (const path of Object.values(voice.clips)) void loadBuffer(path);
+    for (const [id, def] of Object.entries(sounds)) {
+      if (!def.src || sfxBuffers.has(id)) continue;
+      const src = def.src;
+      void loadBuffer(src).then((b) => { if (b) sfxBuffers.set(id, b); });
+    }
   }
 
   function blip(def: SoundDef): void {
@@ -103,20 +119,55 @@ export function createAudio(
     const el = new Audio(assetUrl(audioPath(def.src)));
     el.loop = true;
     el.volume = def.volume;
+    el.addEventListener('error', () => {
+      // Missing for now (e.g. mid-deploy): forget it and try again in a few seconds if still wanted.
+      if (currentMusic !== el) return;
+      musicFailed += 1;
+      currentMusic = null;
+      currentMusicId = null;
+      setTimeout(() => { if (unlocked && wantedMusic === id && currentMusicId === null) startMusic(id); }, 3000);
+    });
     el.play().catch(() => { /* blocked or missing: stay silent */ });
     currentMusic = el;
   }
 
   return {
     unlock() {
-      if (unlocked) return;
+      // Called on every key press and touch. iOS can leave or put the context in 'suspended'
+      // (created outside a gesture, phone call, lock screen); resuming inside a gesture fixes it.
+      if (unlocked) {
+        if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => { /* ignore */ });
+        if (wantedMusic && currentMusic?.paused) void currentMusic.play().catch(() => { /* ignore */ });
+        return;
+      }
       unlocked = true;
       try { ctx = new AudioContext(); } catch { ctx = null; }
+      if (ctx && ctx.state !== 'running') void ctx.resume().catch(() => { /* ignore */ });
+      decodeAll();
       if (wantedMusic) startMusic(wantedMusic);
+    },
+    debugInfo() {
+      const ogg = audioPath('x.ogg').endsWith('.ogg') ? 'ogg' : 'aac';
+      const vTotal = Object.keys(voice.clips).length;
+      const sTotal = Object.values(sounds).filter((d) => d.src).length;
+      let vReady = 0;
+      for (const p of Object.values(voice.clips)) if (decoded.has(p)) vReady += 1;
+      return `audio ${ogg} ctx ${ctx ? ctx.state : 'none'} voice ${vReady}/${vTotal} sfx ${sfxBuffers.size}/${sTotal}` +
+        ` music ${currentMusic ? (currentMusic.paused ? 'paused' : 'playing') : 'none'}${musicFailed ? ` (failed ${musicFailed})` : ''}`;
     },
     play(id) {
       const def = sounds[id];
       if (!def || !unlocked) return;
+      const buf = sfxBuffers.get(id);
+      if (ctx && buf) {
+        const src = ctx.createBufferSource();
+        const gain = ctx.createGain();
+        src.buffer = buf;
+        gain.gain.value = def.volume ?? 1;
+        src.connect(gain).connect(ctx.destination);
+        src.start();
+        return;
+      }
       const clip = clips.get(id);
       if (clip && !broken.has(id)) {
         const el = clip.cloneNode() as HTMLAudioElement;
