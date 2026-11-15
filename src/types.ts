@@ -133,6 +133,21 @@ export interface FishDef {
     cooldown: number; // seconds between attacks
     reach: number;    // px
   };
+  /**
+   * A dodge-only attack: block and dash invulnerability do not help.
+   * 'charge' runs low across the whole arena (jump over it); 'shot' fires one
+   * projectile per `pattern` entry, 'low' along the floor (jump) or 'high' at
+   * head height (crouch).
+   */
+  special?: {
+    kind: 'charge' | 'shot';
+    damage: number;
+    tell: number;      // wind-up seconds, shown to the player
+    cooldown: number;  // seconds of roaming between specials
+    speed: number;     // px/s of the charge or the projectiles
+    pattern?: ('low' | 'high')[]; // 'shot' only
+    gap?: number;      // 'shot' only: seconds between projectiles
+  };
   gimmick: Gimmick;
   taunts: string[];
 }
@@ -212,6 +227,8 @@ export interface FightInput {
   heavy: boolean;        // pressed this step
   defendHeld: boolean;
   defendPressed: boolean;
+  jump: boolean;         // pressed this step
+  crouch: boolean;       // held
 }
 
 // ---------- Scenes ----------

@@ -17,7 +17,7 @@ export function mulberry32(seed: number): () => number {
   };
 }
 
-export const NONE: FightInput = { moveX: 0, quick: false, heavy: false, defendHeld: false, defendPressed: false };
+export const NONE: FightInput = { moveX: 0, quick: false, heavy: false, defendHeld: false, defendPressed: false, jump: false, crouch: false };
 export const input = (p: Partial<FightInput> = {}): FightInput => ({ ...NONE, ...p });
 
 export type Bot = (st: FightState, def: FishDef) => FightInput;
@@ -33,9 +33,23 @@ export function competentBot(): Bot {
     const dx = fish.x - sam.x;
     const dist = Math.abs(dx);
     const toward = Math.sign(dx) || 1;
-    const free = sam.move === 'idle' || sam.move === 'walk' || sam.move === 'block';
+    const free = sam.move === 'idle' || sam.move === 'walk' || sam.move === 'block' || sam.move === 'crouch';
     const quickR = F.samurai.quick.reach + def.size * 0.5 - 8;
     const heavyR = F.samurai.heavy.reach + def.size * 0.5 - 8 - def.move.speed * 0.25 * F.samurai.heavy.startup;
+
+    // Dodge-only specials: jump over low ones, crouch under high ones.
+    if (sam.y > 0) return NONE;
+    const coming = st.projectiles.filter((p) => Math.sign(p.vx) === Math.sign(sam.x - p.x));
+    const charging = fish.mode === 'charge' && fish.facing === Math.sign(sam.x - fish.x) && dist < 230;
+    if (charging || coming.some((p) => p.height === 'low' && Math.abs(p.x - sam.x) < 130)) {
+      blocking = false;
+      return free ? input({ jump: true }) : NONE;
+    }
+    const shotAim = fish.mode === 'aim' && def.special?.kind === 'shot' && def.special.pattern?.[0] === 'high';
+    if (shotAim || coming.some((p) => p.height === 'high' && Math.abs(p.x - sam.x) < 260)) {
+      blocking = false;
+      return free ? input({ crouch: true }) : NONE;
+    }
 
     if ((fish.mode === 'tell' || fish.mode === 'attack') && def.attack && dist < def.attack.reach * 1.3 + 40) {
       const pressed = !blocking;

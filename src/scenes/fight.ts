@@ -6,7 +6,7 @@ import { drawPrompts } from '../input/prompts';
 import { fight as F, sprites, text } from '../manifest';
 import type { FightInput, Game, Prompt, Scene, SceneParams } from '../types';
 import { drawHealthBar, drawSlamText, drawTimer, fill, drawOutlinedText } from '../ui/hud';
-import { FISH_TILT_BY_MODE, createLook, drawFish, drawFishMarks, drawSamurai, fishPose, lurePos, type Ghost } from './fight/fighters';
+import { FISH_TILT_BY_MODE, createLook, drawFish, drawFishMarks, drawProjectiles, drawSamurai, fishPose, lurePos, type Ghost } from './fight/fighters';
 import { Fx } from './fight/fx';
 import { drawStage } from './fight/stage';
 
@@ -31,7 +31,7 @@ const DARK_ALPHA = 0.95;
 const OVERSCAN = 48;
 
 const PROMPTS: Prompt[] = [
-  { action: 'move', label: 'MOVE', keys: 'horizontal' },
+  { action: 'move', label: 'MOVE / JUMP / DUCK', keys: 'all' },
   { action: 'quick', label: 'QUICK' },
   { action: 'heavy', label: 'HEAVY' },
   { action: 'defend', label: 'BLOCK / +DIR DASH' },
@@ -49,7 +49,8 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
   const H = game.height;
   const floorY = F.arena.floorY;
   const fishColor = sprites[fish.def.sprite]?.placeholder.color ?? '#9fd0ff';
-  const biter = fish.def.category === 'biter';
+  // "biter" here means "can hurt the samurai": a lunge or a special attack.
+  const biter = !!(fish.def.attack || fish.def.special);
 
   const fx = new Fx();
   const look = createLook();
@@ -96,7 +97,10 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
         fx.popup(pick(text.slip), e.x, e.y - 50, 36, '#8ff4ff');
         fx.drops(e.x, e.y, 10, state.samurai.x < e.x ? -1 : 1);
         break;
-      case 'tell': game.audio.play('tell'); break;
+      case 'tell': case 'aim': game.audio.play('tell'); break;
+      case 'charge': game.audio.play('dash'); fx.addShake(SHAKE.blocked); break;
+      case 'shoot': game.audio.play('slip'); break;
+      case 'jump': game.audio.play('dash'); fx.drops(e.x, e.y, 6, state.samurai.facing); break;
       case 'bitten':
         game.audio.play('bite');
         fx.popup(`-${dmg}`, e.x, e.y - 80, 34, '#ff4a3a');
@@ -149,7 +153,8 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
     if (f.mode !== prevMode) {
       if (f.mode === 'vulnerable' && prevMode === 'slip') look.vulnTotal = fish.def.slip.recovery;
       else if (f.mode === 'vulnerable' && prevMode === 'attack') look.vulnTotal = F.fish.lungeRecovery;
-      else if (f.mode === 'stunned' && (prevMode === 'tell' || prevMode === 'attack')) {
+      else if (f.mode === 'vulnerable' && prevMode === 'charge') look.vulnTotal = F.fish.special.chargeRecovery;
+      else if (f.mode === 'stunned' && (prevMode === 'tell' || prevMode === 'attack' || prevMode === 'aim' || prevMode === 'charge' || prevMode === 'shoot')) {
         look.vulnTotal = Math.max(f.vulnLeft, look.vulnTotal);
       }
       prevMode = f.mode;
@@ -224,7 +229,7 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       d.fillStyle = g;
       d.fillRect(x - r, y - r, r * 2, r * 2);
     };
-    hole(state.samurai.x, floorY - 64, F.fish.darkRadius);
+    hole(state.samurai.x, floorY - 64 - state.samurai.y, F.fish.darkRadius);
     // The anglerfish's own lure is the light: centred on the bulb in its art,
     // so it follows the fish's pose and facing, and flickers like a flame.
     const onSprite = game.assets.has(fish.def.sprite);
@@ -333,6 +338,8 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
         heavy: game.input.pressed('heavy'),
         defendHeld: game.input.held('defend'),
         defendPressed: game.input.pressed('defend'),
+        jump: game.input.pressed('up') || game.input.pressed('confirm'),
+        crouch: game.input.held('down'),
       };
       const frozen = state.hitStop > 0;
       const fishHpBefore = state.fish.hp;
@@ -372,6 +379,8 @@ export function createFightScene(game: Game, params: SceneParams['fight']): Scen
       fx.drawWorld(ctx);
       if (state.effects.dark) drawDarkness(ctx);
       fx.drawInk(ctx, state.effects.inkLeft);
+      // Above darkness and ink, so dodge-only attacks are always readable.
+      drawProjectiles(ctx, state, look);
       drawFishMarks(ctx, state, fish, look);
       fx.drawPopups(ctx);
       ctx.restore();

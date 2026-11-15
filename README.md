@@ -33,12 +33,14 @@ It is a small single-player 2D game built with TypeScript, Vite and Canvas 2D, w
 | Iwashi | Sardine | slippery | 5-25 m | the tutorial fish |
 | Saba | Mackerel | slippery | 15-40 m | weaves |
 | Pirania | Piranha | biter | 30-55 m | fast, weak bites |
-| Unagi | Eel | slippery | 40-70 m | slips almost everything |
-| Fugu | Pufferfish | slippery | 55-90 m | inflates and bounces you back |
-| Kajiki | Swordfish | biter | 75-110 m | long fencing lunges |
+| Unagi | Eel | slippery | 40-70 m | slips almost everything; floor shock wave (jump) |
+| Fugu | Pufferfish | slippery | 55-90 m | inflates and bounces you back; spits spines at head height (duck) |
+| Kajiki | Swordfish | biter | 75-110 m | long fencing lunges; charges low across the deck (jump) |
 | Anko | Anglerfish | slippery | 95-130 m | fights in the dark |
-| Hojiro | Great white shark | biter | 115-150 m | slow, very heavy bite |
-| Daioika | Giant squid | slippery | 140-170 m | squirts ink over the screen |
+| Hojiro | Great white shark | biter | 115-150 m | slow, very heavy bite; tail-slap wave (jump) |
+| Daioika | Giant squid | slippery | 140-170 m | squirts ink over the screen; ink shots high, low, high (duck, jump, duck) |
+
+Specials cannot be blocked or dash-dodged: the fish backs off, flashes purple and shows JUMP! or DUCK! first.
 
 ## Controls
 
@@ -48,6 +50,8 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 |---|---|---|
 | Move / steer the hook | A D or arrow keys (W S or up/down to brake / sink faster) | left stick or d-pad |
 | Confirm, drop hook, skip | Space or Enter | A |
+| Fight: jump | W, up arrow or Space | A, or up on stick / d-pad |
+| Fight: crouch (hold) | S or down arrow | down on stick / d-pad |
 | Quick slash | J | X |
 | Heavy slash | K | Y |
 | Defend: hold to block, tap with a direction to dash-dodge | L or Shift | B or RB |

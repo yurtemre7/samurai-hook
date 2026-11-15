@@ -221,8 +221,9 @@ describe('biters', () => {
     expect(sim.state.fish.mode).toBe('stunned');
   });
 
-  it('slippery fish never attack', () => {
-    for (const id of ['sardine', 'eel', 'squid']) {
+  it('fish with no attack and no special never hurt the samurai', () => {
+    for (const id of ['sardine', 'mackerel', 'anglerfish']) {
+      expect(def(id).attack ?? def(id).special).toBeUndefined();
       const r = runFight(id, idleBot);
       expect(r.events.some((e) => e.type === 'tell' || e.type === 'bitten')).toBe(false);
       expect(r.hpLeft).toBe(100);
@@ -237,15 +238,18 @@ describe('gimmicks', () => {
     run(sim, () => NONE, has('puff'));
     expect(sim.state.fish.mode).toBe('puffed');
     const hp = sim.state.fish.hp;
+    const samHp = sim.state.samurai.hp;
     const reach = F.samurai.quick.reach + def('pufferfish').size * 0.5 - 6;
     const ev = run(sim, approachAnd('quick', reach), (e) => has('bounce')(e) || has('slip')(e), F.fish.puff.duration);
     expect(ev.some((e) => e.type === 'bounce')).toBe(true);
     expect(sim.state.fish.hp).toBe(hp);
     expect(sim.state.samurai.move).toBe('hurt');
     const x0 = sim.state.samurai.x;
-    run(sim, () => NONE, () => sim.state.samurai.move !== 'hurt');
+    ev.push(...run(sim, () => NONE, () => sim.state.samurai.move !== 'hurt'));
     expect(Math.abs(sim.state.samurai.x - x0)).toBeGreaterThan(20);
-    expect(sim.state.samurai.hp).toBe(100);
+    // The bounce itself does no damage (only its spine special can hurt).
+    const spines = ev.filter((e) => e.type === 'bitten').reduce((a, e) => a + e.damage!, 0);
+    expect(sim.state.samurai.hp).toBeCloseTo(samHp - spines);
   });
 
   it('the pufferfish unpuffs after its duration', () => {
@@ -265,6 +269,109 @@ describe('gimmicks', () => {
     run(sim, () => NONE, has('ink'), F.fish.ink.every + 1);
     expect(sim.state.effects.inkLeft).toBeCloseTo(F.fish.ink.duration, 1);
     run(sim, () => NONE, () => sim.state.effects.inkLeft === 0, F.fish.ink.duration + 0.5);
+  });
+});
+
+describe('jump and crouch', () => {
+  const J = F.samurai.jump;
+  const apex = (J.speed * J.speed) / (2 * J.gravity);
+
+  it('a jump rises, lands back on the floor and allows no second jump in the air', () => {
+    const sim = makeFight('sardine', 1);
+    skipIntro(sim);
+    sim.step(DT, input({ jump: true }));
+    expect(sim.state.samurai.move).toBe('jump');
+    let maxY = 0;
+    let t = 0;
+    run(sim, () => input({ jump: true }), () => {
+      t += DT;
+      maxY = Math.max(maxY, sim.state.samurai.y);
+      return sim.state.samurai.y === 0;
+    }, 2);
+    expect(maxY).toBeGreaterThan(apex * 0.95);
+    expect(maxY).toBeLessThan(apex * 1.05);
+    expect(t).toBeCloseTo((2 * J.speed) / J.gravity, 1);
+  });
+
+  it('the jump clears every charge and lunge, and the tells leave time to dodge', () => {
+    for (const d of fishDefs) {
+      if (d.attack || d.special?.kind === 'charge') expect(apex).toBeGreaterThan(d.size * F.fish.special.clearScale + 30);
+      // Time to rise above a low projectile (top = y + r) is far below any special tell.
+      const P = F.fish.special.projectile.low;
+      const rise = (J.speed - Math.sqrt(J.speed * J.speed - 2 * J.gravity * (P.y + P.r))) / J.gravity;
+      if (d.special) expect(d.special.tell).toBeGreaterThan(rise * 4);
+    }
+    const high = F.fish.special.projectile.high;
+    expect(high.y - high.r).toBeGreaterThan(F.samurai.crouchHeight);
+    expect(high.y + high.r).toBeLessThan(F.samurai.standHeight);
+  });
+
+  /** Waits for the special to come out, then holds `react` until it resolves. */
+  function special(id: string, react: (sim: FightSim) => FightInput) {
+    const sim = makeFight(id, 2);
+    skipIntro(sim);
+    run(sim, () => NONE, has('aim'));
+    const hp0 = sim.state.samurai.hp;
+    const busy = (m: string) => m === 'aim' || m === 'charge' || m === 'shoot';
+    const ev = run(sim, react, (e, s) => has('bitten')(e) || has('blocked')(e)
+      || (!busy(s.state.fish.mode) && s.state.projectiles.length === 0), 6);
+    return { sim, ev, hp0 };
+  }
+  /** True when the charge or a projectile is less than `sec` seconds from the samurai. */
+  const near = (s: FightSim, sec: number) => {
+    const st = s.state;
+    if (st.fish.mode === 'charge') return Math.abs(st.fish.x - st.samurai.x) < 70 + def('swordfish').special!.speed * sec;
+    return st.projectiles.some((p) => Math.abs(p.x - st.samurai.x) < 50 + Math.abs(p.vx) * sec);
+  };
+  const jumpWhenNear = (s: FightSim) => input({ jump: near(s, 0.2) });
+  const block = (s: FightSim) => input({ defendHeld: true, defendPressed: s.state.samurai.move !== 'block' });
+  const dashWhenNear = (s: FightSim) => (near(s, 0.05)
+    ? input({ moveX: Math.sign(s.state.fish.x - s.state.samurai.x) || 1, defendPressed: true, defendHeld: true }) : NONE);
+
+  it('swordfish charge: standing, blocking or dashing gets hit full; jumping over it dodges and opens it up', () => {
+    const dmg = def('swordfish').special!.damage;
+    for (const react of [() => NONE, block, dashWhenNear]) {
+      const { ev } = special('swordfish', react);
+      expect(ev.find((e) => e.type === 'bitten')?.damage).toBe(dmg);
+    }
+    const { sim, ev, hp0 } = special('swordfish', jumpWhenNear);
+    expect(ev.some((e) => e.type === 'dodged')).toBe(true);
+    expect(sim.state.samurai.hp).toBe(hp0);
+    expect(sim.state.fish.mode).toBe('vulnerable');
+  });
+
+  it('low shot (eel): crouching or blocking gets hit; jumping dodges', () => {
+    const dmg = def('eel').special!.damage;
+    for (const react of [() => input({ crouch: true }), block]) {
+      expect(special('eel', react).ev.find((e) => e.type === 'bitten')?.damage).toBe(dmg);
+    }
+    const { sim, ev, hp0 } = special('eel', jumpWhenNear);
+    expect(ev.some((e) => e.type === 'dodged')).toBe(true);
+    expect(sim.state.samurai.hp).toBe(hp0);
+  });
+
+  it('high shot (pufferfish): standing, jumping or blocking gets hit; crouching dodges both spines', () => {
+    const dmg = def('pufferfish').special!.damage;
+    for (const react of [() => NONE, jumpWhenNear, block]) {
+      expect(special('pufferfish', react).ev.find((e) => e.type === 'bitten')?.damage).toBe(dmg);
+    }
+    const sim = makeFight('pufferfish', 2);
+    skipIntro(sim);
+    run(sim, () => NONE, has('aim'));
+    const ev = run(sim, () => input({ crouch: true }), (_, s) => s.state.fish.mode === 'roam' && s.state.projectiles.length === 0, 6);
+    expect(ev.filter((e) => e.type === 'shoot').length).toBe(2);
+    expect(ev.filter((e) => e.type === 'dodged').length).toBe(2);
+    expect(sim.state.samurai.hp).toBe(100);
+  });
+
+  it('jumping over a biter lunge dodges it', () => {
+    const sim = makeFight('piranha', 2);
+    skipIntro(sim);
+    run(sim, () => NONE, has('tell'));
+    const ev = run(sim, (s) => input({ jump: s.state.fish.mode === 'tell' && s.state.fish.tellProgress > 0.5 }),
+      (e) => has('dodged')(e) || has('bitten')(e), 3);
+    expect(ev.some((e) => e.type === 'dodged')).toBe(true);
+    expect(sim.state.samurai.hp).toBe(100);
   });
 });
 

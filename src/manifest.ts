@@ -171,6 +171,8 @@ export const fish: FishDef[] = [
     depthMin: 40, depthMax: 70, hp: 80, timer: 30, gold: 40, swimSpeed: 110, size: 42,
     move: { speed: 280, keepAway: 130, restless: 0.7 },
     slip: { recovery: 0.9, dart: 320 },
+    // Crackles, then sends a shock wave along the floor: jump.
+    special: { kind: 'shot', damage: 8, tell: 0.6, cooldown: 3.2, speed: 380, pattern: ['low'] },
     gimmick: 'none',
     taunts: ['SHOCKING, ISN\'T IT?', 'TOO SLIPPERY FOR YOU, OLD MAN!', 'EEL BE BACK.'],
   },
@@ -179,6 +181,8 @@ export const fish: FishDef[] = [
     depthMin: 55, depthMax: 90, hp: 160, timer: 30, gold: 70, swimSpeed: 60, size: 44,
     move: { speed: 140, keepAway: 120, restless: 0.3 },
     slip: { recovery: 2.2, dart: 160 },
+    // Spits two spines at head height: crouch.
+    special: { kind: 'shot', damage: 8, tell: 0.6, cooldown: 4, speed: 400, pattern: ['high', 'high'], gap: 0.35 },
     gimmick: 'puff',
     taunts: ['DO NOT TOUCH. SERIOUSLY.', 'I AM INFLATING MY EGO!', 'ONE BITE AND YOU DIE. OF ME.'],
   },
@@ -188,6 +192,8 @@ export const fish: FishDef[] = [
     move: { speed: 230, keepAway: 220, restless: 0.5 },
     slip: { recovery: 1.6, dart: 260 },
     attack: { damage: 15, tell: 0.5, cooldown: 1.8, reach: 280 },
+    // Backs up and charges low across the whole arena: jump over it, then punish.
+    special: { kind: 'charge', damage: 20, tell: 0.8, cooldown: 3.5, speed: 950 },
     gimmick: 'none',
     taunts: ['EN GARDE!', 'MY SWORD IS ATTACHED. IS YOURS?', 'I WAS BORN ARMED!'],
   },
@@ -205,6 +211,8 @@ export const fish: FishDef[] = [
     move: { speed: 150, keepAway: 200, restless: 0.4 },
     slip: { recovery: 2.4, dart: 200 },
     attack: { damage: 35, tell: 0.9, cooldown: 2.6, reach: 260 },
+    // Tail slap sends a wave along the floor: jump.
+    special: { kind: 'shot', damage: 15, tell: 0.7, cooldown: 5, speed: 450, pattern: ['low'] },
     gimmick: 'none',
     taunts: ['WE\'RE GONNA NEED A BIGGER SAMURAI.', 'I SMELL HONOUR. AND LUNCH.', 'DUN DUN. DUN DUN.'],
   },
@@ -213,6 +221,8 @@ export const fish: FishDef[] = [
     depthMin: 140, depthMax: 170, hp: 480, timer: 40, gold: 600, swimSpeed: 50, size: 60,
     move: { speed: 190, keepAway: 170, restless: 0.6 },
     slip: { recovery: 1.5, dart: 280 },
+    // Ink balls high, low, high: crouch, jump, crouch.
+    special: { kind: 'shot', damage: 10, tell: 0.7, cooldown: 4.5, speed: 420, pattern: ['high', 'low', 'high'], gap: 0.5 },
     gimmick: 'ink',
     taunts: ['TECHNICALLY NOT A FISH!', 'INK ABOUT YOUR LIFE CHOICES.', 'I AM ARMED. EIGHT TIMES.'],
   },
@@ -248,6 +258,10 @@ export const fight = {
     hurtKnockback: 240,    // px/s pushed away on a bite, decays over hurtStun
     blockPush: 120,        // px/s pushed back on a blocked bite, decays over 0.15 s
     buffer: 0.12,          // seconds a slash pressed during another move is remembered
+    // Jump: apex about 145 px, 0.76 s in the air. Up / W / Space; ground only, no strikes in the air.
+    jump: { speed: 760, gravity: 2000, airSpeed: 220 },
+    standHeight: 120,      // hurtbox height above his feet
+    crouchHeight: 60,      // hurtbox height while crouching (Down / S held)
   },
   fish: {
     slipDuration: 0.3,     // seconds the dart takes
@@ -262,6 +276,16 @@ export const fight = {
     puff: { every: 4.5, duration: 1.6, knockback: 260, stun: 0.5 },
     ink: { every: 6, duration: 3 },
     darkRadius: 150,       // visible radius around the samurai in 'dark' fights
+    special: {
+      minDist: 120,        // a special only starts with at least this much room to the samurai
+      aimDist: 260,        // during the tell the fish backs off to this distance (walls permitting)
+      clearScale: 1.3,     // feet above size x this clear a lunge or charge
+      chargeRecovery: 1.4, // seconds vulnerable after a charge hits the wall
+      shootRecovery: 0.3,  // seconds after the last projectile before roaming again
+      lungeDelay: 0.8,     // no lunge for this long after a special
+      // low: along the floor, jump over it (top 36 px). high: head height, crouch under it (bottom 86 px).
+      projectile: { low: { y: 18, r: 18 }, high: { y: 100, r: 14 } },
+    },
   },
   hitStop: 0.06,           // freeze on a landed hit, seconds
   introDelay: 1.0,         // "FIGHT!" delay before the timer starts

@@ -16,8 +16,10 @@ export interface FightState {
   hitStop: number;
   samurai: {
     x: number; facing: 1 | -1;
+    /** Height of the feet above the floor (0 = standing on it). */
+    y: number;
     hp: number; maxHp: number;
-    move: 'idle' | 'walk' | 'quick' | 'heavy' | 'block' | 'dash' | 'hurt';
+    move: 'idle' | 'walk' | 'quick' | 'heavy' | 'block' | 'dash' | 'hurt' | 'jump' | 'crouch';
     /** For quick / heavy only, else null. */
     stage: 'startup' | 'active' | 'recovery' | null;
     /** Seconds in the current move. */
@@ -30,22 +32,35 @@ export interface FightState {
     x: number; y: number;
     facing: 1 | -1;
     hp: number; maxHp: number;
-    mode: 'roam' | 'slip' | 'vulnerable' | 'tell' | 'attack' | 'stunned' | 'puffed';
+    mode: 'roam' | 'slip' | 'vulnerable' | 'tell' | 'attack' | 'stunned' | 'puffed'
+      | 'aim' | 'charge' | 'shoot';
     modeTime: number;
     /** True = the next strike that connects will be slipped. */
     slipReady: boolean;
-    /** 0..1 during 'tell', else 0. */
+    /** 0..1 during 'tell' and 'aim', else 0. */
     tellProgress: number;
     /** Seconds of the vulnerable window left (also runs through 'stunned'), 0 when none. */
     vulnLeft: number;
   };
   effects: { dark: boolean; inkLeft: number };
+  /** Special-attack projectiles in flight. `y` is the centre height above the floor. */
+  projectiles: Projectile[];
+}
+
+export interface Projectile {
+  x: number; y: number; r: number; vx: number;
+  height: 'low' | 'high';
+  damage: number;
+  /** Side of the samurai it started on; when that flips it has been dodged. */
+  side: 1 | -1;
+  passed: boolean;
 }
 
 export type FightEventType =
   | 'fightStart' | 'quick' | 'heavyStart' | 'heavySwing' | 'hit' | 'heavyHit' | 'slip'
   | 'tell' | 'attack' | 'bitten' | 'blocked' | 'dodged' | 'bounce' | 'puff' | 'unpuff'
-  | 'ink' | 'dash' | 'win' | 'timeout' | 'ko';
+  | 'ink' | 'dash' | 'win' | 'timeout' | 'ko'
+  | 'jump' | 'aim' | 'charge' | 'shoot';
 
 export type FightEvent = { type: FightEventType; x: number; y: number; damage?: number };
 
@@ -80,7 +95,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     timeLeft: def.timer,
     hitStop: 0,
     samurai: {
-      x: mid - 160, facing: 1, hp: stats.maxHp, maxHp: stats.maxHp,
+      x: mid - 160, facing: 1, y: 0, hp: stats.maxHp, maxHp: stats.maxHp,
       move: 'idle', stage: null, moveTime: 0, invulnerable: false, hits: 0, misses: 0,
     },
     fish: {
@@ -88,6 +103,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       mode: 'roam', modeTime: 0, slipReady: true, tellProgress: 0, vulnLeft: 0,
     },
     effects: { dark: def.gimmick === 'dark', inkLeft: 0 },
+    projectiles: [],
   };
   const s = state.samurai;
   const f = state.fish;
@@ -102,6 +118,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
   let hurtLeft = 0;
   let knockV = 0; // px/s, decays linearly over knockLeft
   let knockLeft = 0;
+  let vy = 0; // px/s upward
 
   // ---- hidden fish state ----
   let arc: Arc | null = null;     // slip dart, corner escape or lunge
@@ -114,6 +131,15 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
   let crossCd = 0;
   let attackCd = def.attack ? def.attack.cooldown : 0;
   let lungeHit = false;
+  const sp = def.special;
+  let specialCd = sp ? sp.cooldown * 0.6 : 0;
+  let chargeDir: 1 | -1 = 1;
+  let chargeHit = false;
+  let chargeSide: 1 | -1 = 1;
+  let chargePassed = false;
+  let shotsFired = 0;
+  /** A jump this high clears the fish's lunges and charges. */
+  const clearHeight = def.size * FF.special.clearScale;
   let puffTimer = 0;
   let inkTimer = 0;
 
@@ -166,6 +192,29 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     knockLeft = stun;
   }
 
+  /** Top of the samurai's body above his feet. */
+  const bodyTop = () => (s.move === 'crouch' ? S.crouchHeight : S.standHeight);
+
+  /** Damage from any fish attack. `guardable` = block and dash invulnerability help. */
+  function hitSamurai(dmg: number, fromX: number, guardable: boolean) {
+    const away = sign(s.x - fromX);
+    if (guardable && s.invulnerable) {
+      emit('dodged', s.x, samMidY);
+    } else if (guardable && s.move === 'block') {
+      const d = dmg * (1 - S.blockReduction);
+      s.hp = Math.max(0, s.hp - d);
+      knockV = away * S.blockPush;
+      knockLeft = 0.15;
+      emit('blocked', s.x, samMidY, d);
+    } else {
+      s.hp = Math.max(0, s.hp - dmg);
+      hurtSamurai(S.hurtStun, away * S.hurtKnockback);
+      buffered = null;
+      emit('bitten', s.x, samMidY - s.y, dmg);
+    }
+    if (s.hp <= 0) endFight('ko');
+  }
+
   function strikeConnects(reach: number): boolean {
     const dx = f.x - s.x;
     if (f.mode === 'slip') return false;
@@ -192,7 +241,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     emit(kind === 'quick' ? 'hit' : 'heavyHit', f.x, fishScreenY(), dmg);
     state.hitStop = F.hitStop;
     if (f.hp <= 0) { endFight('win'); return; }
-    if (f.mode === 'tell' || f.mode === 'attack') f.vulnLeft = Math.max(f.vulnLeft, FF.lungeRecovery);
+    if (f.mode === 'tell' || f.mode === 'attack' || f.mode === 'aim' || f.mode === 'charge' || f.mode === 'shoot') f.vulnLeft = Math.max(f.vulnLeft, FF.lungeRecovery);
     arc = null;
     hop = null;
     f.y = 0;
@@ -215,7 +264,18 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       knockLeft -= step;
     }
 
-    const busy = s.move === 'quick' || s.move === 'heavy' || s.move === 'dash' || s.move === 'hurt';
+    // Gravity runs whatever the move, so a samurai hit in mid-air still falls.
+    if (s.y > 0 || vy > 0) {
+      vy -= S.jump.gravity * dt;
+      s.y += vy * dt;
+      if (s.y <= 0) {
+        s.y = 0;
+        vy = 0;
+        if (s.move === 'jump') setMove('idle');
+      }
+    }
+
+    const busy = s.move === 'quick' || s.move === 'heavy' || s.move === 'dash' || s.move === 'hurt' || s.move === 'jump';
     if (busy && (input.quick || input.heavy)) {
       buffered = { kind: input.heavy ? 'heavy' : 'quick', life: S.buffer };
     }
@@ -246,15 +306,19 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       }
       case 'hurt': {
         hurtLeft -= dt;
-        if (hurtLeft <= 0) setMove('idle');
+        if (hurtLeft <= 0) setMove(s.y > 0 ? 'jump' : 'idle');
+        break;
+      }
+      case 'jump': {
+        s.x += clamp(input.moveX, -1, 1) * S.jump.airSpeed * dt;
         break;
       }
       default:
         break;
     }
 
-    // free states: idle / walk / block (also the step a move just ended)
-    if (s.move === 'idle' || s.move === 'walk' || s.move === 'block') {
+    // free states: idle / walk / block / crouch (also the step a move just ended)
+    if (s.move === 'idle' || s.move === 'walk' || s.move === 'block' || s.move === 'crouch') {
       const dir = Math.abs(input.moveX) > 0.3 ? sign(input.moveX) : 0;
       if (input.defendPressed && dir !== 0 && dashCd <= 0) {
         setMove('dash');
@@ -262,10 +326,17 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
         dashCd = S.dash.cooldown + S.dash.duration;
         iframes = S.dash.iframes;
         emit('dash', s.x, samMidY);
+      } else if (input.jump) {
+        setMove('jump');
+        vy = S.jump.speed;
+        emit('jump', s.x, A.floorY);
       } else if (input.quick || input.heavy) {
         startStrike(input.heavy ? 'heavy' : 'quick');
       } else if (buffered) {
         startStrike(buffered.kind);
+      } else if (input.crouch) {
+        if (s.move !== 'crouch') setMove('crouch');
+        faceFish();
       } else if (input.defendHeld && dir === 0) {
         if (s.move !== 'block') setMove('block');
         faceFish();
@@ -325,23 +396,91 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     if (lungeHit) return;
     if (Math.abs(f.x - s.x) > S.bodyRadius + def.size * 0.6) return;
     lungeHit = true;
-    const atk = def.attack!;
-    const away = sign(s.x - f.x);
-    if (s.invulnerable) {
-      emit('dodged', s.x, samMidY);
-    } else if (s.move === 'block') {
-      const dmg = atk.damage * (1 - S.blockReduction);
-      s.hp = Math.max(0, s.hp - dmg);
-      knockV = away * S.blockPush;
-      knockLeft = 0.15;
-      emit('blocked', s.x, samMidY, dmg);
+    if (s.y > clearHeight) { emit('dodged', s.x, samMidY - s.y); return; } // jumped over it
+    hitSamurai(def.attack!.damage, f.x, true);
+  }
+
+  // ---------- specials (dodge only: jump or crouch) ----------
+
+  function startSpecial() {
+    const a = sp!;
+    f.facing = sign(s.x - f.x);
+    if (a.kind === 'charge') {
+      chargeDir = f.facing;
+      chargeSide = sign(f.x - s.x);
+      chargeHit = false;
+      chargePassed = false;
+      setFishMode('charge');
+      emit('charge', f.x, fishScreenY());
     } else {
-      s.hp = Math.max(0, s.hp - atk.damage);
-      hurtSamurai(S.hurtStun, away * S.hurtKnockback);
-      buffered = null;
-      emit('bitten', s.x, samMidY, atk.damage);
+      shotsFired = 0;
+      setFishMode('shoot');
     }
-    if (s.hp <= 0) endFight('ko');
+  }
+
+  function endSpecial(next: 'roam' | 'vulnerable') {
+    specialCd = sp!.cooldown;
+    attackCd = Math.max(attackCd, FF.special.lungeDelay);
+    if (next === 'vulnerable') f.vulnLeft = FF.special.chargeRecovery;
+    setFishMode(next);
+  }
+
+  /** Runs low across the whole arena, through the samurai, to the far wall. */
+  function runCharge(dt: number) {
+    const a = sp!;
+    const to = chargeDir > 0 ? fishMaxX : fishMinX;
+    f.x += chargeDir * a.speed * dt;
+    f.y = 0;
+    if (!chargeHit && Math.abs(f.x - s.x) < S.bodyRadius + def.size * 0.9 && s.y < clearHeight) {
+      chargeHit = true;
+      hitSamurai(a.damage, f.x - chargeDir, false);
+      if (state.phase === 'over') return;
+    }
+    if (!chargeHit && !chargePassed && sign(f.x - s.x) !== chargeSide) {
+      chargePassed = true;
+      emit('dodged', s.x, samMidY - s.y);
+    }
+    if (chargeDir * (f.x - to) >= 0) {
+      f.x = to;
+      endSpecial('vulnerable');
+    }
+  }
+
+  function runShoot() {
+    const a = sp!;
+    const pattern = a.pattern ?? ['high'];
+    const gap = a.gap ?? 0.3;
+    while (shotsFired < pattern.length && f.modeTime >= shotsFired * gap) {
+      const height = pattern[shotsFired++];
+      const P = FF.special.projectile[height];
+      const dir = sign(s.x - f.x);
+      f.facing = dir;
+      const x = f.x + dir * def.size;
+      state.projectiles.push({ x, y: P.y, r: P.r, vx: dir * a.speed, height, damage: a.damage, side: sign(x - s.x), passed: false });
+      emit('shoot', x, A.floorY - P.y);
+    }
+    if (shotsFired >= pattern.length && f.modeTime >= (pattern.length - 1) * gap + FF.special.shootRecovery) endSpecial('roam');
+  }
+
+  function updateProjectiles(dt: number) {
+    const list = state.projectiles;
+    for (let i = list.length - 1; i >= 0; i--) {
+      const p = list[i];
+      p.x += p.vx * dt;
+      const overlapX = Math.abs(p.x - s.x) < S.bodyRadius + p.r;
+      const overlapY = p.y - p.r < s.y + bodyTop() && p.y + p.r > s.y;
+      if (overlapX && overlapY) {
+        list.splice(i, 1);
+        hitSamurai(p.damage, p.x - p.vx, false);
+        if (state.phase === 'over') return;
+        continue;
+      }
+      if (!p.passed && sign(p.x - s.x) !== p.side) {
+        p.passed = true;
+        emit('dodged', s.x, samMidY - s.y);
+      }
+      if (p.x < A.left - 60 || p.x > A.right + 60) list.splice(i, 1);
+    }
   }
 
   function roam(dt: number) {
@@ -384,7 +523,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
   function updateFish(dt: number) {
     f.modeTime += dt;
     crossCd = Math.max(0, crossCd - dt);
-    if (Math.abs(f.x - s.x) > 1 && f.mode !== 'slip' && f.mode !== 'attack') f.facing = sign(s.x - f.x);
+    if (Math.abs(f.x - s.x) > 1 && f.mode !== 'slip' && f.mode !== 'attack' && f.mode !== 'charge') f.facing = sign(s.x - f.x);
 
     // gimmick timers
     if (def.gimmick === 'puff' && f.mode !== 'puffed') puffTimer += dt;
@@ -397,6 +536,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       }
     }
     if (def.attack && f.mode === 'roam') attackCd -= dt;
+    if (sp && f.mode === 'roam') specialCd -= dt;
 
     switch (f.mode) {
       case 'roam': {
@@ -410,6 +550,13 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
           hop = null;
           f.y = 0;
           emit('puff', f.x, fishScreenY());
+          break;
+        }
+        if (sp && specialCd <= 0 && f.y < 4 && Math.abs(f.x - s.x) >= FF.special.minDist) {
+          setFishMode('aim');
+          hop = null;
+          f.y = 0;
+          emit('aim', f.x, fishScreenY());
           break;
         }
         if (def.attack && attackCd <= 0 && Math.abs(f.x - s.x) <= def.attack.reach && f.y < 4) {
@@ -449,6 +596,16 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
         }
         break;
       }
+      case 'aim': {
+        f.y = 0;
+        // Backs off first, so the attack has room to be read and dodged.
+        if (Math.abs(f.x - s.x) < FF.special.aimDist) f.x += sign(f.x - s.x) * def.move.speed * dt;
+        f.tellProgress = Math.min(1, f.modeTime / sp!.tell);
+        if (f.modeTime >= sp!.tell) startSpecial();
+        break;
+      }
+      case 'charge': runCharge(dt); break;
+      case 'shoot': runShoot(); break;
       case 'attack': {
         const done = arc ? runArc(arc, dt) : true;
         lungeContact();
@@ -522,6 +679,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
 
     updateSamurai(dt, input);
     if (state.phase === 'fighting') updateFish(dt);
+    if (state.phase === 'fighting') updateProjectiles(dt);
 
     if (state.phase === 'fighting') {
       state.timeLeft = Math.max(0, state.timeLeft - dt);

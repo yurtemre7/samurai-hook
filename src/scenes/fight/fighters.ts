@@ -12,6 +12,7 @@ export const FISH_DRAW_SIZE = 1.55;
 const FISH_STAND_TILT = 1.1;
 export const FISH_TILT_BY_MODE: Record<FightState['fish']['mode'], number> = {
   roam: FISH_STAND_TILT, slip: 0.45, vulnerable: 0.55, tell: 1.35, attack: 0.12, stunned: 0.8, puffed: 0.2,
+  aim: 1.35, charge: 0.05, shoot: 0.9,
 };
 /** Rotation per px/s of horizontal fish speed (lean into the movement). */
 const FISH_MOVE_LEAN = 0.0011;
@@ -31,7 +32,10 @@ const SAMURAI_SHOULDER = 80; // px above the floor where the sword arc is centre
 const SAM_SPRITE: Record<FightState['samurai']['move'], string> = {
   idle: 'samuraiIdle', walk: 'samuraiWalk', dash: 'samuraiWalk', quick: 'samuraiQuick',
   heavy: 'samuraiHeavy', block: 'samuraiBlock', hurt: 'samuraiHurt',
+  // No jump or crouch art: existing frames, bent by samuraiTransform.
+  jump: 'samuraiWalk', crouch: 'samuraiIdle',
 };
+const JUMP_AIRTIME = (2 * F.samurai.jump.speed) / F.samurai.jump.gravity;
 
 /** A remembered past pose; `on` = draw it (dashing samurai, slipping fish). */
 export interface Ghost { x: number; y: number; rot: number; flip: boolean; on: boolean }
@@ -149,6 +153,15 @@ function samuraiTransform(s: FightState['samurai'], wt: number) {
     case 'dash': rot = s.facing * 0.22; sx = 1.12; sy = 0.92; break;
     case 'block': sy = 0.95; sx = 1.03; break;
     case 'hurt': rot = -s.facing * 0.25; break;
+    case 'jump': {
+      // Stretch on take-off, tuck at the top, lean forward on the way down.
+      const p = Math.min(1, s.moveTime / JUMP_AIRTIME);
+      rot = s.facing * (-0.12 + 0.3 * p);
+      sy = p < 0.2 ? 1.08 : 0.9;
+      sx = p < 0.2 ? 0.94 : 1.05;
+      break;
+    }
+    case 'crouch': sy = F.samurai.crouchHeight / F.samurai.standHeight + 0.08; sx = 1.12; break;
     case 'quick':
       if (s.stage === 'startup') { rot = -s.facing * 0.08; }
       else if (s.stage === 'active') { rot = s.facing * 0.16; sx = 1.1; }
@@ -163,6 +176,7 @@ function samuraiTransform(s: FightState['samurai'], wt: number) {
       else rot = s.facing * 0.1;
       break;
   }
+  dy -= s.y;
   return { rot, sx, sy, dy };
 }
 
@@ -186,7 +200,7 @@ export function drawSamurai(ctx: CanvasRenderingContext2D, assets: Assets, state
   const tr = samuraiTransform(s, look.wt);
   const animTime = s.move === 'quick' || s.move === 'heavy' || s.move === 'hurt' ? s.moveTime : look.wt;
 
-  drawShadow(ctx, s.x, 34, 0);
+  drawShadow(ctx, s.x, 34, s.y);
 
   // Dash after-images.
   const ghosts = look.samGhosts;
@@ -341,6 +355,30 @@ export function drawFish(
     ctx.restore();
   }
 
+  // Special tell: a danger band at the height that will be hit, toward the samurai.
+  if (f.mode === 'aim' && def.special) {
+    const p = f.tellProgress;
+    const a = 0.3 + 0.35 * p * (0.5 + 0.5 * Math.sin(look.rt * 30));
+    const dir = state.samurai.x >= f.x ? 1 : -1;
+    const x0 = dir === 1 ? f.x : F.arena.left;
+    const w = dir === 1 ? F.arena.right - f.x : f.x - F.arena.left;
+    ctx.save();
+    if (def.special.kind === 'charge') {
+      ctx.fillStyle = `rgba(255,30,30,${a})`;
+      const h = def.size * F.fish.special.clearScale;
+      ctx.fillRect(x0, F.arena.floorY - h, w, h);
+      ctx.fillStyle = `rgba(255,220,200,${a + 0.2})`;
+      ctx.fillRect(x0, F.arena.floorY - h - 2, w, 3);
+    } else {
+      for (const height of new Set<'low' | 'high'>(def.special.pattern ?? ['high'])) {
+        const P = F.fish.special.projectile[height];
+        ctx.fillStyle = height === 'low' ? `rgba(90,220,255,${a})` : `rgba(200,90,255,${a})`;
+        ctx.fillRect(x0, F.arena.floorY - P.y - P.r, w, P.r * 2);
+      }
+    }
+    ctx.restore();
+  }
+
   // Slip after-images.
   const ghosts = look.fishGhosts;
   for (let i = 0; i < ghosts.length; i++) {
@@ -355,7 +393,7 @@ export function drawFish(
   }
 
   // Attack speed lines trailing the lunge.
-  if (f.mode === 'attack') {
+  if (f.mode === 'attack' || f.mode === 'charge') {
     ctx.save();
     ctx.strokeStyle = 'rgba(255,255,255,0.8)';
     ctx.lineWidth = 3;
@@ -377,14 +415,14 @@ export function drawFish(
 
   let tint: string | undefined;
   if (f.mode === 'stunned') tint = '#ffffff';
-  else if (f.mode === 'tell') {
+  else if (f.mode === 'tell' || f.mode === 'aim') {
     const rate = 10 + 30 * f.tellProgress;
-    tint = Math.sin(look.rt * rate) > -0.2 ? '#ff1a1a' : undefined;
-  } else if (f.mode === 'attack') tint = '#ff5a3a';
+    tint = Math.sin(look.rt * rate) > -0.2 ? (f.mode === 'aim' ? '#c06cff' : '#ff1a1a') : undefined;
+  } else if (f.mode === 'attack' || f.mode === 'charge') tint = '#ff5a3a';
 
   ctx.save();
   ctx.translate(pose.cx, pose.cy);
-  if (f.mode === 'attack') ctx.scale(ATTACK_STRETCH.x, ATTACK_STRETCH.y);
+  if (f.mode === 'attack' || f.mode === 'charge') ctx.scale(ATTACK_STRETCH.x, ATTACK_STRETCH.y);
   ctx.rotate(pose.rot);
   assets.draw(ctx, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * fishBreathe(state, look), time: look.wt, tint });
   ctx.restore();
@@ -403,6 +441,61 @@ export function drawFishMarks(ctx: CanvasRenderingContext2D, state: FightState, 
     const col = Math.floor(look.rt * 16) % 2 ? '#ff2a1a' : '#ffdd22';
     drawOutlinedText(ctx, '!', pose.cx, pose.cy - pose.ext - 24 - size * 0.35, { size, color: col });
   }
+  // Special tell: says which dodge each hit needs, in order.
+  if (f.mode === 'aim' && fish.def.special) {
+    const sp = fish.def.special;
+    const words = sp.kind === 'charge' ? ['JUMP!'] : (sp.pattern ?? ['high']).map((h) => (h === 'low' ? 'JUMP!' : 'DUCK!'));
+    const size = 26 + 14 * f.tellProgress;
+    const col = Math.floor(look.rt * 16) % 2 ? '#ffffff' : '#ffdd22';
+    drawOutlinedText(ctx, words.join(' '), pose.cx, pose.cy - pose.ext - 30, { size, color: col });
+  }
+}
+
+/** Special-attack projectiles: a crackling wave along the floor (low) or a ball at head height (high). */
+export function drawProjectiles(ctx: CanvasRenderingContext2D, state: FightState, look: Look): void {
+  ctx.save();
+  for (const p of state.projectiles) {
+    const y = F.arena.floorY - p.y;
+    const back = -Math.sign(p.vx);
+    ctx.globalCompositeOperation = 'lighter';
+    if (p.height === 'low') {
+      // Shock wave: a jagged crest hugging the floor.
+      ctx.strokeStyle = '#8ff4ff';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#5ad8ff';
+      ctx.shadowBlur = 14;
+      ctx.beginPath();
+      for (let i = 0; i <= 8; i++) {
+        const u = i / 8;
+        const x = p.x + back * u * p.r * 3;
+        const h = p.r * 2 * (1 - u) * (0.6 + 0.4 * Math.abs(Math.sin(look.rt * 40 + i * 1.7)));
+        if (i === 0) ctx.moveTo(x, F.arena.floorY);
+        ctx.lineTo(x, F.arena.floorY - h);
+      }
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(140,240,255,0.35)';
+      ctx.beginPath();
+      ctx.ellipse(p.x, F.arena.floorY - 2, p.r * 1.4, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Head-high shot with a streak behind it.
+      const g = ctx.createLinearGradient(p.x, y, p.x + back * p.r * 5, y);
+      g.addColorStop(0, 'rgba(200,110,255,0.8)');
+      g.addColorStop(1, 'rgba(200,110,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(Math.min(p.x, p.x + back * p.r * 5), y - p.r * 0.6, p.r * 5, p.r * 1.2);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#2a0a3a';
+      ctx.strokeStyle = '#e8b8ff';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(p.x, y, p.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+  }
+  ctx.restore();
 }
 
 function drawSpikes(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, look: Look): void {
