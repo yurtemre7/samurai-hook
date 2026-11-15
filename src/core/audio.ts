@@ -1,5 +1,6 @@
 import type { AudioSys, SoundDef } from '../types';
 import { assetUrl } from './assets';
+import { audioPath } from './audioFormat';
 import { planAnnounce, resolveLineFx, type AnnounceRequest, type FxChoice, type VoiceFx } from './announcer';
 import { playThroughFx, type VoicePlayback } from './voicefx';
 
@@ -37,7 +38,7 @@ export function createAudio(
     let p = fetched.get(path);
     if (!p) {
       p = typeof fetch === 'undefined' ? Promise.resolve(null)
-        : fetch(assetUrl(path))
+        : fetch(assetUrl(audioPath(path)))
           .then((r) => (r.ok ? r.arrayBuffer() : null))
           .catch(() => null);
       fetched.set(path, p);
@@ -71,7 +72,7 @@ export function createAudio(
 
   for (const [id, def] of Object.entries(sounds)) {
     if (!def.src) continue;
-    const el = new Audio(assetUrl(def.src));
+    const el = new Audio(assetUrl(audioPath(def.src)));
     el.preload = 'auto';
     el.addEventListener('error', () => broken.add(id));
     clips.set(id, el);
@@ -99,7 +100,7 @@ export function createAudio(
     currentMusicId = id;
     const def = id ? music[id] : null;
     if (!def?.src) return;
-    const el = new Audio(assetUrl(def.src));
+    const el = new Audio(assetUrl(audioPath(def.src)));
     el.loop = true;
     el.volume = def.volume;
     el.play().catch(() => { /* blocked or missing: stay silent */ });
