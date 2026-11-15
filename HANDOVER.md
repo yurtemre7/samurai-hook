@@ -196,6 +196,12 @@ block merging.
   spines at head height. Shark: tail-slap floor wave. Squid: ink shots high,
   low, high. Projectiles are drawn above the darkness and ink.
 - Jumping above `size x clearScale` also dodges a biter's lunge.
+- With Down held, a defend tap dashes only on a clear sideways push
+  (`fight.samurai.dash.crouchMinX`, 0.65; standing it is still 0.3). A stick
+  held down with a slight lean used to dash him out of the crouch and into a
+  high shot. Keys, d-pad, touch swipes and the DASH button send a full
+  sideways value and behave as before; a touch drag plus BLOCK now needs the
+  same clear push. Settled by unit tests; no real controller was used.
 - Striking the fish during a special's tell, charge or volley lands (it
   cannot slip then), stuns it and still costs the special its full cooldown.
 - `docs/DESIGN.md` (4-button duel, "slippery fish never attack") is not

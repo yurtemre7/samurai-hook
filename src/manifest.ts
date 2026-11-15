@@ -255,7 +255,9 @@ export const fight = {
     quick: { startup: 0.06, active: 0.08, recovery: 0.14, reach: 185 },
     heavy: { startup: 0.45, active: 0.1, recovery: 0.3, reach: 215 },
     blockReduction: 0.65,   // fraction of damage removed while blocking
-    dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5 },
+    // crouchMinX: with Down held, a defend tap dashes only past this |moveX| (standing: 0.3), so a stick
+    // leaning a little sideways stays crouched. Full-tilt stick within ~42 deg of level; keys, d-pad, touch give 1.
+    dash: { distance: 170, duration: 0.18, iframes: 0.22, cooldown: 0.5, crouchMinX: 0.65 },
     hurtStun: 0.25,
     hurtKnockback: 240,    // px/s pushed away on a bite, decays over hurtStun
     blockPush: 120,        // px/s pushed back on a blocked bite, decays over 0.15 s

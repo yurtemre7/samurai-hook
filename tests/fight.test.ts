@@ -474,3 +474,87 @@ describe('competent bot', () => {
     });
   }
 });
+
+describe('dash out of a crouch', () => {
+  const minX = F.samurai.dash.crouchMinX;
+
+  /** A sardine fight with the samurai already crouched. */
+  function crouched(): FightSim {
+    const sim = makeFight('sardine', 1);
+    skipIntro(sim);
+    for (let i = 0; i < 5; i++) sim.step(DT, input({ crouch: true }));
+    expect(sim.state.samurai.move).toBe('crouch');
+    return sim;
+  }
+  /** Defend tapped (and held) with `moveX`, crouch held or not. */
+  const tap = (moveX: number, crouch = true) => input({ moveX, crouch, defendPressed: true, defendHeld: true });
+
+  /** Steps one defend tap and checks it dashed the way `moveX` points. */
+  function expectDash(sim: FightSim, moveX: number, crouch = true) {
+    const x0 = sim.state.samurai.x;
+    const ev = sim.step(DT, tap(moveX, crouch));
+    expect(ev.some((e) => e.type === 'dash')).toBe(true);
+    expect(sim.state.samurai.move).toBe('dash');
+    expect(sim.state.samurai.invulnerable).toBe(true);
+    run(sim, () => NONE, () => sim.state.samurai.move !== 'dash', 1);
+    expect(Math.sign(sim.state.samurai.x - x0)).toBe(Math.sign(moveX));
+    expect(Math.abs(sim.state.samurai.x - x0)).toBeGreaterThan(F.samurai.dash.distance * 0.8);
+  }
+
+  /** Steps one defend tap and checks the samurai stayed crouched where he was, with no dash side effects. */
+  function expectStay(sim: FightSim, moveX: number) {
+    const x0 = sim.state.samurai.x;
+    const ev = sim.step(DT, tap(moveX));
+    expect(ev.some((e) => e.type === 'dash')).toBe(false);
+    expect(sim.state.samurai.move).toBe('crouch');
+    expect(sim.state.samurai.x).toBe(x0);
+    expect(sim.state.samurai.invulnerable).toBe(false);
+  }
+
+  it('the threshold is above a full-tilt stick diagonal and below a full push (keys, d-pad, touch dash)', async () => {
+    // Imported here, not at the top, so this block stays self-contained.
+    const { applyDeadzone } = await import('../src/input/core');
+    expect(minX).toBeGreaterThan(applyDeadzone(Math.SQRT1_2));
+    expect(minX).toBeLessThan(1);
+  });
+
+  for (const mx of [0.33, -0.33]) {
+    it(`a slight lean (moveX ${mx}) and a defend tap stays crouched; held defend does not block`, () => {
+      const sim = crouched();
+      const x0 = sim.state.samurai.x;
+      expectStay(sim, mx);
+      // Keeps crouching with the lean and defend held: no dash, no block, no walking.
+      for (let i = 0; i < 30; i++) {
+        const ev = sim.step(DT, input({ moveX: mx, crouch: true, defendHeld: true }));
+        expect(ev.some((e) => e.type === 'dash')).toBe(false);
+        expect(sim.state.samurai.move).toBe('crouch');
+        expect(sim.state.samurai.x).toBe(x0);
+      }
+      // The refused tap did not start the cooldown: a full push on the very next step dashes.
+      const again = crouched();
+      expectStay(again, mx);
+      expectDash(again, Math.sign(mx));
+    });
+  }
+
+  for (const mx of [1, -1]) {
+    it(`a full sideways push (moveX ${mx}) dashes out of the crouch, as before`, () => {
+      expectDash(crouched(), mx);
+    });
+  }
+
+  for (const mx of [0.33, -0.33]) {
+    it(`standing, moveX ${mx} and a defend tap still dashes (the 0.3 cutoff is unchanged)`, () => {
+      const sim = makeFight('sardine', 1);
+      skipIntro(sim);
+      expectDash(sim, mx, false);
+    });
+  }
+
+  for (const s of [1, -1]) {
+    it(`crouching: just below the threshold stays down, just above dashes (side ${s})`, () => {
+      expectStay(crouched(), s * (minX - 0.01));
+      expectDash(crouched(), s * (minX + 0.01));
+    });
+  }
+});

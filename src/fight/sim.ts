@@ -322,7 +322,9 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
     // free states: idle / walk / block / crouch (also the step a move just ended)
     if (s.move === 'idle' || s.move === 'walk' || s.move === 'block' || s.move === 'crouch') {
       const dir = Math.abs(input.moveX) > 0.3 ? sign(input.moveX) : 0;
-      if (input.defendPressed && dir !== 0 && dashCd <= 0) {
+      // Crouching, only a clear sideways push dashes: a slight stick lean stays down (a dash would stand him up).
+      const dashOk = dir !== 0 && (!input.crouch || Math.abs(input.moveX) > S.dash.crouchMinX);
+      if (input.defendPressed && dashOk && dashCd <= 0) {
         setMove('dash');
         dashDir = dir;
         dashCd = S.dash.cooldown + S.dash.duration;
