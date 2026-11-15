@@ -49,3 +49,16 @@ export function watchAudio(page: Page) {
   });
   return seen;
 }
+
+/**
+ * The HTTP status of each audio request. WebKit on Linux (CI) reports status 0 for files that
+ * <audio> elements load, so for those the file is fetched again from the page to get a real status.
+ */
+export async function audioStatuses(page: Page, seen: { url: string; status: number }[]) {
+  const out: { url: string; status: number }[] = [];
+  for (const a of seen) {
+    const status = a.status !== 0 ? a.status : await page.evaluate((u) => fetch(u).then((r) => r.status, () => 0), a.url);
+    out.push({ url: a.url, status });
+  }
+  return out;
+}

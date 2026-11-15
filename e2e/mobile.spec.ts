@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { expect, test, type Page } from '@playwright/test';
-import { gameTime, openFight, openOcean, samurai, trackMoves, watchAudio, watchErrors } from './helpers';
+import { gameTime, openFight, openOcean, samurai, trackMoves, watchAudio, watchErrors, audioStatuses } from './helpers';
 
 const button = (page: Page, label: string) => page.locator('.sh-btn', { hasText: label }).first();
 
@@ -103,8 +103,9 @@ test('audio: announcer and fight music use the format the browser chose, and loa
   const oggOk = await page.evaluate(() => !!document.createElement('audio').canPlayType('audio/ogg; codecs="vorbis"'));
   const [ext, other] = oggOk ? ['ogg', 'm4a'] : ['m4a', 'ogg'];
   await page.waitForFunction((e) => performance.getEntriesByType('resource').some((r) => r.name.includes(`music/fight.${e}`)), ext);
-  const voice = audio.filter((a) => a.url.includes('/voice/'));
-  const music = audio.filter((a) => a.url.includes('/music/fight'));
+  const checked = await audioStatuses(page, audio);
+  const voice = checked.filter((a) => a.url.includes('/voice/'));
+  const music = checked.filter((a) => a.url.includes('/music/fight'));
   expect(voice.length).toBeGreaterThan(0);
   expect(music.length).toBeGreaterThan(0);
   for (const a of [...voice, ...music]) {
@@ -128,7 +129,7 @@ test('audio: the iPhone format (?audio=aac) loads every announcer clip and the f
   expect(info).toContain('audio aac');
   const sfx = info.match(/sfx (\d+)\/(\d+)/);
   expect(sfx && sfx[1]).toBe(sfx && sfx[2]); // every effect decoded
-  const used = audio.filter((a) => /\/(voice|music|sfx)\//.test(a.url));
+  const used = (await audioStatuses(page, audio)).filter((a) => /\/(voice|music|sfx)\//.test(a.url));
   expect(used.some((a) => a.url.includes('music/fight.m4a'))).toBe(true);
   for (const a of used) {
     expect(a.url.endsWith('.ogg')).toBe(false);
