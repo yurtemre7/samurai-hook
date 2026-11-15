@@ -1,0 +1,70 @@
+name: Publish to itch.io
+
+# Publishes main to https://yurtemre7.itch.io/samurai-hook after the tests pass.
+# Skipped with a notice (not a failure) until the BUTLER_API_KEY secret exists.
+# See HANDOVER.md ("Deployment and pull request previews", itch.io).
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One push to itch.io at a time; queue later runs instead of cancelling.
+concurrency:
+  group: itch
+  cancel-in-progress: false
+
+env:
+  ITCH_TARGET: yurtemre7/samurai-hook   # itch user/game-slug
+  ITCH_CHANNEL: html5                   # butler channel
+
+jobs:
+  itch:
+    runs-on: ubuntu-latest
+    steps:
+      # Secrets cannot be used in job-level `if:`, so expose a step output.
+      - name: Check for BUTLER_API_KEY
+        id: key
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}
+        run: |
+          if [ -z "$BUTLER_API_KEY" ]; then
+            echo "::notice::itch.io publishing is skipped because the BUTLER_API_KEY secret is not set."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.enabled == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.key.outputs.enabled == 'true'
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+        if: steps.key.outputs.enabled == 'true'
+      - run: npm test
+        if: steps.key.outputs.enabled == 'true'
+      - run: npm run build
+        if: steps.key.outputs.enabled == 'true'
+
+      # butler from itch's official distribution (no third-party action).
+      - name: Install butler
+        if: steps.key.outputs.enabled == 'true'
+        run: |
+          curl -fsSL -o butler.zip https://broth.itch.zone/butler/linux-amd64/LATEST/archive/default
+          unzip -q butler.zip -d "$RUNNER_TEMP/butler"
+          chmod +x "$RUNNER_TEMP/butler/butler"
+          echo "$RUNNER_TEMP/butler" >> "$GITHUB_PATH"
+
+      - name: Push dist to itch.io
+        if: steps.key.outputs.enabled == 'true'
+        env:
+          BUTLER_API_KEY: ${{ secrets.BUTLER_API_KEY }}   # read by butler
+        run: |
+          VERSION="$(node -p "require('./package.json').version")+${GITHUB_SHA::7}"
+          butler push dist "$ITCH_TARGET:$ITCH_CHANNEL" --userversion "$VERSION"

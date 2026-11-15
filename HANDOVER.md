@@ -135,6 +135,24 @@ https://github.com/yurtemre7/samurai-hook.git`. Reload any open game tab.
   left alone.
 - Two third-party actions are used, pinned to major versions:
   `rossjrw/pr-preview-action@v1` and `JamesIves/github-pages-deploy-action@v4`.
+- **itch.io**: `.github/workflows/itch.yml` runs on every push to `main` (and
+  manually via "Run workflow"). It runs `npm ci`, `npm test`, `npm run build`
+  and pushes `dist/` with itch's official `butler` CLI (downloaded from
+  `broth.itch.zone`) to `yurtemre7/samurai-hook:html5`, with the user version
+  `<package.json version>+<short SHA>`. Target and channel are in the
+  workflow's top-level `env:`.
+  - Until the `BUTLER_API_KEY` repository secret exists the workflow is
+    skipped with a `::notice::` (it does not fail, so `main` stays green).
+  - One-time setup, by the itch.io account owner:
+    1. On itch.io go to Settings, API keys
+       (https://itch.io/user/settings/api-keys) and generate a new API key.
+    2. In the GitHub repo go to Settings, Secrets and variables, Actions,
+       New repository secret. Name it `BUTLER_API_KEY` and paste the key.
+    3. On the itch.io game's Edit page make sure "Kind of project" is HTML.
+       After the first automated upload, tick "This file will be played in
+       the browser" for the `html5` channel upload, and remove any old
+       manually uploaded zip so players get the automated build.
+    4. Re-run the workflow from the Actions tab ("Run workflow").
 
 ## Pending (in priority order)
 
