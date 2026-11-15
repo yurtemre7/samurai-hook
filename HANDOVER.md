@@ -105,8 +105,10 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
     trailed far behind a thumb and read as lag;
   - is also a small floating stick (8 px dead zone, full at 30 px) for walking
     in fights and braking or sinking faster while fishing.
-  - **dashes** on a quick horizontal swipe (40 px within 180 ms, `swipeDir`);
-    only fights use it.
+  - **quick swipes** (40 px within 180 ms, `swipeDir`, only fights act on
+    them): left/right dash, up jumps (one press of `up`), down crouches
+    (holds `down` until the finger lifts). Rhaveen: all controls should work
+    by touch, not only by buttons.
   The buttons follow the scene (`setScene`, called from `game.go`): fights show
   QUICK, HEAVY, BLOCK and DASH, with no CONFIRM or SHOP (Rhaveen: a CONFIRM
   that makes him jump "makes no sense"); fishing shows REEL IN and SHOP; the

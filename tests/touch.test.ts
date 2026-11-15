@@ -230,12 +230,14 @@ describe('touch tap and finger drag (core)', () => {
 });
 
 describe('swipe to dash and scene buttons', () => {
-  it('a fast, mostly horizontal swipe dashes that way; slow or vertical does not', () => {
-    expect(swipeDir(SWIPE_PX, 0, 100)).toBe(1);
-    expect(swipeDir(-SWIPE_PX - 5, 10, SWIPE_MS)).toBe(-1);
+  it('a fast swipe gives its main direction; slow, short or diagonal ones give nothing', () => {
+    expect(swipeDir(SWIPE_PX, 0, 100)).toBe('right');
+    expect(swipeDir(-SWIPE_PX - 5, 10, SWIPE_MS)).toBe('left');
     expect(swipeDir(SWIPE_PX - 1, 0, 50)).toBeNull();
     expect(swipeDir(80, 0, SWIPE_MS + 1)).toBeNull();
-    expect(swipeDir(50, 60, 50)).toBeNull();
+    expect(swipeDir(10, -SWIPE_PX, 60)).toBe('up');
+    expect(swipeDir(-5, 60, 60)).toBe('down');
+    expect(swipeDir(30, 30, 60)).toBeNull();
   });
 
   it('fights show no CONFIRM and no SHOP, so nothing on screen jumps by surprise', () => {

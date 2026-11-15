@@ -6,7 +6,8 @@
 // cast. Confirm also jumps and reels in, so a stray tap must never become confirm.
 // Buttons follow the scene (`setScene`): fights show QUICK / HEAVY / BLOCK / DASH and no CONFIRM or SHOP;
 // fishing shows REEL IN and SHOP; the shop shows BUY and BACK; cutscene and result show OK.
-// A quick horizontal swipe on the play area is a dash (only fights use it).
+// A quick swipe on the play area: left/right dashes, up jumps (presses `up` once), down crouches
+// (holds `down` until the finger lifts). Only fights act on dash/jump/crouch.
 // Landscape only: in portrait a full-screen message covers everything and `blocked()` pauses the game loop.
 import type { Action } from '../types';
 import type { InputCore } from './core';
@@ -50,14 +51,20 @@ export function padDirections(dx: number, dy: number, half: number): PadDir[] {
   return out;
 }
 
-/** A swipe this fast counts as a dash: at least SWIPE_PX of mostly-horizontal travel within SWIPE_MS. */
+/** A swipe this fast counts: at least SWIPE_PX of travel within SWIPE_MS, along its main axis. */
 export const SWIPE_PX = 40;
 export const SWIPE_MS = 180;
 
-/** Quick horizontal swipe -> dash direction, else null. Pure, for tests. */
-export function swipeDir(dx: number, dy: number, ms: number): -1 | 1 | null {
-  if (!(ms <= SWIPE_MS) || !(Math.abs(dx) >= SWIPE_PX) || Math.abs(dx) <= Math.abs(dy)) return null;
-  return dx < 0 ? -1 : 1;
+export type Swipe = 'left' | 'right' | 'up' | 'down';
+
+/** Quick swipe -> its direction (the larger axis wins), else null. Pure, for tests. */
+export function swipeDir(dx: number, dy: number, ms: number): Swipe | null {
+  if (!(ms <= SWIPE_MS)) return null;
+  const ax = Math.abs(dx);
+  const ay = Math.abs(dy);
+  if (ax > ay && ax >= SWIPE_PX) return dx < 0 ? 'left' : 'right';
+  if (ay > ax && ay >= SWIPE_PX) return dy < 0 ? 'up' : 'down';
+  return null;
 }
 
 /** Which buttons each scene shows. */
@@ -236,6 +243,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   let lastX = 0;
   let downAt = 0;
   let swiped = false;
+  let crouching = false;
   const canvas = doc.getElementById('game');
   /** CSS px -> game px (the canvas is 960 game px wide, scaled to fit). */
   const toGame = () => {
@@ -264,7 +272,12 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     lastX = e.clientX;
     if (!swiped) {
       const d = swipeDir(e.clientX - ox, e.clientY - oy, (e.timeStamp || win.performance.now()) - downAt);
-      if (d !== null) { swiped = true; input.touchDash(d); }
+      if (d !== null) {
+        swiped = true;
+        if (d === 'left' || d === 'right') input.touchDash(d === 'left' ? -1 : 1);
+        else if (d === 'up') { input.touchDown('up'); input.touchUp('up'); } // one press: jump
+        else { crouching = true; input.touchDown('down'); }                   // held until the finger lifts
+      }
     }
     const a = dragToAxis(e.clientX - ox, e.clientY - oy);
     input.setTouchAxis(a.x, a.y);
@@ -275,6 +288,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     ring.style.display = 'none';
     input.setTouchAxis(0, 0);
     input.setDragging(false);
+    if (crouching) { crouching = false; input.touchUp('down'); }
   };
   doc.addEventListener('pointerup', dragEnd);
   doc.addEventListener('pointercancel', dragEnd);
@@ -286,6 +300,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     for (const h of btnHeld.values()) h.el.classList.remove('on');
     btnHeld.clear();
     dragId = null;
+    crouching = false;
     ring.style.display = 'none';
     input.clearKeys(); // touch buttons and axis in the core as well
   };
