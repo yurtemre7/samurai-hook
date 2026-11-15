@@ -81,12 +81,10 @@ describe('voice fx', () => {
   });
   it('manifest: every announce line resolves to a clip file that exists on disk', () => {
     for (const k of Object.keys(text.announce)) {
-      if (k === 'buy') continue; // "Upgrade!" stays on speech synthesis
       const plan = planAnnounce({ key: k, round: 1 }, (text.announce as Record<string, string>)[k], voice.clips, false);
       expect(plan.clip, k).toBeTruthy();
       expect(voiceFiles.has(plan.clip as string), plan.clip as string).toBe(true);
     }
-    expect(planAnnounce({ key: 'buy' }, text.announce.buy, voice.clips, false).clip).toBeNull();
   });
   it('manifest: every clip in the manifest exists, and no unreferenced clip is shipped', () => {
     const paths = Object.values(voice.clips);

@@ -52,7 +52,7 @@ Sounds (synthesised fallbacks stay in use)
 - `bite`, `uiDeny`, `lose`, `hooked`: no confident match found, and files could not be auditioned. Not guessed.
 
 Announcer
-- Every line except "Fight" is the Kenney Fighter pack (one voice, no "K.O." clip, so the win line uses "you win"); "Fight" is Alba MacKenna's clip. All are processed at playback (deeper pitch, EQ; extra distortion and echo for "Fight"). There is no "Upgrade!" clip: that line (and any line whose clip fails to load) is spoken by browser speech synthesis. Fish names are not recorded; whether synthesis speaks them after "Round N" is the `voice.speakFishName` switch (off). Nobody has listened to the clips; line choice is by file name.
+- Every line except "Fight" is the Kenney Fighter pack (one voice, no "K.O." clip, so the win line uses "you win"); "Fight" is Alba MacKenna's clip. All are processed at playback (deeper pitch, EQ; extra distortion and echo for "Fight"). Any line whose clip is missing or fails to load is spoken by browser speech synthesis. Fish names are not recorded; whether synthesis speaks them after "Round N" is the `voice.speakFishName` switch (off). Nobody has listened to the clips; line choice is by file name.
 
 Notes
 - Fish art faces left; samurai art faces right (`facing: 'right'`); frames are 456x173 on screen, body about 125 px tall.

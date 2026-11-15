@@ -93,9 +93,8 @@ export const music: Record<string, { src: string | null; volume: number }> = {
  * Announcer. Recorded clips are played when present and loaded; otherwise the
  * line in `text.announce` is spoken by browser speech synthesis (rate / pitch /
  * volume below), so the game is never silent. Round clips: the game looks up
- * `round<N>` first, then the generic `round`, then speech. No clip exists for
- * `buy` ("Upgrade!"), which stays synthesised. Clips are credited in
- * CREDITS.md.
+ * `round<N>` first, then the generic `round`, then speech. Clips are
+ * credited in CREDITS.md.
  *
  * Clips are played through a Web Audio effect chain; see `VoiceFx` in
  * src/core/announcer.ts for every setting. `preset` is the treatment for all
@@ -431,7 +430,6 @@ export const text = {
     perfect: 'Perfect!',
     timeout: 'Time! Too slippery!',
     ko: 'You got bitten!',
-    buy: 'Upgrade!',
   },
   shop: {
     title: 'MINATO DOJO SHOP',

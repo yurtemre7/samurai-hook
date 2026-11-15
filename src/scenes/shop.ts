@@ -60,7 +60,6 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
       if (game.input.pressed('confirm')) {
         if (game.state.buy(rows[sel].id)) {
           game.audio.play('buy');
-          game.audio.announce(text.announce.buy);
           flash = 0.5;
           flashRow = sel;
           stamp = 0;

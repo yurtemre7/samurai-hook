@@ -13,7 +13,7 @@ describe('planAnnounce', () => {
     expect(planAnnounce({ key: 'fight' }, 'Fight!', {}, false)).toEqual({ clip: null, speech: 'Fight!' });
   });
   it('speaks the whole line with no request at all', () => {
-    expect(planAnnounce(undefined, 'Upgrade!', clips, true)).toEqual({ clip: null, speech: 'Upgrade!' });
+    expect(planAnnounce(undefined, 'Hello there!', clips, true)).toEqual({ clip: null, speech: 'Hello there!' });
   });
   it('prefers the numbered round clip, then the generic one', () => {
     expect(planAnnounce({ key: 'round', round: 2 }, 'Round 2! X!', clips, false).clip).toBe('a/r2.ogg');

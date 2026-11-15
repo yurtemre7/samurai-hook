@@ -322,7 +322,8 @@ for the team to accept or reject.
   The effect chain is `src/core/voicefx.ts`; which clip a line uses is the
   pure `planAnnounce` in `src/core/announcer.ts`.
 - **Still speech synthesis:** the fallback when a clip is missing or fails
-  to load, and "Upgrade!" in the shop (no recording exists).
+  to load. The shop's spoken "Upgrade!" was removed after a playtest (it
+  sounded odd next to the recorded announcer); the coin sound stays.
 - **Fish names are no longer spoken** (`voice.speakFishName: false`); no
   recording can say them and the name is on screen. Set it to `true` to
   have the synthesised voice say the name after the recorded "Round N".

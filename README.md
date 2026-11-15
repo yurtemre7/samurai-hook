@@ -141,7 +141,7 @@ The ocean, the fight, the announcer and the depth gauge pick it up from the mani
 
 ### Swap a sound or the music
 
-Same idea in `sounds` and `music`: set `src` and `volume`. A sound with `src: null` plays a synthesised blip. The announcer plays recorded clips through an effect chain (`voice.clips`, `voice.presets`, per-line `voice.linePresets`). Browser speech synthesis is the fallback when a clip is missing or fails, and it says "Upgrade!" in the shop. Turn the voice off or change the fallback pitch in `voice`.
+Same idea in `sounds` and `music`: set `src` and `volume`. A sound with `src: null` plays a synthesised blip. The announcer plays recorded clips through an effect chain (`voice.clips`, `voice.presets`, per-line `voice.linePresets`). Browser speech synthesis is the fallback when a clip is missing or fails. Turn the voice off or change the fallback pitch in `voice`.
 
 ### Prices and scaling
 
