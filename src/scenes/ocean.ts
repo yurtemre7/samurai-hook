@@ -157,7 +157,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       boatBob = Math.sin(game.time * 1.6) * L.boatBobPx;
 
       if (mode === 'idle') {
-        if (input.pressed('confirm')) {
+        if (input.pressed('confirm') || input.pressed('down')) {
           game.audio.play('splash');
           mode = 'sinking';
         } else if (input.pressed('shop')) {

@@ -50,6 +50,7 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 |---|---|---|
 | Move / steer the hook | A D or arrow keys (W S or up/down to brake / sink faster) | left stick or d-pad |
 | Confirm, drop hook, skip | Space or Enter | A |
+| Drop hook (also) | S or down arrow | down on stick / d-pad |
 | Fight: jump | W, up arrow or Space | A, or up on stick / d-pad |
 | Fight: crouch (hold) | S or down arrow | down on stick / d-pad |
 | Quick slash | J | X |
