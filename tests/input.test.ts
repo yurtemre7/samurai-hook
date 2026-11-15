@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACTIONS, applyDeadzone, BINDINGS_KEY, createInputCore, DEFAULT_BINDINGS, isReservedKey, keyName, sanitizeBindings,
-  type GamepadLike,
+  stickVertical, type GamepadLike, STICK_VERTICAL_HOLD_RATIO, STICK_VERTICAL_RATIO,
 } from '../src/input/core';
 
 function memStore(initial: Record<string, string> = {}) {
@@ -241,10 +241,11 @@ describe('gamepad', () => {
     expect(input.moveX()).toBeGreaterThan(0);
     expect(input.moveX()).toBeLessThan(0.5);
     expect(input.held('right')).toBe(false);
-    pad.axes[0] = -0.8;
+    // Steep enough to count as down (|y| >= 1.5|x|); -0.8 here would be a 51 deg tilt, now not down.
+    pad.axes[0] = -0.6;
     pad.axes[1] = 1;
     input.update();
-    expect(input.moveX()).toBeCloseTo(applyDeadzone(-0.8));
+    expect(input.moveX()).toBeCloseTo(applyDeadzone(-0.6));
     expect(input.moveY()).toBe(1);
     expect(input.pressed('left')).toBe(true);
     expect(input.pressed('down')).toBe(true);
@@ -302,6 +303,208 @@ describe('gamepad', () => {
     setPads([pad]);
     input.update();
     expect(input.pressed('confirm')).toBe(true);
+  });
+});
+
+/** Stick at `deg` off horizontal, magnitude `r`; sx/sy pick the quadrant (sy -1 = up). */
+function tilt(pad: { axes: number[] }, deg: number, sx = 1, sy = -1, r = 1) {
+  const rad = (deg * Math.PI) / 180;
+  pad.axes[0] = sx * r * Math.cos(rad);
+  pad.axes[1] = sy * r * Math.sin(rad);
+}
+
+const ONSET_DEG = (Math.atan(STICK_VERTICAL_RATIO) * 180) / Math.PI; // ~56.3
+const RELEASE_DEG = (Math.atan(STICK_VERTICAL_HOLD_RATIO) * 180) / Math.PI; // ~50.2
+const QUADRANTS = [[1, -1], [-1, -1], [1, 1], [-1, 1]] as const;
+
+describe('stick up/down needs a clearly vertical tilt', () => {
+  it('stickVertical: magnitude, cone and hysteresis', () => {
+    expect(stickVertical(0, -1)).toBe(-1);
+    expect(stickVertical(0, 1)).toBe(1);
+    expect(stickVertical(0, -0.5)).toBe(-1);
+    expect(stickVertical(0, 0.49)).toBe(0);
+    expect(stickVertical(0.7071, -0.7071)).toBe(0); // 45 deg
+    expect(stickVertical(1, 1)).toBe(0); // square-gate corner
+    expect(stickVertical(0.6, -0.9)).toBe(-1); // exactly 1.5
+    expect(stickVertical(0.61, -0.9)).toBe(0);
+    expect(stickVertical(0.7, -0.9, -1)).toBe(-1); // held: 1.2 is enough
+    expect(stickVertical(0.7, -0.9, 1)).toBe(0); // the other way is a fresh press
+    expect(stickVertical(0.76, -0.9, -1)).toBe(0);
+    expect(stickVertical(0, -0.4, -1)).toBe(0); // magnitude has no hysteresis
+    expect(stickVertical(0, Number.NaN)).toBe(0);
+  });
+
+  it('pure up and pure down fire exactly as before', () => {
+    for (const ay of [-1, -0.51, -0.5]) {
+      const { input, pad } = setup();
+      input.update();
+      pad.axes[1] = ay;
+      input.update();
+      expect(input.pressed('up')).toBe(true);
+      expect(input.held('down')).toBe(false);
+    }
+    for (const ay of [1, 0.51, 0.5]) {
+      const { input, pad } = setup();
+      input.update();
+      pad.axes[1] = ay;
+      input.update();
+      expect(input.pressed('down')).toBe(true);
+      expect(input.held('up')).toBe(false);
+    }
+    const { input, pad } = setup();
+    pad.axes[1] = -0.49;
+    input.update();
+    expect(input.held('up')).toBe(false);
+  });
+
+  it('a full-tilt walk up to 45 deg off horizontal never jumps or crouches, in every quadrant', () => {
+    for (const deg of [0, 15, 30, 45]) {
+      for (const [sx, sy] of QUADRANTS) {
+        const { input, pad } = setup();
+        input.update();
+        tilt(pad, deg, sx, sy);
+        for (let f = 0; f < 5; f++) {
+          input.update();
+          expect(input.held('up')).toBe(false);
+          expect(input.held('down')).toBe(false);
+          expect(input.held(sx > 0 ? 'right' : 'left')).toBe(true);
+          expect(input.held(sx > 0 ? 'left' : 'right')).toBe(false);
+          expect(input.moveX()).toBe(applyDeadzone(pad.axes[0]));
+          expect(input.moveY()).toBe(applyDeadzone(pad.axes[1]));
+        }
+      }
+    }
+  });
+
+  it('a clearly vertical tilt with a little sideways lean still fires', () => {
+    for (const deg of [60, 70, 80, 90]) {
+      for (const [sx, sy] of QUADRANTS) {
+        const { input, pad } = setup();
+        input.update();
+        tilt(pad, deg, sx, sy);
+        input.update();
+        expect(input.pressed(sy < 0 ? 'up' : 'down')).toBe(true);
+        expect(input.held(sy < 0 ? 'down' : 'up')).toBe(false);
+        expect(input.moveY()).toBe(applyDeadzone(pad.axes[1]));
+      }
+    }
+    const { input, pad } = setup();
+    pad.axes[0] = 0.3;
+    pad.axes[1] = -0.9;
+    input.update();
+    expect(input.pressed('up')).toBe(true);
+  });
+
+  it('a slow sweep from horizontal to vertical and back gives one edge, on at ~56 deg, off at ~50', () => {
+    for (const sy of [-1, 1] as const) {
+      const act = sy < 0 ? 'up' : 'down';
+      const { input, pad } = setup();
+      input.update();
+      const edges: number[] = [];
+      let offAt = -1;
+      for (let d = 0; d <= 90; d += 0.5) {
+        tilt(pad, d, 1, sy);
+        input.update();
+        if (input.pressed(act)) edges.push(d);
+      }
+      for (let d = 90; d >= 0; d -= 0.5) {
+        tilt(pad, d, 1, sy);
+        input.update();
+        if (input.pressed(act)) edges.push(d);
+        if (offAt < 0 && !input.held(act)) offAt = d;
+      }
+      expect(edges).toHaveLength(1);
+      expect(edges[0]).toBeGreaterThanOrEqual(ONSET_DEG);
+      expect(edges[0]).toBeLessThan(ONSET_DEG + 0.5);
+      expect(offAt).toBeLessThan(RELEASE_DEG);
+      expect(offAt).toBeGreaterThan(RELEASE_DEG - 0.5);
+    }
+  });
+
+  it('a thumb wobbling around either boundary does not repeat the edge', () => {
+    // Deterministic +-2.5 deg wobble plus a little radial noise.
+    const wobble = (i: number) => 2.5 * Math.sin(i * 2.1) * Math.cos(i * 0.7);
+    const { input, pad } = setup();
+    input.update();
+    let edges = 0;
+    for (let i = 0; i < 300; i++) {
+      tilt(pad, ONSET_DEG + 1 + wobble(i), i % 2 ? 1 : -1, -1, 0.97 + 0.03 * Math.sin(i));
+      input.update();
+      if (input.pressed('up')) edges++;
+    }
+    expect(edges).toBe(1);
+
+    // Resting just above the release angle from rest never fires at all.
+    const b = setup();
+    b.input.update();
+    for (let i = 0; i < 300; i++) {
+      tilt(b.pad, RELEASE_DEG + 3 + wobble(i), 1, 1);
+      b.input.update();
+      expect(b.input.held('down')).toBe(false);
+    }
+  });
+
+  it('a corner push wobbling around 45 deg walks without a single jump or crouch', () => {
+    // A stick resting in a corner of a round gate, with a degree or two of thumb wobble and a
+    // little sensor noise on each axis. A bare |y| > |x| test flips up/down on every crossing.
+    const wobble = (i: number) => 2 * Math.sin(i * 2.1) * Math.cos(i * 0.7);
+    for (const [sx, sy] of QUADRANTS) {
+      const { input, pad } = setup();
+      input.update();
+      let edges = 0;
+      for (let i = 0; i < 300; i++) {
+        tilt(pad, 45 + wobble(i), sx, sy);
+        pad.axes[0] += 0.01 * Math.sin(i * 1.3);
+        pad.axes[1] += 0.01 * Math.cos(i * 1.7);
+        input.update();
+        if (input.pressed('up') || input.pressed('down')) edges++;
+        expect(input.held(sx > 0 ? 'right' : 'left')).toBe(true);
+      }
+      expect(edges).toBe(0);
+    }
+  });
+
+  it('a 45 deg diagonal releases a held up, and pulling partway back does not refire it', () => {
+    const { input, pad } = setup();
+    tilt(pad, 90);
+    input.update();
+    expect(input.held('up')).toBe(true);
+    tilt(pad, 45);
+    input.update();
+    expect(input.held('up')).toBe(false);
+    tilt(pad, 53);
+    input.update();
+    expect(input.held('up')).toBe(false);
+  });
+
+  it('losing the pad resets the hysteresis', () => {
+    const { input, pad, setPads } = setup();
+    tilt(pad, 90);
+    input.update();
+    tilt(pad, 53);
+    input.update();
+    expect(input.held('up')).toBe(true);
+    setPads([]);
+    input.update();
+    expect(input.held('up')).toBe(false);
+    setPads([pad]);
+    input.update();
+    expect(input.held('up')).toBe(false);
+  });
+
+  it('d-pad stays plain digital: up+right gives both, also with the stick on a diagonal', () => {
+    const { input, pad } = setup();
+    pad.buttons[12].pressed = true;
+    pad.buttons[15].pressed = true;
+    input.update();
+    expect(input.held('up')).toBe(true);
+    expect(input.held('right')).toBe(true);
+    expect(input.moveX()).toBe(1);
+    expect(input.moveY()).toBe(-1);
+    tilt(pad, 45, -1, 1);
+    input.update();
+    expect(input.held('up')).toBe(true);
+    expect(input.held('down')).toBe(false);
   });
 });
 
