@@ -2,6 +2,7 @@
   "name": "samurai-hook",
   "private": true,
   "version": "0.1.0",
+  "description": "A samurai goes fishing, and every fish he hooks wants a duel. Small 2D browser game in TypeScript. Keyboard or gamepad.",
   "type": "module",
   "scripts": {
     "dev": "vite",

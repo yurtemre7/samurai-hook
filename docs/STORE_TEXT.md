@@ -23,3 +23,8 @@ Keyboard or gamepad, switch any time. Keyboard: A D or arrows to move, Space or 
 ## itch.io credits and licence line
 
 Art, sound and music are CC0 or CC-BY, with a few original sprites made for the game. Every asset, author and licence is listed in CREDITS.md: https://github.com/yurtemre7/samurai-hook/blob/main/CREDITS.md
+
+## Also uses this text
+
+- `package.json` `description`: the About blurb.
+- `index.html`: the page description and link preview (`og:` tags) use the pitch's first lines, with `public/share.jpg` (a copy of `docs/screenshots/fight.jpg`) as the preview image. Update them when the pitch changes.
