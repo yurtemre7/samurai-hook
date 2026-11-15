@@ -36,8 +36,7 @@ panel (volumes, keybinds) and W to reel in; see the section of that name.
   cast. The giant squid (Daioika, from 140 m) still needs one depth upgrade.
 - **Fight timers +25% (Rhaveen: fights felt too short):** every fish's
   `timer` in `src/manifest.ts`, rounded: 20 -> 25, 25 -> 31, 30 -> 38,
-  40 -> 50 s. For everyone; there is no difficulty setting and no audio
-  settings screen (both asked about and declined for now).
+  40 -> 50 s. For everyone, in both normal and hard mode.
 - Keep the working copy on a normal local disk. Inside a cloud drive mount
   (pCloud Drive was tried) `npm install` fails: the drive cannot create
   symlinks or run the build tool's binary.
@@ -209,12 +208,9 @@ block merging.
 
 ### Hard mode, settings panel and keybinds (branch `feat/hard-mode-settings-keybinds`, open PR, for team review)
 
-- **Needs a team decision, two points:**
-  1. Rhaveen declined both a difficulty setting and an audio settings screen
-     "for now" (see "Fight timers +25%" above). This branch adds both.
-  2. #36 merged with the eel, pufferfish and squid able to hurt the samurai.
-     On this branch that only happens in hard mode; normal mode (the default)
-     makes them harmless again, as before #36.
+- **Behaviour change from #36:** #36 merged with the eel, pufferfish and
+  squid able to hurt the samurai. Now that only happens in hard mode; normal
+  mode (the default) makes them harmless again, as before #36.
 - `docs/DESIGN.md` now describes jump, crouch and the dodge-only specials
   (controls tables, move list, specials paragraph). If the team rejects the
   change, revert those parts.
