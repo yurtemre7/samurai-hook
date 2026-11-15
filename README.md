@@ -1,7 +1,7 @@
 # SamuraiHook
 
-**Play it now: https://yurtemre7.github.io/team-1-game-samurai-hook/**
-([start with progress](https://yurtemre7.github.io/team-1-game-samurai-hook/?start=demo))
+**Play it now: https://yurtemre7.github.io/samurai-hook/**
+([start with progress](https://yurtemre7.github.io/samurai-hook/?start=demo))
 
 A deadly serious samurai goes fishing, and every fish he hooks wants a duel.
 Bait the slip, land the heavy slash, and turn your rival into nigiri before
@@ -185,10 +185,9 @@ so it works under `/<repo>/` or at a domain root.
 
 ## Known gaps
 
-- Swordfish, anglerfish and nigiri are still simple code-drawn placeholders;
-  the squid sprite is a friendly stand-in.
+- The squid sprite is a friendly stand-in.
 - Four sounds (bite, lose, hook-up, shop "denied") are synthesised blips.
-- Kanji use the system's Japanese font.
+- Kanji use a bundled, subset OFL font (`fonts.kanji` in `src/manifest.ts`; see `tools/README-fonts.md`), falling back to the system's Japanese font.
 - Not yet confirmed on a real controller.
 
 See HANDOVER.md for the full list.

@@ -84,13 +84,43 @@ export function fishPose(state: FightState, fish: FishInstance, look: Look) {
   return { cx, cy, scale, rot, ext, hw, hh };
 }
 
-/** Where the anglerfish's lure glows: above and in front of its head. */
-export function lurePos(state: FightState, fish: FishInstance, look: Look): { x: number; y: number } {
+/**
+ * Lure bulb centre per sprite, in the sprite's draw box (manifest w x h, origin
+ * at the centre, fish facing right). The anglerfish value is ANGLER_BULB in
+ * tools/fish-sprites.mjs: native pixel (7.5, 8.5) of the 55x44 art at 2x, mirrored.
+ */
+const LURE_ANCHOR: Record<string, { x: number; y: number }> = {
+  'fish.anglerfish': { x: 40, y: -27 },
+};
+
+/** The fish sprite's breathing scale this frame (same as drawFish uses). */
+function fishBreathe(state: FightState, look: Look): number {
+  return state.fish.mode === 'puffed' ? 1 + 0.04 * Math.sin(look.wt * 9) : 1 + 0.03 * Math.sin(look.wt * 5);
+}
+
+/**
+ * Where the anglerfish's lure glows. With the sprite drawn (`onSprite`), this
+ * is the bulb in the art, following the fish's pose and facing; otherwise a
+ * point above and in front of the placeholder's head.
+ */
+export function lurePos(state: FightState, fish: FishInstance, look: Look, onSprite = true): { x: number; y: number } {
   const p = fishPose(state, fish, look);
-  return {
-    x: p.cx + state.fish.facing * p.hw * 0.5 + Math.sin(look.wt * 3) * 4,
-    y: p.cy - p.ext - 26 + Math.cos(look.wt * 2.3) * 5,
-  };
+  const a = LURE_ANCHOR[fish.def.sprite];
+  if (!a || !onSprite) {
+    return {
+      x: p.cx + state.fish.facing * p.hw * 0.5 + Math.sin(look.wt * 3) * 4,
+      y: p.cy - p.ext - 26 + Math.cos(look.wt * 2.3) * 5,
+    };
+  }
+  // Same transform as drawFish: translate, (attack stretch), rotate, scale and mirror.
+  const k = p.scale * fishBreathe(state, look);
+  const lx = state.fish.facing * a.x * k;
+  const ly = a.y * k;
+  const c = Math.cos(p.rot), s = Math.sin(p.rot);
+  let x = lx * c - ly * s;
+  let y = lx * s + ly * c;
+  if (state.fish.mode === 'attack') { x *= ATTACK_STRETCH.x; y *= ATTACK_STRETCH.y; }
+  return { x: p.cx + x, y: p.cy + y };
 }
 
 // ---------- shadows ----------
@@ -356,8 +386,7 @@ export function drawFish(
   ctx.translate(pose.cx, pose.cy);
   if (f.mode === 'attack') ctx.scale(ATTACK_STRETCH.x, ATTACK_STRETCH.y);
   ctx.rotate(pose.rot);
-  const breathe = f.mode === 'puffed' ? 1 + 0.04 * Math.sin(look.wt * 9) : 1 + 0.03 * Math.sin(look.wt * 5);
-  assets.draw(ctx, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * breathe, time: look.wt, tint });
+  assets.draw(ctx, def.sprite, 0, 0, { flipX: flip, scale: pose.scale * fishBreathe(state, look), time: look.wt, tint });
   ctx.restore();
 
   if (f.slipReady && f.mode !== 'puffed') drawWetShine(ctx, pose, look);

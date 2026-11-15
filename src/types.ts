@@ -35,6 +35,8 @@ export interface Input {
 export interface Prompt {
   action: Action | 'move';
   label: string;
+  /** For 'move' only: which keycaps to draw. 'horizontal' = A D only. Default 'all' (W A S D). */
+  keys?: 'all' | 'horizontal';
 }
 
 // ---------- Assets and audio ----------

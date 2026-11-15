@@ -16,9 +16,14 @@ export interface InputCoreDeps {
 }
 
 export interface InputCore extends Input {
-  /** Feed a keydown (KeyboardEvent.code). Switches device to keyboard, mapped or not. */
-  keyDown(code: string): void;
-  keyUp(code: string): void;
+  /**
+   * Feed a keydown: `code` is KeyboardEvent.code (physical position), `key` the optional
+   * KeyboardEvent.key (the labelled character). Switches device to keyboard, mapped or not.
+   * Returns the actions this event activated (empty if unmapped).
+   */
+  keyDown(code: string, key?: string): Action[];
+  /** Releases whatever `code` activated on its keydown, whatever `key` says now. Returns those actions. */
+  keyUp(code: string, key?: string): Action[];
   /** Release everything (window blur). */
   clearKeys(): void;
 }
@@ -38,6 +43,21 @@ export const KEY_MAP: Record<Action, readonly string[]> = {
   defend: ['KeyL', 'ShiftLeft', 'ShiftRight'],
   shop: ['KeyE'],
 };
+
+/** Labelled-letter bindings (KeyboardEvent.key, lower-cased), so non-QWERTY layouts work too. */
+export const LABEL_MAP: Record<string, Action> = {
+  w: 'up', a: 'left', s: 'down', d: 'right',
+  j: 'quick', k: 'heavy', l: 'defend', e: 'shop',
+};
+
+/** Actions bound to a key event: by physical code, or by labelled letter. Deduplicated. */
+export function actionsForKey(code: string, key?: string): Action[] {
+  const out = new Set<Action>();
+  for (const a of ACTIONS) if (KEY_MAP[a].includes(code)) out.add(a);
+  const label = typeof key === 'string' && key.length === 1 ? LABEL_MAP[key.toLowerCase()] : undefined;
+  if (label) out.add(label);
+  return [...out];
+}
 
 /** Standard-mapping button indices. Directions also come from the left stick. */
 export const PAD_MAP: Record<Action, readonly number[]> = {
@@ -92,9 +112,10 @@ function firstPad(getGamepads: InputCoreDeps['getGamepads']): GamepadLike | null
 }
 
 export function createInputCore(deps: InputCoreDeps): InputCore {
-  const keysDown = new Set<string>();
-  /** Keys that went down since the last update; latched so a tap between steps still registers. */
-  const keysTapped = new Set<string>();
+  /** Held physical keys (by code) -> the actions each activated on keydown. */
+  const keysDown = new Map<string, Action[]>();
+  /** Actions that went down since the last update; latched so a tap between steps still registers. */
+  const keysTapped = new Set<Action>();
   let now = new Set<Action>();
   let prev = new Set<Action>();
   let prevButtons: boolean[] = [];
@@ -105,16 +126,27 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   let digY = 0;
   let device: Device = 'keyboard';
 
-  const keyActive = (code: string) => keysDown.has(code) || keysTapped.has(code);
+  const keyActive = (a: Action) => {
+    if (keysTapped.has(a)) return true;
+    for (const acts of keysDown.values()) if (acts.includes(a)) return true;
+    return false;
+  };
 
   const core: InputCore = {
-    keyDown(code) {
+    keyDown(code, key) {
       device = 'keyboard';
-      keysDown.add(code);
-      keysTapped.add(code);
+      const acts = actionsForKey(code, key);
+      // Autorepeat (code already held) only re-asserts the hold; it must not latch a fresh tap,
+      // or a release right after would linger for one step.
+      const repeat = keysDown.has(code);
+      keysDown.set(code, acts);
+      if (!repeat) for (const a of acts) keysTapped.add(a);
+      return acts;
     },
     keyUp(code) {
+      const acts = keysDown.get(code) ?? [];
       keysDown.delete(code);
+      return acts;
     },
     clearKeys() {
       keysDown.clear();
@@ -126,7 +158,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
       now = new Set<Action>();
 
       for (const a of ACTIONS) {
-        if (KEY_MAP[a].some(keyActive)) now.add(a);
+        if (keyActive(a)) now.add(a);
       }
       keysTapped.clear();
 
@@ -157,8 +189,8 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
 
       stickX = applyDeadzone(ax);
       stickY = applyDeadzone(ay);
-      const keyX = (KEY_MAP.right.some(keyActive) ? 1 : 0) - (KEY_MAP.left.some(keyActive) ? 1 : 0);
-      const keyY = (KEY_MAP.down.some(keyActive) ? 1 : 0) - (KEY_MAP.up.some(keyActive) ? 1 : 0);
+      const keyX = (keyActive('right') ? 1 : 0) - (keyActive('left') ? 1 : 0);
+      const keyY = (keyActive('down') ? 1 : 0) - (keyActive('up') ? 1 : 0);
       const padX = (buttons[15] ? 1 : 0) - (buttons[14] ? 1 : 0);
       const padY = (buttons[13] ? 1 : 0) - (buttons[12] ? 1 : 0);
       digX = clamp1(keyX + padX);

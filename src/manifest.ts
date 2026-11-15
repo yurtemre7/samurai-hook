@@ -5,6 +5,21 @@
 import type { FishDef, SoundDef, SpriteDef, UpgradeDef } from './types';
 import type { VoiceFx } from './core/announcer';
 
+// ---------- Fonts ----------
+// Kanji use a bundled font (subset to the characters the game draws) so they
+// look the same on every machine. Chosen by Rhaveen on 2026-11-15: Kaisei
+// Tokumin Bold. To add a kanji or change the face see tools/README-fonts.md.
+export const fonts = {
+  kanji: 'kaisei-tokumin',
+  files: {
+    'kaisei-tokumin': 'assets/fonts/kaisei-tokumin.woff2',
+  } as Record<string, string>,
+  /** Used after the bundled face (and while it loads / if it fails). */
+  fallback: "'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif",
+  /** Give up waiting for the font after this long and start with the fallback. */
+  loadTimeoutMs: 3000,
+};
+
 // ---------- Sprites ----------
 // src: null means "draw the placeholder". Put files under public/assets and
 // record every one in CREDITS.md.
@@ -26,15 +41,16 @@ export const sprites: Record<string, SpriteDef> = {
   // Code-drawn old wooden wasen (src/core/assets.ts), prow facing right.
   boat:         { src: null, w: 280, h: 110, placeholder: { shape: 'boat', color: '#7a4a26' } },
   hook:         { src: null, w: 20, h: 28,  placeholder: { shape: 'hook', color: '#dfe6e9' } },
-  nigiri:       { src: null, w: 72, h: 48,  placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
+  nigiri:       { src: 'assets/props/nigiri.png', w: 72, h: 48, facing: 'right', placeholder: { shape: 'nigiri', color: '#ff8c5a' } },
 
   'fish.sardine':    { ...fishSprite('#b8c6d1', 'SARDINE', 56, 32), src: 'assets/fish/sardine.png', facing: 'left' },
   'fish.mackerel':   { ...fishSprite('#4f8fba', 'MACKEREL', 78, 42), src: 'assets/fish/mackerel.png', facing: 'left' },
   'fish.piranha':    { ...fishSprite('#d35454', 'PIRANHA', 70, 60), src: 'assets/fish/piranha.png', facing: 'left' },
   'fish.eel':        { ...fishSprite('#6b8e23', 'EEL', 144, 40), src: 'assets/fish/eel.png', facing: 'left' },
   'fish.pufferfish': { ...fishSprite('#e6c34a', 'PUFFER', 81, 69), src: 'assets/fish/pufferfish.png', facing: 'right' },
-  'fish.swordfish':  fishSprite('#5d6d9e', 'SWORDFISH', 150, 56),
-  'fish.anglerfish': fishSprite('#5b3a6b', 'ANGLER', 110, 88),
+  // Original art made for SamuraiHook (tools/fish-sprites.mjs), 75x28 and 55x44 at 2x.
+  'fish.swordfish':  { ...fishSprite('#5d6d9e', 'SWORDFISH', 150, 56), src: 'assets/fish/swordfish.png', facing: 'left' },
+  'fish.anglerfish': { ...fishSprite('#5b3a6b', 'ANGLER', 110, 88), src: 'assets/fish/anglerfish.png', facing: 'left' },
   'fish.shark':      { ...fishSprite('#7d8a97', 'SHARK', 188, 60), src: 'assets/fish/shark.png', facing: 'left' },
   'fish.squid':      { ...fishSprite('#c0567a', 'SQUID', 140, 118), src: 'assets/fish/squid.png', facing: 'left' },
 };

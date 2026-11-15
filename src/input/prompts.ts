@@ -144,7 +144,7 @@ function makeItem(ctx: CanvasRenderingContext2D, input: Input, p: Prompt): Item 
 
   if (p.action === 'move') {
     if (pad) return { glyphW: 20, labelW, draw: (x) => drawStick(ctx, x) };
-    const keys = ['W', 'A', 'S', 'D'];
+    const keys = p.keys === 'horizontal' ? ['A', 'D'] : ['W', 'A', 'S', 'D'];
     const kw = 18;
     const gap = 2;
     return {

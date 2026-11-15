@@ -98,7 +98,7 @@ export function createShopScene(game: Game, _params: SceneParams['shop']): Scene
       if (broke > 0) drawBrokeSign(ctx, Math.min(W - 125, boardX(brokeRow) + BOARD_W / 2), BOARD_Y + BOARD_H - 46, broke);
 
       drawPrompts(ctx, game.input, [
-        { action: 'move', label: 'SELECT' },
+        { action: 'move', label: 'SELECT', keys: 'horizontal' },
         { action: 'confirm', label: 'BUY' },
         { action: 'shop', label: 'BACK' },
       ]);

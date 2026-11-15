@@ -220,3 +220,115 @@ describe('device switching', () => {
     }
   });
 });
+
+describe('autorepeat and composition', () => {
+  it('repeat keydowns keep the key held with exactly one pressed edge', () => {
+    const { input } = setup(false);
+    let edges = 0;
+    input.keyDown('KeyA', 'a');
+    for (let i = 0; i < 10; i++) {
+      input.update();
+      if (input.pressed('left')) edges++;
+      expect(input.held('left')).toBe(true);
+      expect(input.moveX()).toBe(-1);
+      input.keyDown('KeyA', 'a'); // autorepeat
+    }
+    expect(edges).toBe(1);
+    input.keyUp('KeyA', 'a');
+    input.update();
+    expect(input.held('left')).toBe(false);
+  });
+
+  it('a repeat re-asserts the hold after a lost keyup', () => {
+    const { input } = setup(false);
+    input.keyDown('KeyA', 'a');
+    input.update();
+    input.keyUp('KeyA', 'a');
+    input.keyDown('KeyA', 'a');
+    input.update();
+    expect(input.held('left')).toBe(true);
+  });
+
+  it('composition/dead/process keydowns still map by code', () => {
+    const { input } = setup(false);
+    expect(input.keyDown('KeyA', 'Process')).toEqual(['left']);
+    expect(input.keyDown('KeyD', 'Dead')).toEqual(['right']);
+    input.update();
+    expect(input.held('left')).toBe(true);
+    expect(input.held('right')).toBe(true);
+    input.keyUp('KeyA', 'Process');
+    input.update();
+    expect(input.held('left')).toBe(false);
+  });
+});
+
+describe('labelled-letter bindings', () => {
+  it('AZERTY events move by label', () => {
+    const { input } = setup(false);
+    input.keyDown('KeyQ', 'a');
+    input.keyDown('KeyZ', 'w');
+    input.update();
+    expect(input.held('left')).toBe(true);
+    expect(input.held('up')).toBe(true);
+    expect(input.moveX()).toBe(-1);
+    expect(input.moveY()).toBe(-1);
+  });
+
+  it('US events are unchanged', () => {
+    const { input } = setup(false);
+    input.keyDown('KeyD', 'd');
+    input.keyDown('KeyS', 's');
+    input.keyDown('KeyE', 'e');
+    input.update();
+    expect(input.moveX()).toBe(1);
+    expect(input.moveY()).toBe(1);
+    expect(input.held('shop')).toBe(true);
+    expect(input.held('left')).toBe(false);
+  });
+
+  it('action letters bind by label too', () => {
+    const { input } = setup(false);
+    input.keyDown('Semicolon', 'j');
+    input.update();
+    expect(input.pressed('quick')).toBe(true);
+  });
+
+  it('keyUp releases even when key differs from keyDown', () => {
+    const { input } = setup(false);
+    input.keyDown('KeyQ', 'a');
+    input.update();
+    input.keyUp('KeyQ', 'A');
+    input.update();
+    expect(input.held('left')).toBe(false);
+    expect(input.moveX()).toBe(0);
+  });
+
+  it('code and key matching together count once', () => {
+    const { input } = setup(false);
+    expect(input.keyDown('KeyA', 'a')).toEqual(['left']);
+    input.keyDown('KeyD', 'd');
+    input.keyDown('ArrowRight', 'ArrowRight');
+    input.update();
+    expect(input.moveX()).toBe(0);
+    input.keyUp('KeyD', 'd');
+    input.update();
+    expect(input.moveX()).toBe(0);
+    input.keyUp('ArrowRight', 'ArrowRight');
+    input.update();
+    expect(input.moveX()).toBe(-1);
+  });
+
+  it('blur clears everything', () => {
+    const { input } = setup(false);
+    input.keyDown('KeyQ', 'a');
+    input.keyDown('KeyZ', 'w');
+    input.clearKeys();
+    input.update();
+    expect(input.held('left')).toBe(false);
+    expect(input.moveX()).toBe(0);
+    expect(input.moveY()).toBe(0);
+    input.keyUp('KeyQ', 'a');
+    input.update();
+    expect(input.held('left')).toBe(false);
+  });
+});

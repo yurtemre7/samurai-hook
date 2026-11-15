@@ -1,6 +1,6 @@
 # Credits
 
-All third-party assets are CC0 1.0 (public domain) except `fish/pufferfish.png` (CC-BY 3.0, credit below). Licences were read on each
+All third-party assets are CC0 1.0 (public domain) except `fish/pufferfish.png` (CC-BY 3.0, credit below) and the bundled kanji font (SIL OFL 1.1, with its licence text next to it). Licences were read on each
 asset's own OpenGameArt page (the "License(s)" field) on 2026-11-14; the Kenney
 RPG sounds pack also ships a `license.txt` stating CC0. Credit is not required
 but given here anyway. Sprites were cropped, scaled and cut into strips; audio
@@ -24,15 +24,26 @@ was copied unchanged except `music/ocean.mp3` (trimmed to 60 s, fades, MP3 64 kb
 | `public/assets/voice/pack1/fight.ogg` (go), `win.ogg` (you_win), `perfect.ogg` (congratulations), `timeout.ogg` (time_over), `ko.ogg` (you_lose), `round.ogg` (round), all from the Male folder | Announcer candidates (male voice by Jeffrey M. Smith), copied unchanged. Audition only until the owner chooses. | https://opengameart.org/content/voiceover-pack-40-lines (OpenGameArt node 48225, "Voiceover Pack (40+ lines)") | Kenney Vleugels (kenney.nl); male voice Jeffrey M. Smith | CC0 (OpenGameArt "License(s): CC0"; the zip's License.txt says CC0 1.0) | 2026-11-15 |
 | `public/assets/music/fight.ogg` (8BitBattleLoop) | Fight loop | https://opengameart.org/content/8-bit-battle-loop | Wolfgang_ | CC0 | 2026-11-14 |
 | `public/assets/music/ocean.mp3` (first 60 s of hot_spring_town.ogg) | Calm ocean track | https://opengameart.org/content/hot-springs-town | Kistol | CC0 | 2026-11-14 |
+| `public/assets/fonts/kaisei-tokumin.woff2` (+ `OFL-kaiseitokumin.txt`) | Kaisei Tokumin Bold, subset to the game's kanji and kana (WOFF2). The kanji font | https://github.com/google/fonts/tree/main/ofl/kaiseitokumin (source: https://github.com/Font-Kai/Kaisei) | The Kaisei Project Authors | SIL OFL 1.1 | 2026-11-15 |
+
+### Original art made for SamuraiHook
+
+Not third-party assets. Drawn by `tools/fish-sprites.mjs` in the style of the
+Fish DB32 sprites (DB32 colours, 1 px black outline, facing left, shown at 2x). Re-create them with
+`node tools/fish-sprites.mjs`. No usable CC0 or CC-BY swordfish or anglerfish
+was found (searched OpenGameArt and itch.io on 2026-11-14).
+
+| File(s) | What | Source | Author | Licence | Checked |
+|---|---|---|---|---|---|
+| `public/assets/fish/swordfish.png` | 75x28 pixel swordfish (Kajiki) | `tools/fish-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
+| `public/assets/fish/anglerfish.png` | 55x44 pixel anglerfish (Anko) with lure | `tools/fish-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
+| `public/assets/props/nigiri.png` | 36x24 pixel salmon nigiri, shown on the win screen | `tools/prop-sprites.mjs` | original, made for SamuraiHook | same as the project | 2026-11-15 |
 
 ## Gaps (still code-drawn or synthesised placeholders)
 
 Sprites
-- `fish.swordfish`: no swordfish in a confirmed CC0/CC-BY pack.
-- `fish.anglerfish`: the only OpenGameArt anglerfish (https://opengameart.org/content/anglerfish) is CC-BY-SA, rejected.
 - `boat`: the CC0 "Wooden Boat" by Kutejnikov is a top-down view, so it does not fit a side-view scene; not used.
 - `hook`: nothing found.
-- `nigiri`: 1j01's CC0 "8x8 Sushi Sprites" has a nigiri, but it sits on an opaque, tightly packed sheet at 8x8 px; not extracted cleanly.
 - Samurai: no seated pose (`samuraiSit` reuses idle) and no dedicated block pose (frame 3 of Attack2, sword raised).
 - Rejected: Segel "samurai character" (previous hero, chibi); OpenGameArt "samurai animated" (chibi, 48px); "Hero swordsman" (red-haired kid, not a samurai); itch "Ronin Hack and Slash" and "Samurai Ossan" not fetched (download needs scripted access which was blocked).
 

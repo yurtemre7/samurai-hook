@@ -1,0 +1,41 @@
+name: PR preview
+
+# Tests and builds every pull request, publishes the build to the gh-pages
+# branch under pr-preview/pr-<number>/ and comments the play link on the PR.
+# The folder is removed when the PR is closed. See HANDOVER.md ("Deployment").
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+permissions:
+  contents: write        # push to the gh-pages branch
+  pull-requests: write   # comment the link
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview:
+    # Pull requests from forks get a read-only token and cannot publish.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: github.event.action != 'closed'
+        with:
+          node-version: 22
+          cache: npm
+      - if: github.event.action != 'closed'
+        run: npm ci
+      - if: github.event.action != 'closed'
+        run: npm test
+      - if: github.event.action != 'closed'
+        run: npm run build
+      - uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: dist
+          preview-branch: gh-pages
+          umbrella-dir: pr-preview
