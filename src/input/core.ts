@@ -182,8 +182,32 @@ export const TOUCH_GLYPH: Record<Action, string> = {
 export const STICK_DEADZONE = 0.25;
 /** Stick past this counts as a digital direction and switches the device. */
 export const STICK_DIGITAL = 0.5;
+/**
+ * Stick up/down also needs |y| >= this x |x|: about 56 deg or steeper from horizontal, roughly
+ * midway between a 4-way (45) and an 8-way (67.5) split. Up and down jump and crouch in the
+ * fight, so a stick walking a little off horizontal (even a full 45 deg diagonal) must not fire them.
+ */
+export const STICK_VERTICAL_RATIO = 1.5;
+/**
+ * Once up/down is on, it stays on down to |y| >= this x |x| (about 50 deg). Without the band a
+ * thumb resting near the onset would toggle every step, and each toggle is a fresh pressed('up') jump.
+ * Still above 1, so a 45 deg diagonal never holds up/down either.
+ */
+export const STICK_VERTICAL_HOLD_RATIO = 1.2;
 
 const clamp1 = (v: number) => (v < -1 ? -1 : v > 1 ? 1 : v);
+
+/**
+ * Digital vertical direction of the stick: -1 up, 1 down, 0 neither. `prev` is the previous
+ * step's result, for the hysteresis. The magnitude test is the same as left/right's.
+ */
+export function stickVertical(ax: number, ay: number, prev: -1 | 0 | 1 = 0): -1 | 0 | 1 {
+  const ny = Math.abs(ay);
+  if (!(ny >= STICK_DIGITAL)) return 0; // also catches NaN
+  const dir = ay < 0 ? -1 : 1;
+  const ratio = dir === prev ? STICK_VERTICAL_HOLD_RATIO : STICK_VERTICAL_RATIO;
+  return ny >= ratio * Math.abs(ax) ? dir : 0;
+}
 
 /** Deadzone with rescale, so output starts at 0 just past the deadzone and reaches 1 at full tilt. */
 export function applyDeadzone(v: number, dz = STICK_DEADZONE): number {
@@ -216,6 +240,7 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
   let prev = new Set<Action>();
   let prevButtons: boolean[] = [];
   let prevStickBeyond = false;
+  let stickVert: -1 | 0 | 1 = 0;
   let stickX = 0;
   let stickY = 0;
   let digX = 0;
@@ -397,13 +422,13 @@ export function createInputCore(deps: InputCoreDeps): InputCore {
         }
         if (ax <= -STICK_DIGITAL) now.add('left');
         if (ax >= STICK_DIGITAL) now.add('right');
-        // Up/down only when the tilt is mostly vertical, so a diagonal walk does not
-        // jump or crouch in the fight by accident.
-        if (Math.abs(ay) > Math.abs(ax)) {
-          if (ay <= -STICK_DIGITAL) now.add('up');
-          if (ay >= STICK_DIGITAL) now.add('down');
-        }
       }
+      // Up/down only for a clearly vertical tilt, with a hold band (see stickVertical), so a
+      // diagonal walk or a thumb resting near the edge does not jump or crouch in the fight.
+      // ax = ay = 0 without a pad, which also resets the hysteresis.
+      stickVert = stickVertical(ax, ay, stickVert);
+      if (stickVert < 0) now.add('up');
+      if (stickVert > 0) now.add('down');
 
       // Device switch to gamepad only on a new button press or the stick newly crossing 0.5.
       // Level-triggering would fight a keyboard press while a pad button is merely held.

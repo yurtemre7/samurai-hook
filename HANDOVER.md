@@ -246,6 +246,16 @@ block merging.
   New test in `tests/input.test.ts`. Typecheck clean and 99 tests pass
   (checked 2026-11-15, Node 26.13.1 installed in `D:\Fafas Arbeit\nodejs`).
   Not tried in a browser or on a real pad.
+  **Tightened afterwards:** with `|y| > |x|` and no hold band, a stick
+  pushed into a corner sits on the boundary, and stick noise flipped `up` /
+  `down` on and off (in a fake-pad test, 70 to 100 fresh `up` presses in 300
+  steps at 45 degrees with a 1 degree wobble: a jump each time he lands).
+  `stickVertical` in `src/input/core.ts` now needs `|y| >= 1.5 |x|` (about
+  56 degrees from horizontal) to switch on and keeps it on down to
+  `|y| >= 1.2 |x|` (about 50 degrees), so a 45 degree corner push never
+  fires. With this a stick crouch has `moveX` of at most about 0.52 on a
+  round gate, below `crouchMinX`. Rests on fake-pad unit tests only; the
+  angles may need tuning by feel on a real pad.
 - **Hard mode keeps the team decision intact (2026-11-15):** "slippery fish
   stay harmless" (Rhaveen, 2026-11-14) still holds in normal mode, which is
   the default. A **hard mode** switch (settings panel) gives the eel,
