@@ -38,8 +38,9 @@ export const KEY_MAP: Record<Action, readonly string[]> = {
   up: ['KeyW', 'ArrowUp'],
   down: ['KeyS', 'ArrowDown'],
   confirm: ['Space', 'Enter', 'NumpadEnter'],
-  quick: ['KeyJ'],
-  heavy: ['KeyK'],
+  // Mouse<button> codes come from mousedown/mouseup in input.ts: left click quick, right click heavy.
+  quick: ['KeyJ', 'Mouse0'],
+  heavy: ['KeyK', 'Mouse2'],
   defend: ['KeyL', 'ShiftLeft', 'ShiftRight'],
   shop: ['KeyE'],
 };

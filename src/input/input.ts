@@ -42,6 +42,11 @@ export function createInput(target: Window = window): Input {
     const acts = core.keyUp(e.code, e.key);
     debug?.log('up', e, acts);
   });
+  // Mouse buttons go through the key path as "Mouse0" (left) / "Mouse2" (right), see KEY_MAP.
+  target.addEventListener('mousedown', (e) => { core.keyDown(`Mouse${e.button}`); });
+  target.addEventListener('mouseup', (e) => { core.keyUp(`Mouse${e.button}`); });
+  // Right click is heavy slash, not the browser menu.
+  target.addEventListener('contextmenu', (e) => e.preventDefault());
   target.addEventListener('blur', () => core.clearKeys());
 
   return core;

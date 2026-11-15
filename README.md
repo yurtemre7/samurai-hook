@@ -53,8 +53,8 @@ Keyboard and gamepad both work at any time. The prompts at the bottom of the scr
 | Drop hook (also) | S or down arrow | down on stick / d-pad |
 | Fight: jump | W, up arrow or Space | A, or up on stick / d-pad |
 | Fight: crouch (hold) | S or down arrow | down on stick / d-pad |
-| Quick slash | J | X |
-| Heavy slash | K | Y |
+| Quick slash | J or left click | X |
+| Heavy slash | K or right click | Y |
 | Defend: hold to block, tap with a direction to dash-dodge | L or Shift | B or RB |
 | Shop (at the surface) | E | Y |
 | Shop: choose an upgrade | A D or left/right arrows | left stick or d-pad |
