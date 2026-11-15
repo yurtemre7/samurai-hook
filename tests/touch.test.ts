@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createInputCore } from '../src/input/core';
-import { dragToAxis, padDirections, touchEnabled, DRAG_DEADZONE_PX, DRAG_FULL_PX, swipeDir, sceneButtons, SWIPE_PX, SWIPE_MS } from '../src/input/touch';
+import { dragToAxis, padDirections, touchEnabled, DRAG_DEADZONE_PX, DRAG_FULL_PX, swipeDir, sceneButtons, SWIPE_PX, SWIPE_MS, tapSlash, LONG_PRESS_MS } from '../src/input/touch';
 
 const make = () => createInputCore({ getGamepads: () => [] });
 
@@ -257,5 +257,26 @@ describe('swipe to dash and scene buttons', () => {
     c.touchDash(0);
     c.update();
     expect(c.dashDir()).toBe(0);
+  });
+});
+
+describe('fight tap to slash', () => {
+  it('a still short tap is quick, a still long press is heavy, a moved finger is neither', () => {
+    expect(tapSlash(0, 80)).toBe('quick');
+    expect(tapSlash(DRAG_DEADZONE_PX, LONG_PRESS_MS - 1)).toBe('quick');
+    expect(tapSlash(3, LONG_PRESS_MS)).toBe('heavy');
+    expect(tapSlash(DRAG_DEADZONE_PX + 1, 80)).toBeNull();
+    expect(tapSlash(DRAG_DEADZONE_PX + 1, 900)).toBeNull();
+    expect(tapSlash(Number.NaN, 80)).toBeNull();
+  });
+
+  it('a slash press reaches the fight as one pressed step', () => {
+    const core = createInputCore({ getGamepads: () => [] });
+    core.touchDown('heavy');
+    core.touchUp('heavy');
+    core.update();
+    expect(core.pressed('heavy')).toBe(true);
+    core.update();
+    expect(core.pressed('heavy')).toBe(false);
   });
 });

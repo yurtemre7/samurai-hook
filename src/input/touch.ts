@@ -8,6 +8,7 @@
 // fishing shows REEL IN and SHOP; the shop shows BUY and BACK; cutscene and result show OK.
 // A quick swipe on the play area: left/right dashes, up jumps (presses `up` once), down crouches
 // (holds `down` until the finger lifts). Only fights act on dash/jump/crouch.
+// In fights a still touch on the play area slashes: a short tap is QUICK, holding LONG_PRESS_MS is HEAVY.
 // Landscape only: in portrait a full-screen message covers everything and `blocked()` pauses the game loop.
 import type { Action } from '../types';
 import type { InputCore } from './core';
@@ -65,6 +66,15 @@ export function swipeDir(dx: number, dy: number, ms: number): Swipe | null {
   if (ax > ay && ax >= SWIPE_PX) return dx < 0 ? 'left' : 'right';
   if (ay > ax && ay >= SWIPE_PX) return dy < 0 ? 'up' : 'down';
   return null;
+}
+
+/** In fights, holding a finger still on the play area this long is a heavy slash; shorter is a quick slash. */
+export const LONG_PRESS_MS = 350;
+
+/** Fight tap on the play area -> slash. A finger that moved past the drag dead zone was walking: none. Pure, for tests. */
+export function tapSlash(travelPx: number, ms: number): 'quick' | 'heavy' | null {
+  if (!(travelPx <= DRAG_DEADZONE_PX)) return null;
+  return ms >= LONG_PRESS_MS ? 'heavy' : 'quick';
 }
 
 /** Which buttons each scene shows. */
@@ -256,6 +266,12 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   let downAt = 0;
   let swiped = false;
   let crouching = false;
+  let scene: TouchScene = 'ocean';
+  let travel = 0;            // furthest the finger got from where it touched down, CSS px
+  let slashed = false;       // the long-press heavy already fired for this finger
+  let longTimer: ReturnType<typeof setTimeout> | null = null;
+  const press = (a: Action) => { input.touchDown(a); input.touchUp(a); };
+  const stopLong = () => { if (longTimer !== null) { clearTimeout(longTimer); longTimer = null; } };
   const canvas = doc.getElementById('game');
   /** CSS px -> game px (the canvas is 960 game px wide, scaled to fit). */
   const toGame = () => {
@@ -272,6 +288,16 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     lastX = e.clientX;
     downAt = e.timeStamp || win.performance.now();
     swiped = false;
+    travel = 0;
+    slashed = false;
+    stopLong();
+    // Fights: holding still fires a heavy slash while the finger is still down.
+    if (scene === 'fight') {
+      longTimer = setTimeout(() => {
+        longTimer = null;
+        if (dragId !== null && !swiped && tapSlash(travel, LONG_PRESS_MS) === 'heavy') { slashed = true; press('heavy'); }
+      }, LONG_PRESS_MS);
+    }
     input.touchTap();
     input.setDragging(true);
     ring.style.left = `${ox}px`;
@@ -282,6 +308,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     if (e.pointerId !== dragId) return;
     input.touchDrag((e.clientX - lastX) * toGame());
     lastX = e.clientX;
+    travel = Math.max(travel, Math.hypot(e.clientX - ox, e.clientY - oy));
     if (!swiped) {
       const d = swipeDir(e.clientX - ox, e.clientY - oy, (e.timeStamp || win.performance.now()) - downAt);
       if (d !== null) {
@@ -297,6 +324,12 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   const dragEnd = (e: PointerEvent) => {
     if (e.pointerId !== dragId) return;
     dragId = null;
+    stopLong();
+    // Fights: a short still tap is a quick slash (a long one already fired heavy).
+    if (scene === 'fight' && e.type === 'pointerup' && !swiped && !slashed) {
+      const kind = tapSlash(travel, (e.timeStamp || win.performance.now()) - downAt);
+      if (kind) press(kind);
+    }
     ring.style.display = 'none';
     input.setTouchAxis(0, 0);
     input.setDragging(false);
@@ -313,6 +346,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
     btnHeld.clear();
     dragId = null;
     crouching = false;
+    stopLong();
     ring.style.display = 'none';
     input.clearKeys(); // touch buttons and axis in the core as well
   };
@@ -326,6 +360,7 @@ export function createTouchControls(input: InputCore, doc: Document = document):
   }
 
   const setScene = (s: TouchScene) => {
+    scene = s;
     const cfg = SCENE_BUTTONS[s] ?? SCENE_BUTTONS.ocean;
     for (const [a, el] of Object.entries(buttons)) el.classList.toggle('hide', !cfg.show.includes(a));
     if (cfg.confirm) {

@@ -82,6 +82,8 @@ Open the game in a phone browser and turn the phone sideways (in portrait it sho
 | Walk in a fight | drag a finger (1.5x walking speed), or ◀ ▶ |
 | Dash in a fight | a quick swipe left or right, or DASH (with no direction held it dashes away from the fish) |
 | Quick slash, heavy slash, block | QUICK, HEAVY, BLOCK (hold) |
+| Quick slash (no button) | tap the screen anywhere that is not a button |
+| Heavy slash (no button) | touch and hold still for a third of a second |
 | Jump | a quick swipe up, or ▲ |
 | Crouch | a quick swipe down and keep the finger down, or hold ▼ |
 | Buy, back, skip, continue | BUY, BACK, OK |

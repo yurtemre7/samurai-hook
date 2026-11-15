@@ -152,6 +152,13 @@ block merging.
     them): left/right dash, up jumps (one press of `up`), down crouches
     (holds `down` until the finger lifts). Rhaveen: all controls should work
     by touch, not only by buttons.
+  - **tap to slash (fights only, branch `feat/touch-tap-slash`):** a touch on
+    the play area that never leaves the 8 px dead zone and is not a swipe is
+    a slash: lifted before `LONG_PRESS_MS` (350 ms) = QUICK on release, held
+    still that long = HEAVY at once, while the finger is still down
+    (`tapSlash` in `src/input/touch.ts`). Moving past the dead zone means
+    walking, so no slash. The QUICK / HEAVY buttons stay. Checked in the
+    browser with `?touch=1` and synthetic touches; not on a real phone.
   The buttons follow the scene (`setScene`, called from `game.go`): fights show
   QUICK, HEAVY, BLOCK and DASH, with no CONFIRM or SHOP (Rhaveen: a CONFIRM
   that makes him jump "makes no sense"); fishing shows REEL IN and SHOP; the
