@@ -99,7 +99,7 @@ request (issue #21).
 2. **Listen to the sounds.** They were picked by file name. Swap any that do
    not fit in the `sounds` block of `src/manifest.ts`; find CC0 files for
    `bite`, `lose`, `hooked`, `uiDeny`.
-3. **Boat and hook art: looked into on 2026-11-15, no decision yet.** No
+3. **Boat and hook art: decided on 2026-11-15, keep the code-drawn ones.** No
    free hook sprite was found (OpenGameArt: the candidates were GPL, bobbers
    only, or had no hook). The only usable side-view boat (retrowolf's CC0
    "Exreme Fishing") is a modern rowboat with an outboard motor. A new boat
@@ -107,8 +107,9 @@ request (issue #21).
    the lantern reflection in `src/scenes/ocean.ts` reworked. An original
    steel hook was drawn (`node tools/prop-sprites.mjs` writes it to
    `candidates/original/hook.png`) and judged about equal to the current
-   one. The orchestrator's advice is to keep both as they are; Rhaveen has
-   not confirmed. Kenney.nl blocks scripted downloads, but its packs are
+   one. Rhaveen decided to keep both as they are, so they are no longer
+   missing art. Reopen this only if a clearly better old wooden side-view
+   boat turns up. Kenney.nl blocks scripted downloads, but its packs are
    also on OpenGameArt, where a plain download works.
 4. **Redraw all nine fish in one style.** The current sprites are tiny (the
    sardine is 14x8 px) and come from three artists. Deferred by Rhaveen until
