@@ -68,6 +68,24 @@ Keybinds (keyboard only): every action has a first and a second key. Choose a ro
 
 The defaults changed slightly: Right Shift and the numpad Enter no longer count as Block and Confirm (they can be bound again). In normal mode the eel, pufferfish and squid never hurt the samurai. In hard mode they use their jump-or-duck specials too. The swordfish and shark attack in both modes.
 
+### Touch (mobile browser, landscape only)
+
+Open the game in a phone browser and turn the phone sideways (in portrait it shows a "turn your phone sideways" message and the game is paused). On-screen buttons appear automatically and change with the screen: a fight shows QUICK, HEAVY, BLOCK and DASH; fishing shows REEL IN and SHOP; the shop shows BUY and BACK. Short hints at the bottom replace the keyboard prompts.
+
+| Action | Touch |
+|---|---|
+| Drop the hook | touch the water |
+| Steer the hook | drag a finger on the water: the hook follows it (drag up to brake, down to sink faster) |
+| Reel in early | REEL IN |
+| Walk in a fight | drag a finger (1.5x walking speed), or ◀ ▶ |
+| Dash in a fight | a quick swipe left or right, or DASH (with no direction held it dashes away from the fish) |
+| Quick slash, heavy slash, block | QUICK, HEAVY, BLOCK (hold) |
+| Jump | a quick swipe up, or ▲ |
+| Crouch | a quick swipe down and keep the finger down, or hold ▼ |
+| Buy, back, skip, continue | BUY, BACK, OK |
+
+To try it on a desktop browser, add `?touch=1` to the URL. If it feels slow on a phone, add `?debug=perf` to see frames per second and touch delay.
+
 ### Demo shortcuts
 
 | Shortcut | What it does |

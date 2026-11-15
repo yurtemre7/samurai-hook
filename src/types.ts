@@ -12,7 +12,7 @@ export type Action =
   | 'shop'    // open / close the shop at the surface
   | 'settings'; // open / close the settings panel (ocean surface and shop)
 
-export type Device = 'keyboard' | 'gamepad';
+export type Device = 'keyboard' | 'gamepad' | 'touch';
 
 export interface Input {
   /** Call exactly once per fixed update step, before the scene updates. */
@@ -48,6 +48,15 @@ export interface Input {
   clearBinding(a: Action): boolean;
   /** Back to the default keys. */
   resetBindings(): void;
+  /** Touch only: a finger is dragging on the play area (not on a button). */
+  dragging(): boolean;
+  /** Touch only: horizontal finger travel during the last step, in game px (960-wide canvas). */
+  dragDX(): number;
+  /** Touch only: true on the step a finger touched the play area (not a button). */
+  tapped(): boolean;
+  /** Touch only: a dash was asked for this step (quick swipe or DASH button). -1 / 1 = that way,
+   *  0 = no direction given (the fight dashes away from the fish). null = no dash. */
+  dashDir(): -1 | 0 | 1 | null;
 }
 
 export interface Prompt {
@@ -108,6 +117,8 @@ export interface AudioSys {
   /** Announcer line. Plays the recorded clip for `clip` when the manifest has
    *  one, else speaks `text` with browser speech synthesis (silent if
    *  unsupported). Announcer lines never overlap. */
+  /** One line for the ?debug=perf readout: format, context state, what has loaded. */
+  debugInfo?(): string;
   announce(text: string, clip?: import('./core/announcer').AnnounceRequest): void;
   /** Player volume settings, 0..1, remembered between visits. SFX covers the announcer too. */
   musicVolume: number;
@@ -257,6 +268,8 @@ export interface FightInput {
   defendPressed: boolean;
   jump: boolean;         // pressed this step
   crouch: boolean;       // held
+  /** Optional multiplier on walk speed (touch drag walks faster, owner's choice). Default 1. */
+  walkScale?: number;
 }
 
 // ---------- Scenes ----------

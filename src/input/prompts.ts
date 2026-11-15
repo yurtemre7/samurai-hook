@@ -171,6 +171,8 @@ function makeItem(ctx: CanvasRenderingContext2D, input: Input, p: Prompt): Item 
 
 /** Draws the always-visible prompt bar along the bottom of the screen. */
 export function drawPrompts(ctx: CanvasRenderingContext2D, input: Input, prompts: Prompt[]): void {
+  // Touch: the on-screen buttons carry their own word labels, so the keycap bar is hidden.
+  if (input.device === 'touch') return;
   ctx.save();
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1;

@@ -15,6 +15,9 @@ first playable build.
   and agents can work on in parallel.
 - **Non-goals for v1:** multiplayer, mobile/touch, a settings menu, story,
   an ending (a settings menu was added later, as a small panel), special-effect equipment, samurai health or reel-speed upgrades.
+  *Update 2026-11-15: the mobile/touch non-goal was reversed. The team decided
+  to support mobile browsers (landscape only, on-screen buttons plus drag
+  steering). See HANDOVER.md, "Mobile browser".*
 - **Anti-goals:** fights that feel random or unfair (slips the player could
   not have read); breadth that leaves the core loop unpolished; any asset
   with an unconfirmed licence.

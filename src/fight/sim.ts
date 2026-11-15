@@ -345,7 +345,7 @@ export function createFight(inst: FishInstance, stats: SamuraiStats, rng: () => 
       } else if (Math.abs(input.moveX) > 0.05) {
         if (s.move !== 'walk') setMove('walk');
         const before = s.x;
-        s.x += clamp(input.moveX, -1, 1) * S.walkSpeed * dt;
+        s.x += clamp(input.moveX, -1, 1) * S.walkSpeed * (input.walkScale ?? 1) * dt;
         // Walking cannot push through a fish on the floor (dashing can).
         const sep = S.bodyRadius + def.size * 0.5;
         if (f.y < FF.hitHeight && f.mode !== 'slip' && Math.abs(before - f.x) >= sep - 0.01 && Math.abs(s.x - f.x) < sep) {
