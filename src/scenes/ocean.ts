@@ -5,6 +5,7 @@ import { fish as fishDefs, ocean, sprites, text, tiers } from '../manifest';
 import type { FishInstance, Game, Prompt, Scene, SceneParams } from '../types';
 import { drawPineIsland, drawSunsetSea, drawSunsetSky, drawTorii, makeSeigaiha } from '../ui/backdrop';
 import { drawOutlinedText } from '../ui/hud';
+import { createSettingsPanel } from '../ui/settings';
 
 const L = ocean.layout;
 // Underwater palette: the fight scene's dusk violets sinking into deep indigo.
@@ -47,6 +48,8 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
   const rodX = L.boatX + L.rodDx;
 
   let mode: Mode = 'idle';
+  // Bottom-left, just above the prompt bar: free of the title, the gauge and the boat.
+  const settings = createSettingsPanel(game, { x: 12, y: H - 30 - 30, panel: 'above' });
   let hx = rodX;
   let hy = surfaceY + L.hookIdleDy;
   let camY = 0;
@@ -130,7 +133,9 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       const dy = fishY(s) - hy;
       if (dx * dx + dy * dy <= reach * reach) {
         game.audio.play('hooked');
-        game.go('cutscene', { fish: s.fish });
+        // Re-make the fish so it follows the current hard-mode setting, even if it
+        // was spawned before the player changed it.
+        game.go('cutscene', { fish: game.state.makeFish(s.fish.def.id, s.fish.tier) });
         return true;
       }
     }
@@ -156,6 +161,13 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
       const input = game.input;
       boatBob = Math.sin(game.time * 1.6) * L.boatBobPx;
 
+      // Settings are only reachable at the boat; while the panel is open the
+      // fish keep swimming but the player's input belongs to the panel.
+      if (mode === 'idle' && settings.update(dt)) {
+        updateFish(dt);
+        updateBubbles(dt);
+        return;
+      }
       if (mode === 'idle') {
         if (input.pressed('confirm') || input.pressed('down')) {
           game.audio.play('splash');
@@ -169,7 +181,7 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
         hx = clamp(hx + input.moveX() * h.steerSpeed * dt, L.hookSteerMargin, W - L.hookSteerMargin);
         const my = input.moveY();
         if (mode === 'sinking') {
-          if (input.pressed('confirm')) {
+          if (input.pressed('confirm') || input.pressed('up')) {
             mode = 'reeling';
           } else {
             const v = my > 0 ? lerp(h.sinkSpeed, h.fastSinkSpeed, my) : lerp(h.sinkSpeed, h.brakeSpeed, -my);
@@ -344,10 +356,11 @@ export function createOceanScene(game: Game, _params: SceneParams['ocean']): Sce
 
       drawGauge(ctx, lim);
       drawHud(ctx);
+      if (mode === 'idle') settings.render(ctx);
 
       const prompts: Prompt[] =
         mode === 'idle'
-          ? [{ action: 'confirm', label: 'DROP HOOK' }, { action: 'shop', label: 'SHOP' }]
+          ? [{ action: 'confirm', label: 'DROP HOOK' },{ action: 'shop', label: 'SHOP' },{ action: 'settings', label: 'SETTINGS' }]
           : mode === 'sinking'
             ? [{ action: 'move', label: 'STEER' }, { action: 'confirm', label: 'REEL IN' }]
             : [{ action: 'move', label: 'STEER' }];

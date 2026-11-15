@@ -144,13 +144,18 @@ function makeItem(ctx: CanvasRenderingContext2D, input: Input, p: Prompt): Item 
 
   if (p.action === 'move') {
     if (pad) return { glyphW: 20, labelW, draw: (x) => drawStick(ctx, x) };
-    const keys = p.keys === 'horizontal' ? ['A', 'D'] : ['W', 'A', 'S', 'D'];
-    const kw = 18;
+    // The player's own keys, in the order W A S D / A D.
+    const order: Action[] = p.keys === 'horizontal' ? ['left', 'right'] : ['up', 'left', 'down', 'right'];
+    const keys = order.map((a) => input.keyName(input.binding(a, 0)));
+    const widths = keys.map((k) => Math.max(18, keycapWidth(ctx, k) - 2));
     const gap = 2;
     return {
-      glyphW: keys.length * kw + (keys.length - 1) * gap,
+      glyphW: widths.reduce((s, w) => s + w, 0) + (keys.length - 1) * gap,
       labelW,
-      draw: (x) => keys.forEach((k, i) => drawKeycap(ctx, x + i * (kw + gap), k, kw)),
+      draw: (x) => {
+        let cx = x;
+        keys.forEach((k, i) => { drawKeycap(ctx, cx, k, widths[i]); cx += widths[i] + gap; });
+      },
     };
   }
 

@@ -1,12 +1,13 @@
 // Keyboard + gamepad input. Thin browser wrapper around the pure core in core.ts.
 import type { Input } from '../types';
-import { actionsForKey, createInputCore, type GamepadLike } from './core';
+import { createInputCore, type GamepadLike } from './core';
 import { createKeyDebug, keysDebugEnabled } from './debug';
 
 const NO_SCROLL = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Space']);
 
 export function createInput(target: Window = window): Input {
   const core = createInputCore({
+    storage: (() => { try { return target.localStorage; } catch { return null; } })(),
     // Looked up on every call: tests and tools may replace navigator.getGamepads at runtime.
     getGamepads: () => {
       const nav = (target.navigator ?? (globalThis as { navigator?: Navigator }).navigator) as
@@ -32,7 +33,8 @@ export function createInput(target: Window = window): Input {
     // Not with a modifier held, so browser shortcuts keep working. Unbound keys and F-keys untouched.
     // Composition/Dead/Process events are still mapped by their `code` (the core ignores `key` then).
     // Repeats re-assert the held state; the core's pressed() edge only fires on a real up->down.
-    if (!mod && (NO_SCROLL.has(e.code) || actionsForKey(e.code, e.key).length > 0)) e.preventDefault();
+    // While the settings panel is waiting for a key to bind, every key is consumed (Tab must not move focus).
+    if (!mod && (core.capturing || NO_SCROLL.has(e.code) || core.actionsFor(e.code, e.key).length > 0)) e.preventDefault();
     // Call the core first: `debug?.log(..., core.keyDown())` would skip keyDown when debug is off.
     const acts = core.keyDown(e.code, e.key);
     debug?.log('down', e, acts);

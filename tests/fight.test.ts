@@ -4,7 +4,7 @@ import { fight as F, fish as fishDefs } from '../src/manifest';
 import type { FightInput } from '../src/types';
 import { createFight } from '../src/fight/sim';
 import { createGameState } from '../src/game/state';
-import { competentBot, DT, idleBot, input, makeFight, mulberry32, NONE, runFight, skipIntro, statsAt } from './fightBots';
+import { competentBot, DT, idleBot, input, makeFight, mulberry32, NONE, runFight, skipIntro, stateWith, statsAt } from './fightBots';
 
 const def = (id: string) => fishDefs.find((f) => f.id === id)!;
 
@@ -233,6 +233,59 @@ describe('biters', () => {
   });
 });
 
+describe('hard mode', () => {
+  const SLIPPERY_WITH_SPECIAL = ['eel', 'pufferfish', 'squid'];
+
+  it('normal mode: slippery fish stay harmless, however long the fight', () => {
+    for (const id of SLIPPERY_WITH_SPECIAL) {
+      expect(def(id).special, `${id} has a special in the manifest`).toBeDefined();
+      expect(stateWith(false).makeFish(id, 0).def.special).toBeUndefined();
+      const r = runFight(id, idleBot, 0, 1, false);
+      expect(r.events.some((e) => e.type === 'aim' || e.type === 'shoot' || e.type === 'bitten'), id).toBe(false);
+      expect(r.hpLeft, id).toBe(100);
+    }
+  });
+
+  it('normal mode: the same holds for the tougher tiers', () => {
+    for (const id of SLIPPERY_WITH_SPECIAL) expect(stateWith(false).makeFish(id, 2).def.special).toBeUndefined();
+  });
+
+  it('normal mode keeps the specials of the biters: swordfish and shark still attack', () => {
+    for (const id of ['swordfish', 'shark']) expect(stateWith(false).makeFish(id, 0).def.special).toBeDefined();
+  });
+
+  it('hard mode: eel, pufferfish and squid use their specials and can hurt', () => {
+    for (const id of SLIPPERY_WITH_SPECIAL) {
+      expect(stateWith(true).makeFish(id, 0).def.special, id).toBeDefined();
+      const r = runFight(id, idleBot, 0, 1, true);
+      expect(r.events.some((e) => e.type === 'bitten'), id).toBe(true);
+      expect(r.hpLeft, id).toBeLessThan(100);
+    }
+  });
+
+  it('hard mode never gives sardine, mackerel or anglerfish an attack', () => {
+    for (const id of ['sardine', 'mackerel', 'anglerfish']) {
+      const r = runFight(id, idleBot, 0, 1, true);
+      expect(r.hpLeft, id).toBe(100);
+    }
+  });
+
+  it('the mode is saved, defaults to off, survives reset and an old save without the field', () => {
+    const store: Record<string, string> = {};
+    const storage = { getItem: (k: string) => store[k] ?? null, setItem: (k: string, v: string) => { store[k] = v; } };
+    const a = createGameState(storage);
+    expect(a.hardMode).toBe(false);
+    a.hardMode = true;
+    expect(createGameState(storage).hardMode).toBe(true);
+    a.reset();
+    expect(createGameState(storage).hardMode).toBe(true);
+    a.loadPreset({ gold: 10, levels: { damage: 1, depth: 0, gold: 0 } });
+    expect(a.hardMode).toBe(true);
+    store['samurai-hook-save-v1'] = JSON.stringify({ gold: 5, round: 1, levels: { damage: 0, depth: 0, gold: 0 } });
+    expect(createGameState(storage).hardMode).toBe(false);
+  });
+});
+
 describe('gimmicks', () => {
   it('hitting a puffed pufferfish bounces and does no damage', () => {
     const sim = makeFight('pufferfish', 1);
@@ -312,7 +365,7 @@ describe('jump and crouch', () => {
   it('no jump timing clears a single high shot', () => {
     const P = F.fish.special.projectile.high;
     for (let lead = 0.05; lead <= 0.7; lead += 0.05) {
-      const inst = createGameState(null).makeFish('pufferfish', 0);
+      const inst = stateWith(true).makeFish('pufferfish', 0);
       inst.def = { ...inst.def, gimmick: 'none', special: { ...inst.def.special!, pattern: ['high'] } };
       const sim = createFight(inst, statsAt(0), mulberry32(2));
       skipIntro(sim);

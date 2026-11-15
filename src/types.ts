@@ -9,7 +9,8 @@ export type Action =
   | 'quick'   // quick slash
   | 'heavy'   // heavy slash
   | 'defend'  // hold = block, tap + direction = dash-dodge
-  | 'shop';   // open / close the shop at the surface
+  | 'shop'    // open / close the shop at the surface
+  | 'settings'; // open / close the settings panel (ocean surface and shop)
 
 export type Device = 'keyboard' | 'gamepad';
 
@@ -30,6 +31,23 @@ export interface Input {
   readonly device: Device;
   /** Short glyph text for an action on the current device, e.g. "J" or "X". */
   glyph(a: Action): string;
+
+  // ---- keyboard rebinding (settings panel). Each action has a primary and an alternate key. ----
+  /** The KeyboardEvent.code bound to this slot (0 primary, 1 alternate), or null. */
+  binding(a: Action, slot: 0 | 1): string | null;
+  /** A readable name for a key code, e.g. "KeyJ" -> "J"; null -> "-". */
+  keyName(code: string | null | undefined): string;
+  /** While capturing, the next key press is handed to `onKey` and triggers no action. */
+  startCapture(onKey: (code: string) => void): void;
+  cancelCapture(): void;
+  readonly capturing: boolean;
+  /** Binds `code` to the slot. If another slot has it the two swap. Reserved keys (F-keys, modifiers,
+   *  Backspace/Delete) are refused, as is anything that would leave an action without a primary key. */
+  rebind(a: Action, slot: 0 | 1, code: string): 'ok' | 'swapped' | 'reserved' | 'refused';
+  /** Clears the alternate key. False if there was none. */
+  clearBinding(a: Action): boolean;
+  /** Back to the default keys. */
+  resetBindings(): void;
 }
 
 export interface Prompt {
@@ -91,6 +109,9 @@ export interface AudioSys {
    *  one, else speaks `text` with browser speech synthesis (silent if
    *  unsupported). Announcer lines never overlap. */
   announce(text: string, clip?: import('./core/announcer').AnnounceRequest): void;
+  /** Player volume settings, 0..1, remembered between visits. SFX covers the announcer too. */
+  musicVolume: number;
+  sfxVolume: number;
 }
 
 // ---------- Fish ----------
@@ -201,6 +222,13 @@ export interface GameState {
   /** Number of fights started; used for "ROUND N". */
   readonly round: number;
   readonly maxDepth: number;
+  /**
+   * Hard mode: slippery fish (eel, pufferfish, squid) use their specials and can
+   * hurt the samurai. Off by default, where they stay harmless. Saved, and kept
+   * by reset() and loadPreset(). Fish made by makeFish() follow the mode at the
+   * time they are made.
+   */
+  hardMode: boolean;
   readonly samurai: SamuraiStats;
   upgrades(): UpgradeInfo[];
   buy(id: UpgradeId): boolean;

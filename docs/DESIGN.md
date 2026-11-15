@@ -14,7 +14,7 @@ first playable build.
   sprite, sound and number editable in one file; a codebase several people
   and agents can work on in parallel.
 - **Non-goals for v1:** multiplayer, mobile/touch, a settings menu, story,
-  an ending, special-effect equipment, samurai health or reel-speed upgrades.
+  an ending (a settings menu was added later, as a small panel), special-effect equipment, samurai health or reel-speed upgrades.
 - **Anti-goals:** fights that feel random or unfair (slips the player could
   not have read); breadth that leaves the core loop unpolished; any asset
   with an unconfirmed licence.
@@ -55,9 +55,10 @@ Orchestrator's own calls (correct them if wrong):
 
 ### 3.2 Ocean
 
-The samurai sits in a boat at the surface. Confirm drops the hook. The hook
-sinks on its own; the player steers left and right, holds down to sink
-faster and up to brake. The camera follows the hook. Fish swim across in
+The samurai sits in a boat at the surface. Confirm or down drops the hook.
+The hook sinks on its own; the player steers left and right, holds down to
+sink faster, and presses confirm or up to reel it back in (a gentle
+analogue stick tilt up still slows the sink). The camera follows the hook. Fish swim across in
 depth bands. Touching any fish starts a fight, so reaching a valuable deep
 fish means steering past the cheap ones. At maximum depth (the depth
 upgrade) the line reels back up; fish can still be hooked on the way up.
@@ -84,17 +85,44 @@ Samurai moves:
 | Heavy slash | 0.45 s wind-up, long reach, triple damage |
 | Block | hold defend: takes 20% damage, cannot move |
 | Dash-dodge | tap defend with a direction: short dash, brief invulnerability |
+| Jump | W / up / Space (pad: A or up): ground-only, 120 px high, 0.7 s in the air, air steering; no slash, block or dash in the air |
+| Crouch | hold S / down: halves the hurtbox (120 to 60 px) |
 
-Slippery fish never attack. Each has a **slip**: when a strike would land,
+Jump and crouch were added after the first build (branch
+`feat/jump-crouch-dodge`, pending team review). They exist to answer the
+**specials** below; the 4-button duel is otherwise unchanged.
+
+Every fish has a **slip**: when a strike would land,
 the fish can dart away (often over the samurai's head) and "SLIPPED!"
 appears. After a slip the fish is briefly out of slips (its recovery
 window, shown by a sweat-drop and a slower wobble). The skill is to bait a
 slip with a quick slash, then land a heavy slash in the window. Slips are
 driven by a visible state, not hidden dice, so a miss always has a reason.
 
-Biters do all of that and attack. Every attack has a wind-up tell (flash
-and "!"). Piranha: 0.3 s tell, weak, frequent. Shark: 0.9 s tell, very
-heavy. The samurai has a health bar only in these fights.
+Biters do all of that and also bite (the normal attack, which block and
+dash stop). Every attack has a wind-up tell (flash and "!"). Piranha: 0.3 s
+tell, weak, frequent. Shark: 0.9 s tell, very heavy. Fish with a special
+(see above) attack with that too, whatever their category. The samurai's
+health bar shows in every fight against a fish that can hurt him: the
+biters in both modes, and the eel, pufferfish and squid in hard mode only.
+
+**Dodge-only specials.** Slippery fish stay harmless in normal mode, as
+decided on 2026-11-14. A **hard mode** switch in the settings panel (off by
+default, saved) gives the eel, pufferfish and squid their specials too, so
+they can hurt. The swordfish and shark are biters and use theirs in both
+modes. In code the mode is applied in one place, `makeFish` in
+`src/game/state.ts`, which drops `special` from slippery fish when hard mode
+is off. Eel, pufferfish, swordfish, shark and squid each have a special: the fish
+backs off, flashes purple and shows JUMP! or DUCK! with a danger band at the
+hit height, then attacks. Block and dash invulnerability do not help; only
+jumping or ducking does. Swordfish: low charge across the deck. Eel: floor
+shock wave. Pufferfish: two spines at head height. Shark: tail-slap floor
+wave. Squid: ink shots high, low, high. High shots can only be ducked (the
+jump apex stays below them). Striking the fish during a special's tell,
+charge or volley lands, stuns it and costs the special its full cooldown.
+Jumping above the fish's reach also dodges a biter's lunge. A fish with no
+attack and no special never hurts the samurai, which in normal mode includes
+the eel, pufferfish and squid.
 
 Outcomes: fish health zero = "K.O.!", the fish becomes nigiri and is sold.
 Timer zero = "TIME! IT WAS... TOO SLIPPERY." Samurai health zero = "YOU
@@ -109,15 +137,20 @@ Samurai base: quick slash 6, heavy slash 18, health 100.
 | 1 | Sardine | slippery | 5-25 | 40 | 20 s | 5 | tutorial fish, rarely slips |
 | 2 | Mackerel | slippery | 15-40 | 70 | 25 s | 12 | weaves, moderate slips |
 | 3 | Piranha | biter | 30-55 | 90 | 25 s | 25 | fast weak bites (6), 0.3 s tell |
-| 4 | Eel | slippery | 40-70 | 80 | 25 s | 40 | slips almost everything, tiny recovery window |
-| 5 | Pufferfish | slippery | 55-90 | 160 | 30 s | 70 | inflates; hitting it then bounces the samurai back |
-| 6 | Swordfish | biter | 75-110 | 200 | 30 s | 120 | fencing lunges (15), 0.5 s tell, long reach |
-| 7 | Anglerfish | slippery | 95-130 | 260 | 35 s | 200 | arena dims; only its lure glows |
-| 8 | Shark | biter | 115-150 | 400 | 40 s | 350 | slow heavy bite (35), 0.9 s tell |
-| 9 | Giant Squid | slippery | 140-170 | 550 | 40 s | 600 | ink splats hide part of the screen |
+| 4 | Eel | slippery | 40-70 | 80 | 30 s | 40 | slips almost everything, tiny recovery window; special: floor shock wave (jump) |
+| 5 | Pufferfish | slippery | 55-90 | 160 | 30 s | 70 | inflates, hitting it bounces the samurai back; special: two head-height spines (duck) |
+| 6 | Swordfish | biter | 75-110 | 200 | 30 s | 120 | fencing lunges (15), 0.5 s tell, long reach; special: low charge across the deck (jump) |
+| 7 | Anglerfish | slippery | 95-130 | 260 | 40 s | 200 | arena dims; only its lure glows; no attack, stays harmless |
+| 8 | Shark | biter | 115-150 | 400 | 40 s | 350 | slow heavy bite (35), 0.9 s tell; special: tail-slap floor wave (jump) |
+| 9 | Giant Squid | slippery | 140-170 | 480 | 40 s | 600 | ink splats hide part of the screen; special: ink shots high, low, high |
 
-Six slippery, three biters. All nine share one behaviour model driven by
-config numbers; only pufferfish, anglerfish and squid have a gimmick.
+Six slippery, three biters. Five fish have a dodge-only special (eel,
+pufferfish, swordfish, shark, squid); the eel, pufferfish and squid use it
+in hard mode only. Sardine, mackerel and anglerfish never hurt the samurai.
+The specials in the rows below are therefore hard-mode behaviour for the
+three slippery fish. All nine share one behaviour model driven by config
+numbers; only pufferfish, anglerfish and squid have a gimmick. Numbers in
+this table follow `src/manifest.ts`, which is the source of truth.
 
 ### 3.6 Shop and economy
 
@@ -139,10 +172,16 @@ gold by 2.5, so the loop never runs out. All numbers live in the manifest.
 | Quick slash | J | X (left) |
 | Heavy slash | K | Y (top) |
 | Defend | L or Shift | B (right) or RB |
+| Jump (fight) | W, up or Space | A (bottom) or stick up |
+| Crouch (fight) | S or down (held) | stick down (mostly vertical tilt only) |
+| Settings (boat and shop) | Esc or Tab | Select (Back) |
 | Shop (at surface) | E | Y (top) |
 
 Prompts are always on screen and switch glyphs to whichever device was
-used last. No settings menu.
+used last. The only settings are a small panel at the boat and in the shop:
+music volume, sound effects volume (announcer included), hard mode and a
+keybinds page (first and second keyboard key for every action; the gamepad
+layout is fixed).
 
 ## 4. Approaches considered
 

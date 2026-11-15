@@ -3,7 +3,7 @@
 Shared source of truth for project status. Read this before starting any
 work, and update it in the same commit as the work.
 
-Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jump-crouch-dodge`)
+Last updated: 2026-11-15 (jump, crouch and dodge-only specials, hard mode and a settings panel, branch `feat/jump-crouch-dodge`)
 
 ## Current state
 
@@ -14,7 +14,7 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
   (`.github/workflows/pages.yml`). Asset paths go through `assetUrl()` in
   `src/core/assets.ts`, so the build works under the `/<repo>/` sub-path.
 - How to run: `npm install`, then `npm run dev` and open
-  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (90 tests).
+  http://localhost:5173. Checks: `npm run typecheck`, `npm test` (99 tests).
   README.md has controls and how to add a fish or swap an asset.
 - Starting depth raised from 25 m to 135 m on 2026-11-15, at the owner
   Rhaveen's request, so everything up to the shark (Hojiro, 115-150 m) is
@@ -100,13 +100,67 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
 - Jumping above `size x clearScale` also dodges a biter's lunge.
 - Striking the fish during a special's tell, charge or volley lands (it
   cannot slip then), stuns it and still costs the special its full cooldown.
-- `docs/DESIGN.md` (4-button duel, "slippery fish never attack") is not
-  updated yet; update it once the team accepts this change.
-- **This reverses a team decision:** "slippery fish stay harmless"
-  (Rhaveen, 2026-11-14). The eel, pufferfish and squid can now hurt the
-  samurai, so their fights show his health bar. The test "slippery fish never
-  attack" became "fish with no attack and no special never hurt the samurai".
-  Needs the team's OK before merging.
+- `docs/DESIGN.md` now describes jump, crouch and the dodge-only specials
+  (controls tables, move list, specials paragraph). If the team rejects the
+  change, revert those parts.
+- **Gamepad diagonal fix (2026-11-15):** a stick tilt only counts as `up` /
+  `down` when it is mostly vertical (`|y| > |x|`, in `src/input/core.ts`),
+  so walking with a slightly diagonal stick no longer jumps or crouches.
+  New test in `tests/input.test.ts`. Typecheck clean and 99 tests pass
+  (checked 2026-11-15, Node 26.13.1 installed in `D:\Fafas Arbeit\nodejs`).
+  Not tried in a browser or on a real pad.
+- **Hard mode keeps the team decision intact (2026-11-15):** "slippery fish
+  stay harmless" (Rhaveen, 2026-11-14) still holds in normal mode, which is
+  the default. A **hard mode** switch (settings panel) gives the eel,
+  pufferfish and squid their specials, so they can hurt and their fights show
+  the samurai's health bar. The swordfish and shark are biters and keep their
+  specials in both modes (the request named only slippery fish; the team can
+  overrule this). The mode is applied in one place: `makeFish` in
+  `src/game/state.ts` drops `special` from slippery fish when it is off, so
+  the sim, health bar and tell drawing all follow. It is saved in the game
+  save (`hard`; an old save without it loads as off) and survives `reset()`
+  and `loadPreset()`. No gold bonus or other reward for hard mode. The ocean
+  re-makes a hooked fish, so a mode change applies even to fish already
+  swimming. Tests run in hard mode by default (`stateWith(hard)` in
+  `tests/fightBots.ts`) so the special tests test something; the new "hard
+  mode" tests cover normal mode (harmless, also in higher tiers) and the
+  save. The printed balance table is hard mode.
+- **Settings panel (2026-11-15, `src/ui/settings.ts`):** a small tab with
+  music volume, sound effects volume (announcer included) and hard mode.
+  Bottom-left on the ocean screen (only while the boat is idle), top-left in
+  the shop. New input action `settings`: Esc or Tab, pad Select (button 8).
+  W S choose a row, A D change it (10 % steps), Esc / E / B close. Volumes
+  are kept by `src/core/audio.ts` in their own localStorage key
+  (`samurai-hook-volume-v1`), so wiping the save keeps them. The tab shows
+  "HARD" when the mode is on. Not reachable in the fight or during a cast.
+  Checked in the browser (keyboard only): panel in ocean and shop, SFX
+  volume 80 % kept after a reload, normal-mode eel has no special and shows
+  "cannot be harmed", hard-mode eel shows the health bar. **Not verified:**
+  that the volume really changes what you hear (no one listened), a real pad,
+  and a fight in hard mode played to the end.
+- **Keybinds page (2026-11-15):** a fourth row in the settings panel opens a
+  page with all ten actions, each with a first and a second keyboard key.
+  Enter on a row, then press the new key. Esc cancels, Backspace while
+  changing a second key clears it, a key used elsewhere swaps with it, no
+  action can lose its first key, and F-keys, Ctrl / Alt / Meta, Backspace and
+  Delete are refused (`isReservedKey` in `src/input/core.ts`). The last row
+  resets to defaults. **Keyboard only: the gamepad layout is still fixed**
+  (heavy and shop share a button on purpose and the d-pad is hard-coded).
+  Bindings live in the core per instance (`DEFAULT_BINDINGS`, `rebind`,
+  capture mode) and are saved under `samurai-hook-keys-v1`, separate from the
+  save, so F4 keeps them. A bad or partly stored map merges with the defaults
+  action by action. The labelled-letter fallback for non-QWERTY layouts only
+  applies while the keys are the defaults. Prompts and the move hint now draw
+  the player's keys (`keyName`). Defaults changed slightly: Right Shift and
+  numpad Enter are no longer bound (the panel shows every binding). The
+  settings panel hints are generated from the keys too. Escape cannot be
+  bound (it cancels a capture). 110 tests pass. Quick and Heavy keep the team's mouse buttons as their default second keys (left click, right click) and clicks can be bound too. In the browser: rebinding
+  Quick slash to U showed U in the fight prompt and survived a reload.
+  **Not verified:** that the old key really does nothing in a played fight
+  (covered by a unit test), other layouts, and a gamepad in the panel.
+- Ocean controls: S or down drops the hook, and W or up reels it in (Space
+  still does both). The brake on up is gone on the keyboard; a gentle analogue
+  stick tilt still slows the sink. The prompt bar shows each once.
 - No jump or crouch art exists: the poses are the walk and idle frames,
   stretched and squashed by `samuraiTransform`.
 - Verified: 91 tests (new ones: jump arc, clear heights vs. tells, each
@@ -115,8 +169,8 @@ Last updated: 2026-11-15 (jump, crouch and dodge-only specials, branch `feat/jum
   still wins every fish at every damage level. In the browser (scripted
   keys): crouch under pufferfish spines, jump over a squid ink wave, jump
   over the swordfish charge, the JUMP! tell and red band; no console errors.
-- **Not verified:** a human playing it; any gamepad (a diagonal stick tilt
-  may jump or crouch by accident); projectiles drawn over real ink splats
+- **Not verified:** a human playing it; any real gamepad (the diagonal tilt
+  is handled in code, untested on hardware); projectiles drawn over real ink splats
   (the draw order puts them on top, but no screenshot caught both at once).
 
 README and store text (session 2, 2026-11-15): README.md was rewritten in a
