@@ -193,6 +193,10 @@ Every push to `main` runs the tests, builds, and publishes to GitHub Pages (the 
 
 See HANDOVER.md for the full list.
 
+## Licence
+
+The game's code and original assets are under the [PolyForm Noncommercial License 1.0.0](LICENSE): free for noncommercial use, not for commercial use. Third-party assets keep their own licences (below).
+
 ## Credits and licence of assets
 
 Most art, sound and music are CC0 or CC-BY from OpenGameArt and itch.io authors, including LuizMelo ("Martial Hero", the samurai). The swordfish, the anglerfish and the nigiri are original pixel art made for this game. The announcer's lines are from Kenney's Voiceover Pack: Fighter (CC0), except "Fight", which is by Alba MacKenna (CC-BY 4.0). Every file is listed with its source and licence in [CREDITS.md](CREDITS.md).
