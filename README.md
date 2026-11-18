@@ -184,6 +184,10 @@ Project documents:
 
 Every push to `main` runs the tests, builds, and publishes to GitHub Pages (the `gh-pages` branch) through `.github/workflows/pages.yml`. Every pull request is tested and built too, and a bot comments a play link on it (`https://yurtemre7.github.io/samurai-hook/pr-preview/pr-<number>/`). The preview is removed when the PR closes, and PRs from forks are skipped. The build uses a relative base path, so it works under `/<repo>/` or at a domain root.
 
+## Roblox port
+
+`roblox/` is a git submodule ([FafaWanji/samurai-hook-roblox](https://github.com/FafaWanji/samurai-hook-roblox)): the same game as a 2D Roblox experience, with the fight sim ported line for line to Luau and replay-tested against `src/fight/sim.ts`. Clone with `--recurse-submodules`, or run `git submodule update --init` in an existing clone, then see `roblox/README.md`. The web build does not need it.
+
 ## Known gaps
 
 - The squid sprite is a friendly stand-in.
